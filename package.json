@@ -1,0 +1,17 @@
+{
+  "name": "splunkstuff",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "setup": "yarn install && yarn workspace @splunk/splunk-one run build",
+    "start": "yarn workspace @splunk/splunk-one run start",
+    "build": "yarn workspace @splunk/splunk-one run build"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "yarn@1.22.22"
+}

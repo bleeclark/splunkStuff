@@ -1,0 +1,8 @@
+node_modules/
+**/node_modules/
+packages/splunk-one/stage/
+.yarn/cache
+*.log
+.DS_Store
+preview/node_modules/
+preview/dist/
