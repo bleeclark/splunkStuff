@@ -34,8 +34,10 @@ export default function PreviewCard({
     sparkPadRight = 4,
     sparkPadTop = 2,
     sparkPadBottom = 2,
+    showSparklineHoverValues = true,
+    sparkValueUnit = '',
 }) {
-    const { subheader = '', values = [] } = feed || {};
+    const { subheader = '', values = [], times = [] } = feed || {};
     const { last, delta } = useMemo(() => trendFromValues(values), [values]);
     const isGoodTrend = useMemo(() => {
         if (!Number.isFinite(delta)) {
@@ -88,11 +90,18 @@ export default function PreviewCard({
                         left: sparkLeft,
                         right: sparkRight,
                         zIndex: 10,
-                        pointerEvents: 'none',
+                        pointerEvents: showSparklineHoverValues
+                            ? 'auto'
+                            : 'none',
                     }}
                 >
                     <FixedSparkline
                         values={values}
+                        times={
+                            Array.isArray(times) && times.length === values.length
+                                ? times
+                                : []
+                        }
                         width={cardWidth - sparkLeft - sparkRight}
                         height={sparkHeight}
                         min={sparkMin}
@@ -103,6 +112,8 @@ export default function PreviewCard({
                         padRight={sparkPadRight}
                         padTop={sparkPadTop}
                         padBottom={sparkPadBottom}
+                        showHover={showSparklineHoverValues}
+                        valueUnit={sparkValueUnit}
                     />
                 </div>
             </div>

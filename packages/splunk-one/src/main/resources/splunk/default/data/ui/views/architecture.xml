@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<view template="splunk-one:/templates/architecture.html" type="html">
+    <label>Architecture</label>
+</view>

@@ -1,3 +1,6 @@
 <nav>
     <view name="start" default="true" />
+    <view name="demo" />
+    <view name="documentation" />
+    <view name="architecture" />
 </nav>

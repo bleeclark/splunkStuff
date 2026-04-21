@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import SingleValue from '@splunk/visualizations/SingleValue';
 import Tooltip from '@splunk/react-ui/Tooltip';
 
@@ -55,8 +55,45 @@ function toLocalDataSource(values = [], times = []) {
     };
 }
 
+function formatSparkHoverTime(raw) {
+    if (raw == null || raw === '') {
+        return null;
+    }
+    if (typeof raw === 'string') {
+        const ms = Date.parse(raw);
+        if (Number.isFinite(ms) && !Number.isNaN(new Date(ms).getTime())) {
+            return new Date(ms).toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        }
+        return raw;
+    }
+    if (typeof raw === 'number' && raw > 31536000000) {
+        return new Date(raw).toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    }
+    return null;
+}
+
+function formatSparkHoverValue(v) {
+    if (!Number.isFinite(v)) {
+        return '—';
+    }
+    return Number.isInteger(v) && Math.abs(v) < 1e6
+        ? String(v)
+        : v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
 export function FixedSparkline({
     values = [],
+    times = [],
     width = 360,
     height = 50,
     min = 0,
@@ -67,7 +104,11 @@ export function FixedSparkline({
     padRight = 0,
     padTop = 0,
     padBottom = 0,
+    showHover = true,
+    valueUnit = '',
 }) {
+    const [hoverIdx, setHoverIdx] = useState(null);
+
     const nums = (Array.isArray(values) ? values : [])
         .map(Number)
         .filter(Number.isFinite);
@@ -92,14 +133,119 @@ export function FixedSparkline({
     const d = nums
         .map((v, i) => `${i === 0 ? 'M' : 'L'} ${toX(i)} ${toY(v)}`)
         .join(' ');
+
+    const handleMove = useCallback(
+        (e) => {
+            if (!showHover) {
+                return;
+            }
+            const svg = e.currentTarget;
+            const rect = svg.getBoundingClientRect();
+            if (!rect.width) {
+                return;
+            }
+            const scaleX = width / rect.width;
+            const x = (e.clientX - rect.left) * scaleX;
+            const relX = x - padLeft;
+            let idx = Math.round(relX / xStep);
+            idx = Math.max(0, Math.min(nums.length - 1, idx));
+            setHoverIdx(idx);
+        },
+        [showHover, width, padLeft, xStep, nums.length]
+    );
+
+    const handleLeave = useCallback(() => {
+        setHoverIdx(null);
+    }, []);
+
+    const hitStroke = Math.max(16, strokeWidth * 6);
+    const timeRow =
+        showHover &&
+        hoverIdx != null &&
+        Array.isArray(times) &&
+        times.length > hoverIdx
+            ? formatSparkHoverTime(times[hoverIdx])
+            : null;
+    const hx = hoverIdx != null ? toX(hoverIdx) : 0;
+    const hy = hoverIdx != null ? toY(nums[hoverIdx]) : 0;
+
     return (
-        <svg
-            width={width}
-            height={height}
-            style={{ display: 'block', overflow: 'visible' }}
-        >
-            <path d={d} fill="none" stroke={stroke} strokeWidth={strokeWidth} />
-        </svg>
+        <div style={{ position: 'relative', width, height }}>
+            <svg
+                width={width}
+                height={height}
+                style={{ display: 'block', overflow: 'visible' }}
+                onMouseMove={showHover ? handleMove : undefined}
+                onMouseLeave={showHover ? handleLeave : undefined}
+            >
+                <path
+                    d={d}
+                    fill="none"
+                    stroke={stroke}
+                    strokeWidth={strokeWidth}
+                    style={{ pointerEvents: 'none' }}
+                />
+                {showHover && (
+                    <path
+                        d={d}
+                        fill="none"
+                        stroke="transparent"
+                        strokeWidth={hitStroke}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{ cursor: 'crosshair' }}
+                    />
+                )}
+                {showHover && hoverIdx != null && (
+                    <g style={{ pointerEvents: 'none' }}>
+                        <line
+                            x1={hx}
+                            y1={padTop}
+                            x2={hx}
+                            y2={height - padBottom}
+                            stroke="rgba(255,255,255,0.35)"
+                            strokeWidth={1}
+                        />
+                        <circle
+                            cx={hx}
+                            cy={hy}
+                            r={4}
+                            fill={stroke}
+                            stroke="rgba(0,0,0,0.35)"
+                            strokeWidth={1}
+                        />
+                    </g>
+                )}
+            </svg>
+            {showHover && hoverIdx != null && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: Math.min(width - 4, Math.max(4, hx)),
+                        top: hy - 6,
+                        transform: 'translate(-50%, -100%)',
+                        pointerEvents: 'none',
+                        background: 'rgba(15, 25, 45, 0.96)',
+                        color: '#fff',
+                        fontSize: 11,
+                        lineHeight: 1.35,
+                        padding: '6px 8px',
+                        borderRadius: 4,
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
+                        whiteSpace: 'nowrap',
+                        zIndex: 2,
+                    }}
+                >
+                    <div style={{ fontWeight: 600 }}>
+                        {formatSparkHoverValue(nums[hoverIdx])}
+                        {valueUnit || ''}
+                    </div>
+                    {timeRow ? (
+                        <div style={{ opacity: 0.88, marginTop: 2 }}>{timeRow}</div>
+                    ) : null}
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -126,6 +272,9 @@ export default function NewSingleValue({
     sparkPadRight = 4,
     sparkPadTop = 2,
     sparkPadBottom = 2,
+    showSparklineHoverValues = true,
+    /** `overlay` = sparkline on top of SingleValue (default). `below` = sparkline in normal flow under the numbers. */
+    sparklineLayout = 'overlay',
 }) {
     const {
         subheader = '',
@@ -197,9 +346,9 @@ export default function NewSingleValue({
             majorColor: textColor,
             trendColor: textColor,
             showSparkAreaGraph: false,
+            sparklineDisplay: 'off',
             sparklineStrokeColor: '#DFA611',
             sparklineStrokeWidth: 2,
-            showSparklineTooltip: false,
             unit: '%',
             majorFontSize: 28,
             trendFontSize: 11,
@@ -207,7 +356,6 @@ export default function NewSingleValue({
             trendValue: delta,
             subheader,
             color: textColor,
-            showSparkline: false,
         }),
         [
             options,
@@ -223,53 +371,127 @@ export default function NewSingleValue({
 
     const cardWidth = width - 24;
     const cardHeight = height - 24 - 12 - 24;
+    const sparkGap = 6;
+    const isSparkBelow = sparklineLayout === 'below';
+    const mainVizHeight = isSparkBelow
+        ? Math.max(28, cardHeight - sparkHeight - sparkGap)
+        : cardHeight;
+
+    const sparklineSvg = (
+        <FixedSparkline
+            values={preparedFeed.safeValues}
+            times={preparedFeed.safeTimes}
+            width={cardWidth - sparkLeft - sparkRight}
+            height={sparkHeight}
+            min={sparkMin}
+            max={sparkMax}
+            stroke={sparkStroke}
+            strokeWidth={sparkStrokeWidth}
+            padLeft={sparkPadLeft}
+            padRight={sparkPadRight}
+            padTop={sparkPadTop}
+            padBottom={sparkPadBottom}
+            showHover={showSparklineHoverValues}
+            valueUnit=""
+        />
+    );
+
+    const overlaySparkline = (
+        <div
+            style={{
+                position: 'absolute',
+                height: sparkHeight,
+                bottom: sparkBottom,
+                left: sparkLeft,
+                right: sparkRight,
+                zIndex: 10,
+                pointerEvents: showSparklineHoverValues ? 'auto' : 'none',
+                color: '#000000',
+            }}
+        >
+            {sparklineSvg}
+        </div>
+    );
 
     const content = (
-        <div style={{ width, height }}>
-            <div style={{ background: 'transparent', color: textColor }}>
-                {subheader}
-            </div>
+        <div
+            style={{
+                width,
+                ...(isSparkBelow
+                    ? { height: 'auto', display: 'flex', flexDirection: 'column' }
+                    : { height }),
+            }}
+        >
             <div
                 style={{
-                    position: 'relative',
-                    width: cardWidth,
-                    height: cardHeight,
+                    background: 'transparent',
+                    color: textColor,
+                    marginBottom: isSparkBelow && subheader ? 8 : 0,
                 }}
             >
-                <SingleValue
-                    width={cardWidth}
-                    height={cardHeight}
-                    dataSources={resolvedDataSources}
-                    options={mergedOptions}
-                    onClick={onDrilldown}
-                />
+                {subheader}
+            </div>
+            {isSparkBelow ? (
                 <div
                     style={{
-                        position: 'absolute',
-                        height: sparkHeight,
-                        bottom: sparkBottom,
-                        left: sparkLeft,
-                        right: sparkRight,
-                        zIndex: 10,
-                        pointerEvents: 'none',
-                        color: '#000000',
+                        width: cardWidth,
+                        alignSelf: 'flex-start',
+                        backgroundColor: mergedOptions.backgroundColor,
+                        borderRadius: 4,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'stretch',
+                        marginBottom: 0,
+                        paddingBottom: 0,
+                        boxSizing: 'border-box',
                     }}
                 >
-                    <FixedSparkline
-                        values={preparedFeed.safeValues}
-                        width={cardWidth - sparkLeft - sparkRight}
-                        height={sparkHeight}
-                        min={sparkMin}
-                        max={sparkMax}
-                        stroke={sparkStroke}
-                        strokeWidth={sparkStrokeWidth}
-                        padLeft={sparkPadLeft}
-                        padRight={sparkPadRight}
-                        padTop={sparkPadTop}
-                        padBottom={sparkPadBottom}
-                    />
+                    <div style={{ flexShrink: 0 }}>
+                        <SingleValue
+                            width={cardWidth}
+                            height={mainVizHeight}
+                            dataSources={resolvedDataSources}
+                            options={mergedOptions}
+                            onClick={onDrilldown}
+                        />
+                    </div>
+                    <div
+                        style={{
+                            marginTop: sparkGap,
+                            marginBottom: 0,
+                            paddingLeft: sparkLeft,
+                            paddingRight: sparkRight,
+                            paddingBottom: 0,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'flex-end',
+                            pointerEvents: showSparklineHoverValues ? 'auto' : 'none',
+                            color: '#000000',
+                            flexShrink: 0,
+                        }}
+                    >
+                        {sparklineSvg}
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <div
+                    style={{
+                        position: 'relative',
+                        width: cardWidth,
+                        height: cardHeight,
+                    }}
+                >
+                    <SingleValue
+                        width={cardWidth}
+                        height={cardHeight}
+                        dataSources={resolvedDataSources}
+                        options={mergedOptions}
+                        onClick={onDrilldown}
+                    />
+                    {overlaySparkline}
+                </div>
+            )}
         </div>
     );
 
