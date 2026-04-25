@@ -20,9 +20,11 @@ const heading = { color: '#000000', marginBottom: 12 };
 const panel = {
     background: '#0B1F3B',
     width: 376,
+    height: 70,
     marginBottom: 24,
     color: '#FFFFFF',
-    padding: '8px 0',
+    padding: '4px 0 0',
+    boxSizing: 'border-box',
 };
 
 const palette = {
@@ -32,15 +34,19 @@ const palette = {
 };
 
 const widgetCommon = {
-    width: 400,
-    height: 148,
+    width: 376,
+    height: 70,
     ...palette,
     sparkStroke: 'rgba(255,255,255,0.95)',
-    sparkStrokeWidth: 2,
-    sparkPadLeft: 10,
-    sparkPadRight: 10,
-    sparkPadTop: 6,
-    sparkPadBottom: 4,
+    sparkStrokeWidth: 1.5,
+    sparkHeight: 16,
+    sparkBottom: 2,
+    sparkLeft: 8,
+    sparkRight: 8,
+    sparkPadLeft: 4,
+    sparkPadRight: 4,
+    sparkPadTop: 0,
+    sparkPadBottom: 0,
     options: {},
 };
 

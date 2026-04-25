@@ -369,12 +369,24 @@ export default function NewSingleValue({
         ]
     );
 
-    const cardWidth = width - 24;
-    const cardHeight = height - 24 - 12 - 24;
-    const sparkGap = 6;
+    const cardWidth = width;
     const isSparkBelow = sparklineLayout === 'below';
+    const isCompactHeight = height <= 100;
+    const subheaderAllowance = subheader ? 18 : 0;
+    let interBlockGap = 0;
+    if (isSparkBelow && subheader) {
+        interBlockGap = isCompactHeight ? 4 : 8;
+    }
+    const cardHeight = isCompactHeight
+        ? Math.max(4, height - subheaderAllowance - interBlockGap - 2)
+        : height - 24 - 12 - 24;
+    const sparkGap = isCompactHeight && isSparkBelow ? 2 : 6;
+    const minMainH = isCompactHeight ? 2 : 28;
     const mainVizHeight = isSparkBelow
-        ? Math.max(28, cardHeight - sparkHeight - sparkGap)
+        ? Math.max(
+              minMainH,
+              cardHeight - sparkHeight - sparkGap
+          )
         : cardHeight;
 
     const sparklineSvg = (
@@ -426,7 +438,12 @@ export default function NewSingleValue({
                 style={{
                     background: 'transparent',
                     color: textColor,
-                    marginBottom: isSparkBelow && subheader ? 8 : 0,
+                    marginBottom: (() => {
+                        if (!isSparkBelow || !subheader) {
+                            return 0;
+                        }
+                        return isCompactHeight ? 4 : 8;
+                    })(),
                 }}
             >
                 {subheader}
