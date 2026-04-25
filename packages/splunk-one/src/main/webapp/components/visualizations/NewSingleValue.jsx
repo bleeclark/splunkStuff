@@ -275,6 +275,8 @@ export default function NewSingleValue({
     showSparklineHoverValues = true,
     /** `overlay` = sparkline on top of SingleValue (default). `below` = sparkline in normal flow under the numbers. */
     sparklineLayout = 'overlay',
+    /** Paints the spark band; leaves trend/alert fill only on the value block (top of the card). */
+    sparkRegionBackground = '#0B1F3B',
 }) {
     const {
         subheader = '',
@@ -453,7 +455,6 @@ export default function NewSingleValue({
                     style={{
                         width: cardWidth,
                         alignSelf: 'flex-start',
-                        backgroundColor: mergedOptions.backgroundColor,
                         borderRadius: 4,
                         overflow: 'hidden',
                         display: 'flex',
@@ -464,7 +465,14 @@ export default function NewSingleValue({
                         boxSizing: 'border-box',
                     }}
                 >
-                    <div style={{ flexShrink: 0 }}>
+                    <div
+                        style={{
+                            flexShrink: 0,
+                            backgroundColor: mergedOptions.backgroundColor,
+                            borderTopLeftRadius: 4,
+                            borderTopRightRadius: 4,
+                        }}
+                    >
                         <SingleValue
                             width={cardWidth}
                             height={mainVizHeight}
@@ -475,10 +483,10 @@ export default function NewSingleValue({
                     </div>
                     <div
                         style={{
-                            marginTop: sparkGap,
+                            paddingTop: sparkGap,
                             marginBottom: 0,
-                            paddingLeft: sparkLeft,
-                            paddingRight: sparkRight,
+                            paddingLeft: 0,
+                            paddingRight: 0,
                             paddingBottom: 0,
                             display: 'flex',
                             justifyContent: 'center',
@@ -486,9 +494,19 @@ export default function NewSingleValue({
                             pointerEvents: showSparklineHoverValues ? 'auto' : 'none',
                             color: '#000000',
                             flexShrink: 0,
+                            backgroundColor: sparkRegionBackground,
+                            borderBottomLeftRadius: 4,
+                            borderBottomRightRadius: 4,
                         }}
                     >
-                        {sparklineSvg}
+                        <div
+                            style={{
+                                paddingLeft: sparkLeft,
+                                paddingRight: sparkRight,
+                            }}
+                        >
+                            {sparklineSvg}
+                        </div>
                     </div>
                 </div>
             ) : (
@@ -506,14 +524,35 @@ export default function NewSingleValue({
                         options={mergedOptions}
                         onClick={onDrilldown}
                     />
+                    <div
+                        style={{
+                            position: 'absolute',
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            height: sparkHeight + sparkBottom,
+                            background: sparkRegionBackground,
+                            zIndex: 1,
+                            pointerEvents: 'none',
+                        }}
+                    />
                     {overlaySparkline}
                 </div>
             )}
         </div>
     );
 
+    const tooltipStyleInline = {
+        display: 'block',
+        width,
+        minHeight: height,
+        boxSizing: 'border-box',
+    };
+
     return tooltipText ? (
-        <Tooltip content={tooltipText}>{content}</Tooltip>
+        <Tooltip content={tooltipText}>
+            <div style={tooltipStyleInline}>{content}</div>
+        </Tooltip>
     ) : (
         content
     );

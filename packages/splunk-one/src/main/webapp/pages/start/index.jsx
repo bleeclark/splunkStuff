@@ -19,11 +19,11 @@ import {
 const heading = { color: '#000000', marginBottom: 12 };
 const panel = {
     background: '#0B1F3B',
-    width: 376,
-    height: 70,
+    width: 400,
+    height: 130,
     marginBottom: 24,
     color: '#FFFFFF',
-    padding: '4px 0 0',
+    padding: '8px 0 0',
     boxSizing: 'border-box',
 };
 
@@ -34,19 +34,19 @@ const palette = {
 };
 
 const widgetCommon = {
-    width: 376,
-    height: 70,
+    width: 400,
+    height: 130,
     ...palette,
     sparkStroke: 'rgba(255,255,255,0.95)',
-    sparkStrokeWidth: 1.5,
-    sparkHeight: 16,
-    sparkBottom: 2,
-    sparkLeft: 8,
-    sparkRight: 8,
+    sparkStrokeWidth: 2,
+    sparkHeight: 36,
+    sparkBottom: 0,
+    sparkLeft: 10,
+    sparkRight: 10,
     sparkPadLeft: 4,
     sparkPadRight: 4,
-    sparkPadTop: 0,
-    sparkPadBottom: 0,
+    sparkPadTop: 2,
+    sparkPadBottom: 2,
     options: {},
 };
 

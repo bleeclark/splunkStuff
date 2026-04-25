@@ -63,11 +63,11 @@ const heading = { color: '#000000', marginBottom: 12 };
 /** Same footprint as Start page panels; top padding only so the inner card sits flush at the bottom. */
 const panel = {
     background: '#0B1F3B',
-    width: 376,
-    height: 70,
+    width: 400,
+    height: 130,
     marginBottom: 24,
     color: '#FFFFFF',
-    padding: '4px 0 0',
+    padding: '8px 0 0',
     boxSizing: 'border-box',
 };
 
@@ -78,19 +78,19 @@ const palette = {
 };
 
 const widgetDemo = {
-    width: 376,
-    height: 70,
+    width: 400,
+    height: 130,
     ...palette,
     sparkStroke: 'rgba(255,255,255,0.95)',
-    sparkStrokeWidth: 1.5,
-    sparkHeight: 16,
+    sparkStrokeWidth: 2,
+    sparkHeight: 36,
     sparkBottom: 0,
-    sparkLeft: 8,
-    sparkRight: 8,
+    sparkLeft: 10,
+    sparkRight: 10,
     sparkPadLeft: 4,
     sparkPadRight: 4,
-    sparkPadTop: 0,
-    sparkPadBottom: 0,
+    sparkPadTop: 2,
+    sparkPadBottom: 2,
     sparklineLayout: 'below',
     options: {},
 };
@@ -226,8 +226,8 @@ getUserTheme()
                 sparkStroke: '#ffffff',
                 sparkMin: 0,
                 sparkMax: 100,
-                sparkHeight: 16,
-                sparkStrokeWidth: 1.5,
+                sparkHeight: 36,
+                sparkStrokeWidth: 2,
                 invert: false,
                 sparklineLayout: 'below',
                 unit: '%',
@@ -475,7 +475,7 @@ getUserTheme()
                                                 setPlay({
                                                     sparkHeight: Math.max(
                                                         8,
-                                                        Number(e.target.value) || 16
+                                                        Number(e.target.value) || 36
                                                     ),
                                                 })
                                             }
