@@ -275,8 +275,6 @@ export default function NewSingleValue({
     showSparklineHoverValues = true,
     /** `overlay` = sparkline on top of SingleValue (default). `below` = sparkline in normal flow under the numbers. */
     sparklineLayout = 'overlay',
-    /** Paints the spark band; leaves trend/alert fill only on the value block (top of the card). */
-    sparkRegionBackground = '#0B1F3B',
 }) {
     const {
         subheader = '',
@@ -455,6 +453,7 @@ export default function NewSingleValue({
                     style={{
                         width: cardWidth,
                         alignSelf: 'flex-start',
+                        backgroundColor: mergedOptions.backgroundColor,
                         borderRadius: 4,
                         overflow: 'hidden',
                         display: 'flex',
@@ -468,9 +467,6 @@ export default function NewSingleValue({
                     <div
                         style={{
                             flexShrink: 0,
-                            backgroundColor: mergedOptions.backgroundColor,
-                            borderTopLeftRadius: 4,
-                            borderTopRightRadius: 4,
                         }}
                     >
                         <SingleValue
@@ -483,10 +479,8 @@ export default function NewSingleValue({
                     </div>
                     <div
                         style={{
-                            paddingTop: sparkGap,
+                            marginTop: sparkGap,
                             marginBottom: 0,
-                            paddingLeft: 0,
-                            paddingRight: 0,
                             paddingBottom: 0,
                             display: 'flex',
                             justifyContent: 'center',
@@ -494,9 +488,6 @@ export default function NewSingleValue({
                             pointerEvents: showSparklineHoverValues ? 'auto' : 'none',
                             color: '#000000',
                             flexShrink: 0,
-                            backgroundColor: sparkRegionBackground,
-                            borderBottomLeftRadius: 4,
-                            borderBottomRightRadius: 4,
                         }}
                     >
                         <div
@@ -523,18 +514,6 @@ export default function NewSingleValue({
                         dataSources={resolvedDataSources}
                         options={mergedOptions}
                         onClick={onDrilldown}
-                    />
-                    <div
-                        style={{
-                            position: 'absolute',
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            height: sparkHeight + sparkBottom,
-                            background: sparkRegionBackground,
-                            zIndex: 1,
-                            pointerEvents: 'none',
-                        }}
                     />
                     {overlaySparkline}
                 </div>
