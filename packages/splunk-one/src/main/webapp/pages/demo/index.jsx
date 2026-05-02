@@ -1,3 +1,7 @@
+/**
+ * Demo page: interactively edit value series and (in the props playground) visualization
+ * props. Complements the Start page with a sticky sidebar for dataset textareas.
+ */
 import React, { useMemo, useState } from 'react';
 import layout from '@splunk/react-page/18';
 import { getUserTheme } from '@splunk/splunk-utils/themes';
@@ -15,6 +19,7 @@ import {
     customTooltipsDemoFeed,
 } from '../../components/visualizations/singleValueFeed';
 
+// --- Time axis for feeds that use ISO timestamps (Start-style cards) ---
 const TIME_SLOTS = [
     '2024-06-01T00:00:00Z',
     '2024-06-01T01:00:00Z',
@@ -24,6 +29,8 @@ const TIME_SLOTS = [
     '2024-06-01T05:00:00Z',
 ];
 
+// --- Parse comma/space-separated numbers from textarea state ---
+/* eslint-disable no-unused-vars */
 function parseValues(text) {
     return text
         .split(/[,;\s]+/)
@@ -33,6 +40,7 @@ function parseValues(text) {
         .filter(Number.isFinite);
 }
 
+/* eslint-disable no-unused-vars */
 function buildTimes(len) {
     if (len <= 0) {
         return [];
@@ -49,6 +57,8 @@ function buildLetterLabels(len) {
     return Array.from({ length: len }, (_, i) => letters[i % 26]);
 }
 
+/* eslint-disable no-unused-vars */
+/** Ensure at least two points for a line; otherwise spark math degrades. */
 function coerceSeries(parsed, fallback) {
     if (parsed.length >= 2) {
         return parsed;
@@ -59,15 +69,16 @@ function coerceSeries(parsed, fallback) {
     return fallback;
 }
 
+// --- Shared layout (align with Start: 400×105 tile, page chrome #0B1F3B) ---
 const heading = { color: '#000000', marginBottom: 12 };
 /** Same footprint as Start page panels; top padding only so the inner card sits flush at the bottom. */
 const panel = {
     background: '#0B1F3B',
     width: 400,
-    height: 130,
+    height: 105,
     marginBottom: 24,
     color: '#FFFFFF',
-    padding: '8px 0 0',
+    padding: 0,
     boxSizing: 'border-box',
 };
 
@@ -77,9 +88,10 @@ const palette = {
     textColor: '#FFFFFF',
 };
 
+/** Default props for NewSingleValue; playground overrides some via `playProps`. */
 const widgetDemo = {
     width: 400,
-    height: 130,
+    height: 105,
     ...palette,
     sparkStroke: 'rgba(255,255,255,0.95)',
     sparkStrokeWidth: 2,
@@ -91,16 +103,18 @@ const widgetDemo = {
     sparkPadRight: 4,
     sparkPadTop: 2,
     sparkPadBottom: 2,
-    sparklineLayout: 'below',
+    sparklineLayout: 'overlay',
     options: {},
 };
 
+/** Most Start-parity cards: full 0–100 spark domain. */
 const totalRequestsWidget = {
     ...widgetDemo,
     sparkMin: 0,
     sparkMax: 100,
 };
 
+/** Last card: different spark range and stroke for variety vs. `totalRequestsWidget`. */
 const latencyWidget = {
     ...widgetDemo,
     sparkMin: 20,
@@ -108,6 +122,7 @@ const latencyWidget = {
     sparkStrokeWidth: 1.5,
 };
 
+// Sticky right column: edit raw series for each card below
 const sidebarStyle = {
     flex: '0 0 300px',
     position: 'sticky',
@@ -133,13 +148,14 @@ function formatInitial(values) {
 }
 
 /* eslint-disable react/prop-types -- small controlled field helper */
+/** One labeled textarea for a comma/space-separated value series. */
 function DatasetField({ label, value, onChange }) {
     return (
         <div style={{ marginBottom: 16 }}>
             <div style={fieldLabel}>{label}</div>
             <textarea
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
+                value={value} 
+                onChange={(e) => onChange(e.target.value)} 
                 rows={2}
                 style={{
                     width: '100%',
@@ -160,6 +176,7 @@ function DatasetField({ label, value, onChange }) {
 }
 /* eslint-enable react/prop-types */
 
+// Playground: form panel beside the live preview card
 const playForm = {
     flex: '0 0 300px',
     minWidth: 240,
@@ -191,18 +208,21 @@ const playInput = {
 
 const playRow = { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' };
 
+// Splunk page shell: wait for user theme, then mount the React tree.
 getUserTheme()
     .then((theme) => {
         function ParagraphHint() {
             return (
                 <p style={{ color: '#333', marginBottom: 20, maxWidth: 720 }}>
-                    Sparklines render <strong>below</strong> the major value. Edit numbers
-                    on the right to update each card.
+                    Use the <strong>Props playground</strong> to tune colors and spark
+                    options; use <strong>Datasets</strong> on the right to edit value series
+                    for the cards below.
                 </p>
             );
         }
 
         const DemoPage = () => {
+            // String state for each dataset textarea (parsed to numbers in useMemo)
             const [totalStr, setTotalStr] = useState(
                 formatInitial(totalRequestsFeed.values)
             );
@@ -219,6 +239,7 @@ getUserTheme()
                 formatInitial(latencyRequests.values)
             );
 
+            // Props playground: drives the first NewSingleValue card only
             const [playProps, setPlayProps] = useState({
                 goodColor: '#01417F',
                 badColor: '#DFA611',
@@ -229,7 +250,7 @@ getUserTheme()
                 sparkHeight: 36,
                 sparkStrokeWidth: 2,
                 invert: false,
-                sparklineLayout: 'below',
+                sparklineLayout: 'overlay',
                 unit: '%',
             });
             const [playDataStr, setPlayDataStr] = useState('10, 25, 15, 40, 30, 20');
@@ -238,6 +259,7 @@ getUserTheme()
                 setPlayProps((prev) => ({ ...prev, ...patch }));
             };
 
+            // Feeds: static metadata from `singleValueFeed` + user-edited `values` / `times`
             const feedPlayground = useMemo(() => {
                 const v = coerceSeries(
                     parseValues(playDataStr),
@@ -309,6 +331,7 @@ getUserTheme()
                     </Heading>
                     <ParagraphHint />
 
+                    {/* One card + form: try props without touching the Start-style section */}
                     <div style={{ marginBottom: 32 }}>
                         <Heading level={1} style={heading}>
                             Props playground
@@ -537,6 +560,7 @@ getUserTheme()
                         </div>
                     </div>
 
+                    {/* Start-parity cards (left) + dataset editor sidebar (right) */}
                     <div
                         style={{
                             display: 'flex',
@@ -635,6 +659,7 @@ getUserTheme()
         layout(<DemoPage />, { theme });
     })
     .catch((e) => {
+        // Theme/bootstrap failure: surface without React tree
         const errorEl = document.createElement('span');
         errorEl.textContent = String(e);
         document.body.appendChild(errorEl);

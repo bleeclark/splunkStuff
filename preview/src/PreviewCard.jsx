@@ -17,7 +17,7 @@ function trendFromValues(values) {
 export default function PreviewCard({
     feed,
     width = 400,
-    height = 130,
+    height = 105,
     goodColor = '#01417F',
     badColor = '#DFA611',
     textColor = '#FFFFFF',

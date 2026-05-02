@@ -252,7 +252,7 @@ export function FixedSparkline({
 export default function NewSingleValue({
     feed,
     width = 400,
-    height = 130,
+    height = 105,
     options = {},
     onDrilldown,
     dataSources,
@@ -283,6 +283,27 @@ export default function NewSingleValue({
         times = [],
     } = feed || {};
 
+    /** Canonical Y-scale for spark anchors + SVG (avoids max <= min and Splunk SingleValue errors). */
+    const sparkScale = useMemo(() => {
+        let lo = Number(sparkMin);
+        let hi = Number(sparkMax);
+        if (!Number.isFinite(lo)) {
+            lo = 0;
+        }
+        if (!Number.isFinite(hi)) {
+            hi = 100;
+        }
+        if (lo > hi) {
+            const t = lo;
+            lo = hi;
+            hi = t;
+        }
+        if (hi <= lo) {
+            hi = lo + 1;
+        }
+        return { min: lo, max: hi };
+    }, [sparkMin, sparkMax]);
+
     const preparedFeed = useMemo(() => {
         const safeValues = Array.isArray(values)
             ? values.map(Number).filter(Number.isFinite)
@@ -294,7 +315,7 @@ export default function NewSingleValue({
         const { values: anchoredValues, times: anchoredTimes } = withAnchors(
             safeValues,
             safeTimes,
-            { min: sparkMin, max: sparkMax }
+            { min: sparkScale.min, max: sparkScale.max }
         );
         return {
             safeValues,
@@ -302,7 +323,7 @@ export default function NewSingleValue({
             anchoredValues,
             anchoredTimes,
         };
-    }, [values, times, sparkMin, sparkMax]);
+    }, [values, times, sparkScale]);
 
     const { last, delta } = useMemo(() => {
         const nums = preparedFeed.safeValues;
@@ -354,32 +375,28 @@ export default function NewSingleValue({
             trendFontSize: 11,
             majorValue: last,
             trendValue: delta,
-            subheader,
+            /** Title is rendered in the dark strip above the colored body (matches Splunk-style tiles). */
+            subheader: '',
             color: textColor,
         }),
-        [
-            options,
-            isGoodTrend,
-            goodColor,
-            badColor,
-            textColor,
-            last,
-            delta,
-            subheader,
-        ]
+        [options, isGoodTrend, goodColor, badColor, textColor, last, delta]
     );
 
     const cardWidth = width;
     const isSparkBelow = sparklineLayout === 'below';
     const isCompactHeight = height <= 100;
-    const subheaderAllowance = subheader ? 18 : 0;
+    const hasTitle = Boolean(subheader && String(subheader).trim());
     let interBlockGap = 0;
-    if (isSparkBelow && subheader) {
-        interBlockGap = isCompactHeight ? 4 : 8;
+    if (isSparkBelow && hasTitle && isCompactHeight) {
+        interBlockGap = 4;
     }
-    const cardHeight = isCompactHeight
-        ? Math.max(4, height - subheaderAllowance - interBlockGap - 2)
-        : height - 24 - 12 - 24;
+    /** Taller tiles: fixed title bar under the reference layout (~28px). Compact: tighter strip. */
+    const subheaderBarPx = hasTitle ? (isCompactHeight ? 18 : 28) : 0;
+    const tailSlack = isCompactHeight ? 2 : 0;
+    const cardHeight = Math.max(
+        isCompactHeight ? 4 : 48,
+        height - subheaderBarPx - interBlockGap - tailSlack
+    );
     const sparkGap = isCompactHeight && isSparkBelow ? 2 : 6;
     const minMainH = isCompactHeight ? 2 : 28;
     const mainVizHeight = isSparkBelow
@@ -395,8 +412,8 @@ export default function NewSingleValue({
             times={preparedFeed.safeTimes}
             width={cardWidth - sparkLeft - sparkRight}
             height={sparkHeight}
-            min={sparkMin}
-            max={sparkMax}
+            min={sparkScale.min}
+            max={sparkScale.max}
             stroke={sparkStroke}
             strokeWidth={sparkStrokeWidth}
             padLeft={sparkPadLeft}
@@ -429,29 +446,37 @@ export default function NewSingleValue({
         <div
             style={{
                 width,
-                ...(isSparkBelow
-                    ? { height: 'auto', display: 'flex', flexDirection: 'column' }
-                    : { height }),
+                height,
+                display: 'flex',
+                flexDirection: 'column',
+                boxSizing: 'border-box',
             }}
         >
-            <div
-                style={{
-                    background: 'transparent',
-                    color: textColor,
-                    marginBottom: (() => {
-                        if (!isSparkBelow || !subheader) {
-                            return 0;
-                        }
-                        return isCompactHeight ? 4 : 8;
-                    })(),
-                }}
-            >
-                {subheader}
-            </div>
+            {hasTitle ? (
+                <div
+                    style={{
+                        flexShrink: 0,
+                        height: subheaderBarPx,
+                        boxSizing: 'border-box',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '0 10px',
+                        background: 'rgba(0,0,0,0.52)',
+                        color: 'rgba(255,255,255,0.82)',
+                        fontSize: isCompactHeight ? 11 : 12,
+                        fontWeight: 500,
+                        letterSpacing: '0.02em',
+                    }}
+                >
+                    {subheader}
+                </div>
+            ) : null}
             {isSparkBelow ? (
                 <div
                     style={{
                         width: cardWidth,
+                        height: cardHeight,
+                        flexShrink: 0,
                         alignSelf: 'flex-start',
                         backgroundColor: mergedOptions.backgroundColor,
                         borderRadius: 4,

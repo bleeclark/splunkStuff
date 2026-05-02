@@ -1,0 +1,44 @@
+<!--
+  Splunk "formatter" UI for this visualization.
+
+  Each input uses `name="{{VIZ_NAMESPACE}}.<prop>"`.
+  Splunk expands `{{VIZ_NAMESPACE}}` to:
+    display.visualizations.custom.<app>.<viz_name>
+
+  In `visualization.js` we read these back from the `config` object via:
+    config["display.visualizations.custom.splunk-one.fixed_single_value.<prop>"]
+-->
+<form class="splunk-formatter-section" section-label="Spark scale">
+    <!-- Y-axis domain for the sparkline. -->
+    <splunk-control-group label="Spark min">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkMin" value="0"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Spark max">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkMax" value="100"></splunk-text-input>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Colors">
+    <!-- Background is chosen based on trend (delta >= 0 => goodColor; otherwise badColor). -->
+    <splunk-control-group label="Good trend (background)">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.goodColor" value="#01417F"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Bad trend (background)">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.badColor" value="#DFA611"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Text color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Spark stroke">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.sparkStroke" value="#FFFFFF"></splunk-color-picker>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Labels">
+    <!-- Optional header strip label (leave blank to hide). -->
+    <splunk-control-group label="Subheader (metric title)">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.subheader" value=""></splunk-text-input>
+    </splunk-control-group>
+    <!-- Appended to the major value only (not the trend delta). -->
+    <splunk-control-group label="Value unit suffix (e.g. %)">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.unit" value="%"></splunk-text-input>
+    </splunk-control-group>
+</form>

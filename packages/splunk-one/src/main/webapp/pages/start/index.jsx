@@ -20,10 +20,10 @@ const heading = { color: '#000000', marginBottom: 12 };
 const panel = {
     background: '#0B1F3B',
     width: 400,
-    height: 130,
+    height: 105,
     marginBottom: 24,
     color: '#FFFFFF',
-    padding: '8px 0 0',
+    padding: 0,
     boxSizing: 'border-box',
 };
 
@@ -35,8 +35,9 @@ const palette = {
 
 const widgetCommon = {
     width: 400,
-    height: 130,
+    height: 105,
     ...palette,
+    sparklineLayout: 'overlay',
     sparkStroke: 'rgba(255,255,255,0.95)',
     sparkStrokeWidth: 2,
     sparkHeight: 36,
@@ -54,14 +55,12 @@ const totalRequestsWidget = {
     ...widgetCommon,
     sparkMin: 0,
     sparkMax: 100,
-    lineBandFraction: 0.38,
 };
 
 const latencyWidget = {
     ...widgetCommon,
     sparkMin: 20,
     sparkMax: 40,
-    lineBandFraction: 0.26,
     sparkStrokeWidth: 1.5,
 };
 
