@@ -11,6 +11,7 @@ import Heading from '@splunk/react-ui/Heading';
 import { StyledContainer } from '../start/StartStyles';
 import NewSingleValue from '../../components/visualizations/NewSingleValue';
 import NewSingleValueTwo from '../../components/visualizations/NewSingleValueTwo';
+import LineChart from '../../components/visualizations/LineChart';
 import {
     totalRequestsFeed,
     latencyRequests,
@@ -557,6 +558,30 @@ getUserTheme()
                                     </select>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Line chart variant: same data editing model, different presentation */}
+                    <div style={{ marginBottom: 32 }}>
+                        <Heading level={1} style={heading}>
+                            Line chart (no overlay)
+                        </Heading>
+                        <p style={{ color: '#333', maxWidth: 800, marginBottom: 12 }}>
+                            This renders the same underlying series as a simple line chart (SVG),
+                            instead of overlaying a sparkline on a single-value tile.
+                        </p>
+                        <div style={panel}>
+                            <LineChart
+                                values={feedTotal.values}
+                                times={feedTotal.times}
+                                width={400}
+                                height={105}
+                                min={0}
+                                max={100}
+                                stroke="rgba(255,255,255,0.95)"
+                                strokeWidth={2}
+                                background="#0B1F3B"
+                            />
                         </div>
                     </div>
 

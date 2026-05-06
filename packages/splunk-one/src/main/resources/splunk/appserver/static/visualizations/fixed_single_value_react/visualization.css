@@ -1,0 +1,64 @@
+/* Styling for the React-mounted viz (class names are distinct from the vanilla viz). */
+.splunk-one-fixed-single-value-react-viz {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.splunk-one-fixed-single-value-react-viz__header {
+    flex: 0 0 auto;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    background: rgba(0, 0, 0, 0.52);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.splunk-one-fixed-single-value-react-viz__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px 36px;
+}
+
+.splunk-one-fixed-single-value-react-viz__major {
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.splunk-one-fixed-single-value-react-viz__trend {
+    margin-top: 6px;
+    font-size: 11px;
+    opacity: 0.95;
+}
+
+.splunk-one-fixed-single-value-react-viz__spark {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 6px;
+    height: 28px;
+}
+
+.splunk-one-fixed-single-value-react-viz__spark svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.splunk-one-fixed-single-value-react-viz__err {
+    padding: 12px;
+    font-size: 12px;
+    opacity: 0.9;
+}
