@@ -1,0 +1,14 @@
+# Paste into: $SPLUNK_HOME/etc/apps/<APP_ID>/default/visualizations.conf
+# (merge with existing contents; do not duplicate stanza names)
+#
+# NOTE: This viz hard-codes the Splunk formatter namespace segment `splunk-one`.
+# formatter.html keys resolve to display.visualizations.custom.splunk-one.line_single_value.*
+# If you install into another app id, update `NS` in visualization.js to match.
+
+[line_single_value]
+label = Line single value (splunk-one)
+description = Single value with delta and a footer line chart; fixed vertical scale via formatter min/max. Expects column-major results with at least one numeric column (last all-numeric column drives the series).
+default_height = 200
+search_fragment = | timechart span=1h avg(my_metric) as value
+supports_drilldown = 0
+supports_trellis = 0

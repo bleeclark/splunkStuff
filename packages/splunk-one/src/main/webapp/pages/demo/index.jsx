@@ -215,9 +215,10 @@ getUserTheme()
         function ParagraphHint() {
             return (
                 <p style={{ color: '#333', marginBottom: 20, maxWidth: 720 }}>
-                    Use the <strong>Props playground</strong> to tune colors and spark
-                    options; use <strong>Datasets</strong> on the right to edit value series
-                    for the cards below.
+                    The <strong>Line chart (no overlay)</strong> sample is at the top—then
+                    use the <strong>Props playground</strong> to tune colors and spark options;
+                    use <strong>Datasets</strong> on the right to edit value series for the
+                    cards below.
                 </p>
             );
         }
@@ -325,12 +326,318 @@ getUserTheme()
                 };
             }, [latencyStr]);
 
+            const [lineOpts, setLineOpts] = useState({
+                multi: false,
+                comparison: false,
+                chartMin: 0,
+                chartMax: 100,
+                smoothing: 'none',
+                smaWindow: 3,
+                maxPoints: 0,
+                threshold: false,
+                thresholdMin: 20,
+                thresholdMax: 80,
+                target: 50,
+                anomalies: 'none',
+                anomalySensitivity: 3,
+                drilldown: false,
+                showXAxis: false,
+            });
+
+            const lineSeries = useMemo(() => {
+                const main = {
+                    id: 'total',
+                    label: 'Total requests',
+                    values: feedTotal.values,
+                    color: 'rgba(255,255,255,0.95)',
+                };
+                if (!lineOpts.multi) {
+                    return [main];
+                }
+                const lat = {
+                    id: 'latency',
+                    label: 'Latency',
+                    values: feedLatency.values,
+                    color: 'rgba(255,255,255,0.65)',
+                };
+                return [main, lat];
+            }, [feedTotal.values, feedLatency.values, lineOpts.multi]);
+
+            const lineComparison = useMemo(() => {
+                if (!lineOpts.comparison) return null;
+                const main = feedTotal.values.map((v, i) => {
+                    const base = Number(v);
+                    const wiggle = i % 2 === 0 ? -6 : 4;
+                    return Number.isFinite(base) ? base + wiggle : base;
+                });
+                return [
+                    {
+                        id: 'previous',
+                        label: 'Previous period',
+                        values: main,
+                        color: 'rgba(255,255,255,0.65)',
+                    },
+                ];
+            }, [feedTotal.values, lineOpts.comparison]);
+
             return (
                 <StyledContainer style={{ maxWidth: 1180 }}>
                     <Heading level={1} style={heading}>
                         Demo
                     </Heading>
                     <ParagraphHint />
+
+                    {/* Line chart: same Total requests series as the sidebar "Total requests" textarea */}
+                    <div style={{ marginBottom: 32 }}>
+                        <Heading level={1} style={heading}>
+                            Line chart (no overlay)
+                        </Heading>
+                        <p style={{ color: '#333', maxWidth: 800, marginBottom: 12 }}>
+                            Simple SVG line chart of the{' '}
+                            <strong>Total requests</strong> dataset (edit it in{' '}
+                            <strong>Datasets</strong> on the right once you scroll to that
+                            section)—not Splunk Search&apos;s Visualization menu.
+                        </p>
+                        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                            <div style={panel}>
+                                <LineChart
+                                    series={lineSeries}
+                                    comparisonSeries={lineComparison || undefined}
+                                    times={feedTotal.times}
+                                    width={400}
+                                    height={105}
+                                    min={lineOpts.chartMin}
+                                    max={lineOpts.chartMax}
+                                    stroke="rgba(255,255,255,0.95)"
+                                    strokeWidth={2}
+                                    background="#0B1F3B"
+                                    showMajor
+                                    goodColor={palette.goodColor}
+                                    badColor={palette.badColor}
+                                    textColor={palette.textColor}
+                                    unit="%"
+                                    subheader={feedTotal.subheader}
+                                    centerMajor
+                                    colorPlacement="full"
+                                    smoothing={lineOpts.smoothing}
+                                    smaWindow={lineOpts.smaWindow}
+                                    maxPoints={lineOpts.maxPoints || undefined}
+                                    thresholdMin={lineOpts.threshold ? lineOpts.thresholdMin : undefined}
+                                    thresholdMax={lineOpts.threshold ? lineOpts.thresholdMax : undefined}
+                                    target={lineOpts.threshold ? lineOpts.target : undefined}
+                                    anomalyMode={lineOpts.anomalies}
+                                    anomalySensitivity={lineOpts.anomalySensitivity}
+                                    drilldown={lineOpts.drilldown}
+                                    drilldownQuery="search index=_internal | stats count"
+                                    showXAxis={lineOpts.showXAxis}
+                                />
+                            </div>
+
+                            <div style={playForm}>
+                                <div style={{ ...playField, marginBottom: 16 }}>
+                                    <span style={playLabel}>Line chart options</span>
+                                    <div style={{ fontSize: 12, color: '#444' }}>
+                                        Toggle features to demonstrate drilldown, thresholds, overlays, and anomalies.
+                                    </div>
+                                </div>
+
+                                <div style={{ ...playField, marginBottom: 10 }}>
+                                    <span style={playLabel}>Y-axis minimum</span>
+                                    <input
+                                        type="number"
+                                        value={lineOpts.chartMin}
+                                        onChange={(e) =>
+                                            setLineOpts((p) => ({
+                                                ...p,
+                                                chartMin: Number(e.target.value) || 0,
+                                            }))
+                                        }
+                                        style={playInput}
+                                    />
+                                </div>
+                                <div style={{ ...playField, marginBottom: 10 }}>
+                                    <span style={playLabel}>Y-axis maximum</span>
+                                    <input
+                                        type="number"
+                                        value={lineOpts.chartMax}
+                                        onChange={(e) =>
+                                            setLineOpts((p) => ({
+                                                ...p,
+                                                chartMax: Number(e.target.value) || 100,
+                                            }))
+                                        }
+                                        style={playInput}
+                                    />
+                                    <div style={{ fontSize: 11, color: '#666' }}>
+                                        LineChart min / max—the fixed scale for drawing the sparkline (not downsampling).
+                                    </div>
+                                </div>
+
+                                <div style={{ ...playField, marginBottom: 10 }}>
+                                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={lineOpts.multi}
+                                            onChange={(e) => setLineOpts((p) => ({ ...p, multi: e.target.checked }))}
+                                        />
+                                        multi-series (adds Latency)
+                                    </label>
+                                </div>
+
+                                <div style={{ ...playField, marginBottom: 10 }}>
+                                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={lineOpts.comparison}
+                                            onChange={(e) => setLineOpts((p) => ({ ...p, comparison: e.target.checked }))}
+                                        />
+                                        compare vs previous period (overlay)
+                                    </label>
+                                </div>
+
+                                <div style={{ ...playField, marginBottom: 10 }}>
+                                    <span style={playLabel}>smoothing</span>
+                                    <select
+                                        value={lineOpts.smoothing}
+                                        onChange={(e) => setLineOpts((p) => ({ ...p, smoothing: e.target.value }))}
+                                        style={playInput}
+                                    >
+                                        <option value="none">none</option>
+                                        <option value="sma">SMA</option>
+                                    </select>
+                                </div>
+                                {lineOpts.smoothing === 'sma' ? (
+                                    <div style={{ ...playField, marginBottom: 10 }}>
+                                        <span style={playLabel}>SMA window</span>
+                                        <input
+                                            type="number"
+                                            value={lineOpts.smaWindow}
+                                            min={1}
+                                            max={15}
+                                            onChange={(e) =>
+                                                setLineOpts((p) => ({ ...p, smaWindow: Number(e.target.value) || 3 }))
+                                            }
+                                            style={playInput}
+                                        />
+                                    </div>
+                                ) : null}
+
+                                <div style={{ ...playField, marginBottom: 10 }}>
+                                    <span style={playLabel}>maxPoints (downsample)</span>
+                                    <input
+                                        type="number"
+                                        value={lineOpts.maxPoints}
+                                        min={0}
+                                        onChange={(e) =>
+                                            setLineOpts((p) => ({ ...p, maxPoints: Number(e.target.value) || 0 }))
+                                        }
+                                        style={playInput}
+                                    />
+                                    <div style={{ fontSize: 11, color: '#666' }}>0 = no downsampling</div>
+                                </div>
+
+                                <div style={{ ...playField, marginBottom: 10 }}>
+                                    <span style={playLabel}>anomalies</span>
+                                    <select
+                                        value={lineOpts.anomalies}
+                                        onChange={(e) => setLineOpts((p) => ({ ...p, anomalies: e.target.value }))}
+                                        style={playInput}
+                                    >
+                                        <option value="none">none</option>
+                                        <option value="deltaZscore">delta z-score</option>
+                                        <option value="pctChange">% change</option>
+                                    </select>
+                                </div>
+                                {lineOpts.anomalies !== 'none' ? (
+                                    <div style={{ ...playField, marginBottom: 10 }}>
+                                        <span style={playLabel}>anomaly sensitivity</span>
+                                        <input
+                                            type="number"
+                                            value={lineOpts.anomalySensitivity}
+                                            min={1}
+                                            max={10}
+                                            onChange={(e) =>
+                                                setLineOpts((p) => ({
+                                                    ...p,
+                                                    anomalySensitivity: Number(e.target.value) || 3,
+                                                }))
+                                            }
+                                            style={playInput}
+                                        />
+                                    </div>
+                                ) : null}
+
+                                <div style={{ ...playField, marginBottom: 10 }}>
+                                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={lineOpts.threshold}
+                                            onChange={(e) => setLineOpts((p) => ({ ...p, threshold: e.target.checked }))}
+                                        />
+                                        thresholds + target
+                                    </label>
+                                </div>
+                                {lineOpts.threshold ? (
+                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                                        <input
+                                            type="number"
+                                            value={lineOpts.thresholdMin}
+                                            onChange={(e) =>
+                                                setLineOpts((p) => ({ ...p, thresholdMin: Number(e.target.value) || 0 }))
+                                            }
+                                            style={{ ...playInput, width: 90 }}
+                                        />
+                                        <input
+                                            type="number"
+                                            value={lineOpts.thresholdMax}
+                                            onChange={(e) =>
+                                                setLineOpts((p) => ({ ...p, thresholdMax: Number(e.target.value) || 100 }))
+                                            }
+                                            style={{ ...playInput, width: 90 }}
+                                        />
+                                        <input
+                                            type="number"
+                                            value={lineOpts.target}
+                                            onChange={(e) =>
+                                                setLineOpts((p) => ({ ...p, target: Number(e.target.value) || 50 }))
+                                            }
+                                            style={{ ...playInput, width: 90 }}
+                                        />
+                                    </div>
+                                ) : null}
+
+                                <div style={{ ...playField, marginBottom: 10 }}>
+                                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={lineOpts.showXAxis}
+                                            onChange={(e) =>
+                                                setLineOpts((p) => ({ ...p, showXAxis: e.target.checked }))
+                                            }
+                                        />
+                                        show x-axis ticks
+                                    </label>
+                                </div>
+
+                                <div style={{ ...playField, marginBottom: 10 }}>
+                                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={lineOpts.drilldown}
+                                            onChange={(e) =>
+                                                setLineOpts((p) => ({ ...p, drilldown: e.target.checked }))
+                                            }
+                                        />
+                                        drilldown click (opens Search)
+                                    </label>
+                                </div>
+
+                                <div style={{ fontSize: 11, color: '#666' }}>
+                                    Legend: {lineSeries.map((s) => s.label).filter(Boolean).join(' • ') || '—'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* One card + form: try props without touching the Start-style section */}
                     <div style={{ marginBottom: 32 }}>
@@ -558,30 +865,6 @@ getUserTheme()
                                     </select>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Line chart variant: same data editing model, different presentation */}
-                    <div style={{ marginBottom: 32 }}>
-                        <Heading level={1} style={heading}>
-                            Line chart (no overlay)
-                        </Heading>
-                        <p style={{ color: '#333', maxWidth: 800, marginBottom: 12 }}>
-                            This renders the same underlying series as a simple line chart (SVG),
-                            instead of overlaying a sparkline on a single-value tile.
-                        </p>
-                        <div style={panel}>
-                            <LineChart
-                                values={feedTotal.values}
-                                times={feedTotal.times}
-                                width={400}
-                                height={105}
-                                min={0}
-                                max={100}
-                                stroke="rgba(255,255,255,0.95)"
-                                strokeWidth={2}
-                                background="#0B1F3B"
-                            />
                         </div>
                     </div>
 

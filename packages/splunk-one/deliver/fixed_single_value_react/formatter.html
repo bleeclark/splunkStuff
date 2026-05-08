@@ -1,0 +1,38 @@
+<!--
+  Splunk formatter UI for the React-bundled visualization.
+
+  `{{VIZ_NAMESPACE}}` expands to:
+    display.visualizations.custom.<app_id>.<viz_directory_name>
+
+  This must match the `NS` prefix in `visualization.amd.jsx`.
+-->
+<form class="splunk-formatter-section" section-label="Spark scale">
+    <splunk-control-group label="Spark min">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkMin" value="0"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Spark max">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkMax" value="100"></splunk-text-input>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Colors">
+    <splunk-control-group label="Good trend (background)">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.goodColor" value="#01417F"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Bad trend (background)">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.badColor" value="#DFA611"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Text color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Spark stroke">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.sparkStroke" value="#FFFFFF"></splunk-color-picker>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Labels">
+    <splunk-control-group label="Subheader (metric title)">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.subheader" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Value unit suffix (e.g. %)">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.unit" value="%"></splunk-text-input>
+    </splunk-control-group>
+</form>

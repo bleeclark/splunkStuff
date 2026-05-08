@@ -1,0 +1,12 @@
+# Paste into: $SPLUNK_HOME/etc/apps/<APP_ID>/default/visualizations.conf
+# (merge with existing contents; do not duplicate stanza names)
+#
+# Bundled React visualization — formatter keys use segment `splunk-one.fixed_loaded_line`.
+
+[fixed_loaded_line]
+label = Fixed loaded line (React) (splunk-one)
+description = React LineChart tile with major value, delta, and footer SVG line—fixed Y min/max plus optional overlays (demo parity).
+default_height = 200
+search_fragment = | timechart span=1h avg(my_metric) as value
+supports_drilldown = 0
+supports_trellis = 0

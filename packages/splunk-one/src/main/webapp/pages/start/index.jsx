@@ -8,6 +8,7 @@ import { StyledContainer } from './StartStyles';
 
 import NewSingleValue from '../../components/visualizations/NewSingleValue';
 import NewSingleValueTwo from '../../components/visualizations/NewSingleValueTwo';
+import LineChart from '../../components/visualizations/LineChart';
 import {
     totalRequestsFeed,
     latencyRequests,
@@ -118,6 +119,31 @@ getUserTheme()
                 <Heading level={1} style={heading}>
                     Single Value Widget w/ Line Graph
                 </Heading>
+                <p style={{ color: '#333', maxWidth: 720, marginBottom: 12 }}>
+                    Same series as <strong>Total Requests</strong> above, shown as a plain SVG line
+                    chart (not the Search app visualization picker).
+                </p>
+                <div style={panel}>
+                    <LineChart
+                        values={totalRequestsFeed.values}
+                        times={totalRequestsFeed.times}
+                        width={400}
+                        height={105}
+                        min={0}
+                        max={100}
+                        stroke="rgba(255,255,255,0.95)"
+                        strokeWidth={2}
+                        background="#0B1F3B"
+                        showMajor
+                        goodColor={palette.goodColor}
+                        badColor={palette.badColor}
+                        textColor={palette.textColor}
+                        unit="%"
+                        subheader={totalRequestsFeed.subheader}
+                        centerMajor
+                        colorPlacement="full"
+                    />
+                </div>
             </StyledContainer>
         );
 
