@@ -4,14 +4,41 @@ const fs = require('fs');
 const path = require('path');
 const shell = require('shelljs');
 
-const VANILLA_VIZ_IDS = ['line_single_value', 'fixed_loaded_line_vanilla'];
+const VANILLA_VIZ_IDS = ['line_single_value', 'fixed_loaded_line_vanilla', 'splunkstuff_kpi_line', 'splunkstuff_kpi_line_verbose'];
+
+/**
+ * Vizes that ship extra AMD files next to visualization.js (empty by default; KPI verbose inlines helpers).
+ * Source of truth for any listed files remains visualizations/_shared — synced before each deliver/stage copy.
+ */
+const VIZ_SELF_CONTAINED_SHARED = {};
 
 /** Webpack writes these to src/.../static; pages copy can leave stage/ stale — sync after build. */
 const REACT_VIZ_IDS = ['fixed_loaded_line', 'fixed_single_value_react'];
 
 /**
- * Production webpack minifies copied AMD visualization.js in stage/.
- * Restore readable hand-maintained sources for stage/ (Splunk link target) and deliver/.
+ * Copy _shared AMD helpers into viz directories that use same-folder defines (portable deliver/).
+ */
+function syncSelfContainedSharedModules(pkgRoot) {
+    const root = pkgRoot || path.join(__dirname, '..');
+    const staticVizRoot = path.join(
+        root,
+        'src/main/resources/splunk/appserver/static/visualizations'
+    );
+    Object.keys(VIZ_SELF_CONTAINED_SHARED).forEach((vizId) => {
+        const destDir = path.join(staticVizRoot, vizId);
+        shell.mkdir('-p', destDir);
+        VIZ_SELF_CONTAINED_SHARED[vizId].forEach((name) => {
+            const sharedSrc = path.join(staticVizRoot, '_shared', name);
+            if (!fs.existsSync(sharedSrc)) {
+                return;
+            }
+            fs.copyFileSync(sharedSrc, path.join(destDir, name));
+        });
+    });
+}
+
+/**
+ * Restore readable React-built AMD visualization.js into stage/ when Webpack emitted minified output.
  */
 function syncReactVizBundlesToStage(pkgRoot) {
     const root = pkgRoot || path.join(__dirname, '..');
@@ -32,6 +59,9 @@ function syncReactVizBundlesToStage(pkgRoot) {
     });
 }
 
+/**
+ * Copy hand-maintained vanilla AMD viz sources + optional embedded _shared copies to deliver/ and stage/.
+ */
 function copyReadableVanillaViz(pkgRoot) {
     const root = pkgRoot || path.join(__dirname, '..');
     const staticVizRoot = path.join(
@@ -56,20 +86,31 @@ function copyReadableVanillaViz(pkgRoot) {
                 }
                 fs.copyFileSync(src, path.join(destDir, asset));
             });
+            const embeddedShared = VIZ_SELF_CONTAINED_SHARED[vizId];
+            if (embeddedShared) {
+                embeddedShared.forEach((name) => {
+                    const srcFile = path.join(staticVizRoot, vizId, name);
+                    if (!fs.existsSync(srcFile)) {
+                        return;
+                    }
+                    fs.copyFileSync(srcFile, path.join(destDir, name));
+                });
+            }
         });
     });
 
-    const sharedSrc = path.join(staticVizRoot, '_shared', 'splunkstuffTrendColors.js');
-    if (fs.existsSync(sharedSrc)) {
+    const sharedFiles = ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'];
+    sharedFiles.forEach((name) => {
+        const sharedSrc = path.join(staticVizRoot, '_shared', name);
+        if (!fs.existsSync(sharedSrc)) {
+            return;
+        }
         copyTargets.forEach((targetRoot) => {
             const destDir = path.join(targetRoot, '_shared');
             shell.mkdir('-p', destDir);
-            fs.copyFileSync(
-                sharedSrc,
-                path.join(destDir, 'splunkstuffTrendColors.js')
-            );
+            fs.copyFileSync(sharedSrc, path.join(destDir, name));
         });
-    }
+    });
 }
 
 /** Watch hand-edited vanilla viz sources (webpack watch does not see these files). */
@@ -99,21 +140,27 @@ function watchReadableVanillaViz(pkgRoot, onChange) {
         fs.watch(src, schedule);
     });
 
-    const sharedSrc = path.join(staticVizRoot, '_shared', 'splunkstuffTrendColors.js');
-    if (fs.existsSync(sharedSrc)) {
-        fs.watch(sharedSrc, schedule);
-    }
+    const sharedFiles = ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'];
+    sharedFiles.forEach((name) => {
+        const sharedSrc = path.join(staticVizRoot, '_shared', name);
+        if (fs.existsSync(sharedSrc)) {
+            fs.watch(sharedSrc, schedule);
+        }
+    });
 }
 
 function postBuildVizSync(pkgRoot) {
     syncReactVizBundlesToStage(pkgRoot);
+    syncSelfContainedSharedModules(pkgRoot);
     copyReadableVanillaViz(pkgRoot);
 }
 
 module.exports = {
     VANILLA_VIZ_IDS,
     REACT_VIZ_IDS,
+    VIZ_SELF_CONTAINED_SHARED,
     copyReadableVanillaViz,
+    syncSelfContainedSharedModules,
     syncReactVizBundlesToStage,
     postBuildVizSync,
     watchReadableVanillaViz,

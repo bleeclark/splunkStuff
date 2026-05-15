@@ -1,27 +1,105 @@
 /* eslint-disable */
 /**
- * Splunk custom visualization: Fixed loaded line (vanilla AMD)
+ * =============================================================================
+ * SplunkStuff — KPI loaded line VERBOSE (vanilla AMD)
+ * =============================================================================
  *
- * Readable hand-maintained source — Webpack does NOT overwrite this file.
- * Feature parity with React fixed_loaded_line / LineChart.jsx.
+ * Fork of splunkstuff_kpi_line with identical runtime behavior, expanded inline
+ * documentation, and opt-in structured console logging.
+ *
+ * --- Data contract (formatData / updateView) ---
+ * Splunk delivers COLUMN_MAJOR search results. We pick the *last* column that is
+ * all-numeric excluding _time, then reorder rows by _time when that column exists.
+ * updateView receives { values: number[], times: parallel[] }.
+ *
+ * --- Config namespace ---
+ * Keys in Splunk config are NS + propName, where NS must match formatter names:
+ *   display.visualizations.custom.<APP_ID>.splunkstuff_kpi_line_verbose.<prop>
+ * APP_ID here is so_BUI_pickulationts (see NS constant below).
+ *
+ * --- Formatter UI pitfall ---
+ * Do not use (parentheses) in splunk-formatter-section section-label: Splunk/jQuery
+ * builds IDs from labels; parentheses break selectors. See formatter.html header.
+ *
+ * --- Hover / hit-testing ---
+ * Pointer listeners run on document CAPTURE because Splunk dashboard chrome sits
+ * above the viz and swallows bubble-phase hits. Index mapping uses SVG xMidYMid
+ * meet letterboxing math inlined below (same behavior as _shared/splunkstuffVizHoverMath.js).
+ *
+ * --- Inlined helpers (single-file deliver) ---
+ * Trend surfaces + repaint: logic from _shared/splunkstuffTrendColors.js.
+ * Hover mapping: logic from _shared/splunkstuffVizHoverMath.js.
+ * With SPLUNKSTUFF_KPI_LINE_VERBOSE_DEBUG, argument-shape warnings and API verification log once at load.
+ *
+ * --- Formatter options (prop key → purpose, default) ---
+ *   min, max — fixed Y scale (0, 100)
+ *   background — empty tile / chart strip when colorPlacement top (#0B1F3B)
+ *   goodColor, badColor — trend up vs down (#01417F / #DFA611)
+ *   textColor, stroke — label and line (#FFFFFF)
+ *   strokeWidth — line width px (2)
+ *   showMajor, centerMajor, colorPlacement — headline row layout (true, true, full|top)
+ *   subheader — optional 28px title row ()
+ *   unit — suffix after numbers in major + hover (); empty = digits only
+ *   unitScale — em size of unit vs major (0.6)
+ *   smoothing, smaWindow, maxPoints — none|sma, window, downsample cap
+ *   comparison — synthetic shifted series (false)
+ *   threshold, thresholdMin, thresholdMax, target — band + line (off)
+ *   thresholdShade, targetStroke — rgba/hex for band fill and target line
+ *   anomalies, anomalySensitivity — none|deltaZscore|pctChange, 1–10
+ *   showHover, showHoverAnnotation — tooltip + in-chart caption
+ *   padLeft..padBottom — SVG paddings; capped when showMajor
+ *   showXAxis — time ticks (false)
+ *   drilldown, drilldownQuery — click opens Search (false)
+ *   emptyText — custom message when &lt; 2 points ()
+ *
+ * --- Debug ---
+ *   window.SPLUNKSTUFF_KPI_LINE_VERBOSE_DEBUG = true  →  log() + effectiveConfig snapshot
  */
-define([
-    'api/SplunkVisualizationBase',
-    '../_shared/splunkstuffTrendColors',
-    '../_shared/splunkstuffVizHoverMath',
-], function (SplunkVisualizationBase, trendColors, hoverMath) {
-    var DEBUG = false;
-    var VIZ_ID = 'fixed_loaded_line_vanilla';
-    var NS = 'display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line_vanilla.';
+define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
+    var VIZ_ID = 'splunkstuff_kpi_line_verbose';
+    var BUILD_TAG = '2026-05-15-smaWindow-early-read';
+    var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line_verbose.';
+
+    function debugEnabled() {
+        try {
+            return typeof window !== 'undefined' && window.SPLUNKSTUFF_KPI_LINE_VERBOSE_DEBUG === true;
+        } catch (e) {
+            return false;
+        }
+    }
 
     function log() {
-        if (!DEBUG) return;
+        if (!debugEnabled()) return;
         var args = ['[' + VIZ_ID + ']'].concat(Array.prototype.slice.call(arguments));
         // eslint-disable-next-line no-console
         console.log.apply(console, args);
     }
 
+    /** One structured row per updateView when SPLUNKSTUFF_KPI_LINE_VERBOSE_DEBUG is true. */
+    function logEffectiveConfig(snapshot) {
+        if (!debugEnabled()) return;
+        try {
+            // eslint-disable-next-line no-console
+            console.log('[' + VIZ_ID + '] effectiveConfig', snapshot);
+            if (typeof console.table === 'function') {
+                var keys = Object.keys(snapshot);
+                var rows = [];
+                var ki;
+                for (ki = 0; ki < keys.length; ki += 1) {
+                    var k = keys[ki];
+                    rows.push({ option: k, value: snapshot[k] });
+                }
+                // eslint-disable-next-line no-console
+                console.table(rows);
+            }
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn('[' + VIZ_ID + '] logEffectiveConfig failed', err);
+        }
+    }
+
     function readConfig(config, prop, defaultVal) {
+        if (config == null || typeof config !== 'object') return defaultVal;
         var v = config[NS + prop];
         if (v === undefined || v === null || v === '') return defaultVal;
         return v;
@@ -59,30 +137,233 @@ define([
         return fallback;
     }
 
-    /**
-     * Older _shared/splunkstuffTrendColors.js may lack repaintTrendTile; inline equivalent.
-     */
-    function repaintTrendTileCompat(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
-        trendColors.applyTrendHostStyle(hostEl, bg, textColor);
-        if (rootEl) trendColors.applyTrendSurfaceStyle(rootEl, bg);
-        if (majorEl) trendColors.applyTrendSurfaceStyle(majorEl, bg);
-        if (chartEl) trendColors.applyTrendSurfaceStyle(chartEl, bg);
+    /** Hex (#RRGGBB) or rgb/rgba(...) for threshold fills / strokes. */
+    function sanitizeCssColor(raw, fallback) {
+        if (typeof raw !== 'string') return fallback;
+        var s = raw.trim();
+        if (!s) return fallback;
+        if (/^#[0-9A-Fa-f]{6}$/.test(s)) return s;
+        if (/^rgba?\(\s*[\d.]+\s*,/.test(s)) return s;
+        return fallback;
+    }
+
+    /** Shared numeric clamp for SMA path, thresholds, and hover index math (must precede hover helpers). */
+    function clamp(v, lo, hi) {
+        return Math.max(lo, Math.min(hi, v));
+    }
+
+    /* =========================================================================
+     * Inlined: _shared/splunkstuffTrendColors.js (Keith/ITSI-style trend surfaces)
+     * ========================================================================= */
+    var DEFAULT_UP_COLOR = '#01417F';
+    var DEFAULT_DOWN_COLOR = '#DFA611';
+
+    function trendDelta(values) {
+        if (debugEnabled() && values != null && !Array.isArray(values)) {
+            log('trendDelta: expected Array, got', typeof values);
+        }
+        if (!values || !values.length) {
+            return NaN;
+        }
+        var len = values.length;
+        var last = Number(values[len - 1]);
+        var prev = len > 1 ? Number(values[len - 2]) : last;
+        if (!isFinite(last) || !isFinite(prev)) {
+            if (debugEnabled()) {
+                log('trendDelta: non-finite last/prev', { last: last, prev: prev });
+            }
+            return NaN;
+        }
+        return last - prev;
+    }
+
+    function trendBackground(delta, upColor, downColor) {
+        var isUp = isFinite(delta) ? delta >= 0 : true;
+        return isUp ? upColor : downColor;
+    }
+
+    function applyTrendSurfaceStyle(el, bg) {
+        if (!el) {
+            if (debugEnabled()) {
+                log('applyTrendSurfaceStyle: el is null/undefined');
+            }
+            return;
+        }
+        el.style.backgroundColor = bg;
+        el.style.setProperty('background-color', bg, 'important');
+    }
+
+    function applyTrendHostStyle(el, bg, textColor) {
+        if (!el) {
+            if (debugEnabled()) {
+                log('applyTrendHostStyle: el is null/undefined');
+            }
+            return;
+        }
+        el.style.position = 'relative';
+        applyTrendSurfaceStyle(el, bg);
+        el.style.setProperty('background', bg, 'important');
+        el.style.color = textColor;
+        el.style.overflow = 'hidden';
+        el.style.width = '100%';
+        el.style.height = '100%';
+        el.style.minHeight = '100%';
+        el.style.boxSizing = 'border-box';
+        el.style.pointerEvents = 'auto';
+    }
+
+    /** Re-apply trend bg after Splunk formatter may have painted host/parent navy. */
+    function repaintTrendTile(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
+        applyTrendHostStyle(hostEl, bg, textColor);
+        if (rootEl) {
+            applyTrendSurfaceStyle(rootEl, bg);
+        }
+        if (majorEl) {
+            applyTrendSurfaceStyle(majorEl, bg);
+        }
+        if (chartEl) {
+            applyTrendSurfaceStyle(chartEl, bg);
+        }
         var p = hostEl ? hostEl.parentElement : null;
         var depth = 0;
         while (p && depth < 4) {
-            trendColors.applyTrendSurfaceStyle(p, bg);
+            applyTrendSurfaceStyle(p, bg);
             p = p.parentElement;
             depth += 1;
         }
     }
 
-    /** Splunk dashboard wrappers often set pointer-events:none on viz hosts; don't stop early. */
+    var trendColors = {
+        DEFAULT_UP_COLOR: DEFAULT_UP_COLOR,
+        DEFAULT_DOWN_COLOR: DEFAULT_DOWN_COLOR,
+        trendDelta: trendDelta,
+        trendBackground: trendBackground,
+        applyTrendSurfaceStyle: applyTrendSurfaceStyle,
+        applyTrendHostStyle: applyTrendHostStyle,
+        repaintTrendTile: repaintTrendTile,
+    };
+
+    /* =========================================================================
+     * Inlined: _shared/splunkstuffVizHoverMath.js (pointer → series index)
+     * ========================================================================= */
+    function viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH) {
+        if (debugEnabled()) {
+            if (typeof clientX !== 'number' || typeof clientY !== 'number' || !isFinite(clientX) || !isFinite(clientY)) {
+                log('viewportToSvgUserXY: client coordinates should be finite numbers', {
+                    clientX: clientX,
+                    clientY: clientY,
+                });
+            }
+            if (typeof userW !== 'number' || typeof userH !== 'number' || !isFinite(userW) || !isFinite(userH)) {
+                log('viewportToSvgUserXY: userW/userH invalid', { userW: userW, userH: userH });
+            }
+        }
+        var rect =
+            rectSource && typeof rectSource.getBoundingClientRect === 'function'
+                ? rectSource.getBoundingClientRect()
+                : rectSource;
+        if (
+            !rect ||
+            !rect.width ||
+            !rect.height ||
+            !isFinite(userW) ||
+            !isFinite(userH) ||
+            userW <= 0 ||
+            userH <= 0
+        ) {
+            return null;
+        }
+        var scale = Math.min(rect.width / userW, rect.height / userH);
+        var offX = rect.left + (rect.width - scale * userW) / 2;
+        var offY = rect.top + (rect.height - scale * userH) / 2;
+        return {
+            x: (clientX - offX) / scale,
+            y: (clientY - offY) / scale,
+        };
+    }
+
+    function seriesIndexFromPointerMeet(clientX, clientY, rectSource, userW, userH, padLeft, padRight, pointCount) {
+        try {
+            if (debugEnabled()) {
+                if (typeof pointCount !== 'number' || pointCount !== Math.floor(pointCount)) {
+                    log('seriesIndexFromPointerMeet: pointCount should be integer', pointCount);
+                }
+                if (typeof padLeft !== 'number' || typeof padRight !== 'number') {
+                    log('seriesIndexFromPointerMeet: padLeft/padRight should be numbers', padLeft, padRight);
+                }
+            }
+            var mapped = viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH);
+            if (!mapped || pointCount < 2) return null;
+            var innerW = Math.max(1, userW - padLeft - padRight);
+            var xStep = pointCount > 1 ? innerW / (pointCount - 1) : innerW;
+            return clamp(Math.round((mapped.x - padLeft) / xStep), 0, pointCount - 1);
+        } catch (err) {
+            if (debugEnabled()) {
+                // eslint-disable-next-line no-console
+                console.warn('[' + VIZ_ID + '] seriesIndexFromPointerMeet ReferenceError/TypeError', err);
+            }
+            return null;
+        }
+    }
+
+    var hoverMath = {
+        clamp: clamp,
+        viewportToSvgUserXY: viewportToSvgUserXY,
+        seriesIndexFromPointerMeet: seriesIndexFromPointerMeet,
+    };
+
+    /** When verbose debug is on at load: ensure inlined APIs exist (catches edit regressions). */
+    function verifyInlinedApis() {
+        if (!debugEnabled()) return;
+        var trendNeed = [
+            'trendDelta',
+            'trendBackground',
+            'applyTrendSurfaceStyle',
+            'applyTrendHostStyle',
+            'repaintTrendTile',
+        ];
+        var ti;
+        for (ti = 0; ti < trendNeed.length; ti += 1) {
+            var tk = trendNeed[ti];
+            if (typeof trendColors[tk] !== 'function') {
+                // eslint-disable-next-line no-console
+                console.warn(
+                    '[' + VIZ_ID + '] trendColors.' + tk + ' missing (expected function), got',
+                    typeof trendColors[tk]
+                );
+            }
+        }
+        var hoverNeed = ['seriesIndexFromPointerMeet', 'viewportToSvgUserXY', 'clamp'];
+        var hi;
+        for (hi = 0; hi < hoverNeed.length; hi += 1) {
+            var hk = hoverNeed[hi];
+            if (typeof hoverMath[hk] !== 'function') {
+                // eslint-disable-next-line no-console
+                console.warn(
+                    '[' + VIZ_ID + '] hoverMath.' + hk + ' missing (expected function), got',
+                    typeof hoverMath[hk]
+                );
+            }
+        }
+        log('verifyInlinedApis: trend + hover surfaces OK');
+    }
+    verifyInlinedApis();
+
+    function repaintTrendTileCompat(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
+        /* Call the hoisted function directly — avoids relying on trendColors.repaintTrendTile if the
+         * object were ever reassigned or partially merged (stale AMD cache, bad hand edits). */
+        repaintTrendTile(hostEl, rootEl, chartEl, majorEl, bg, textColor);
+    }
+
+    /** Splunk dashboard wrappers often set pointer-events:none on viz hosts; walk ancestors. */
     function enableAncestorPointerEvents(el, maxDepth) {
         var node = el;
         var depth = 0;
         var limit = maxDepth == null ? 24 : maxDepth;
         while (node && depth < limit) {
-            node.style.pointerEvents = 'auto';
+            if (node.style) {
+                node.style.pointerEvents = 'auto';
+            }
             node = node.parentElement;
             depth += 1;
         }
@@ -179,10 +460,6 @@ define([
             var wiggle = i % 2 === 0 ? -6 : 4;
             return isFinite(base) ? base + wiggle : base;
         });
-    }
-
-    function clamp(v, lo, hi) {
-        return Math.max(lo, Math.min(hi, v));
     }
 
     function sma(values, windowSize) {
@@ -354,13 +631,18 @@ define([
         return v.toLocaleString(undefined, { maximumFractionDigits: 2 }) + String(unit || '');
     }
 
-    function clearHoverOverlay(svg, tooltip) {
-        var old = svg.querySelector('.splunk-one-fixed-loaded-line-vanilla-viz__hover');
+    function clearHoverOverlay(svg, tooltip, hoverAnnEl) {
+        if (!svg) return;
+        var old = svg.querySelector('.splunkstuff-kpi-line-viz__hover');
         if (old) {
             old.parentNode.removeChild(old);
         }
         if (tooltip) {
             tooltip.style.display = 'none';
+        }
+        if (hoverAnnEl) {
+            hoverAnnEl.style.display = 'none';
+            hoverAnnEl.textContent = '';
         }
     }
 
@@ -380,10 +662,10 @@ define([
 
         var svgDoc = svg.ownerDocument || ownerDoc;
 
-        clearHoverOverlay(svg, tooltip);
+        clearHoverOverlay(svg, tooltip, opts.hoverAnnEl);
 
         var g = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('class', 'splunk-one-fixed-loaded-line-vanilla-viz__hover');
+        g.setAttribute('class', 'splunkstuff-kpi-line-viz__hover');
         g.setAttribute('pointer-events', 'none');
 
         var line = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -412,12 +694,12 @@ define([
 
         tooltip.innerHTML = '';
         var valEl = ownerDoc.createElement('div');
-        valEl.className = 'splunk-one-fixed-loaded-line-vanilla-viz__tooltipValue';
+        valEl.className = 'splunkstuff-kpi-line-viz__tooltipValue';
         valEl.textContent = valueLabel;
         tooltip.appendChild(valEl);
         if (timeLabel) {
             var timeEl = ownerDoc.createElement('div');
-            timeEl.className = 'splunk-one-fixed-loaded-line-vanilla-viz__tooltipTime';
+            timeEl.className = 'splunkstuff-kpi-line-viz__tooltipTime';
             timeEl.textContent = timeLabel;
             tooltip.appendChild(timeEl);
         }
@@ -448,9 +730,29 @@ define([
         if (bodyEl && tooltip.parentNode !== bodyEl) {
             bodyEl.appendChild(tooltip);
         }
+
+        if (opts.showHoverAnnotation && opts.hoverAnnEl) {
+            var ann = opts.hoverAnnEl;
+            var annParts = [valueLabel];
+            if (timeLabel) annParts.push(timeLabel);
+            ann.textContent = annParts.join(' \u2014 ');
+            ann.style.display = 'block';
+        }
     }
 
     log('module loaded');
+
+    if (typeof console !== 'undefined' && typeof console.info === 'function') {
+        // eslint-disable-next-line no-console
+            console.info(
+                '[' +
+                    VIZ_ID +
+                    '] AMD loaded (' +
+                    BUILD_TAG +
+                    '). Trace: window.SPLUNKSTUFF_KPI_LINE_VERBOSE_DEBUG = true (refresh). ' +
+                    'Logs: verifyInlinedApis + effectiveConfig + console.table per updateView; ReferenceError/TypeError in updateView always warn.'
+            );
+    }
 
     return SplunkVisualizationBase.extend({
         getInitialDataParams: function () {
@@ -460,23 +762,54 @@ define([
             };
         },
 
+        /**
+         * Column-major input → { values, times } for updateView.
+         * Picks the last all-numeric non-_time column; sorts by _time when present.
+         */
         formatData: function (rawData) {
+            if (debugEnabled()) {
+                if (rawData == null) {
+                    log('formatData: rawData is null or undefined');
+                } else if (typeof rawData !== 'object') {
+                    log('formatData: rawData expected object, got', typeof rawData);
+                } else if (!Object.prototype.hasOwnProperty.call(rawData, 'columns')) {
+                    log('formatData: rawData has no columns property');
+                } else if (!Array.isArray(rawData.columns)) {
+                    log('formatData: rawData.columns is not Array, got', typeof rawData.columns);
+                }
+            }
             if (!rawData || !rawData.columns || rawData.columns.length === 0) {
+                log('formatData: empty columns');
                 return { values: [], times: [] };
             }
             var idx = pickNumericColumnIndex(rawData);
             if (idx < 0) {
+                log('formatData: no numeric column — VisualizationError');
                 throw new SplunkVisualizationBase.VisualizationError(
-                    'Fixed loaded line (vanilla) requires at least one all-numeric column (excluding _time).'
+                    'KPI loaded line verbose (SplunkStuff) requires at least one all-numeric column (excluding _time).'
                 );
             }
             var tIdx = findTimeColumnIndex(rawData);
-            return reorderValuesAndTimesByTime(rawData, idx, tIdx);
+            var out = reorderValuesAndTimesByTime(rawData, idx, tIdx);
+            log('formatData: valueCol', idx, '_timeCol', tIdx, 'points', out.values ? out.values.length : 0);
+            return out;
         },
 
+        /**
+         * Full DOM rebuild: subheader, optional major row, SVG strip, hover + optional drilldown.
+         */
         updateView: function (data, config) {
+            var t0 = debugEnabled() && typeof performance !== 'undefined' ? performance.now() : 0;
+            try {
+            if (config == null || typeof config !== 'object') {
+                log('updateView: config missing or non-object — using {}');
+                config = {};
+            }
+            log('updateView: start values.length', (data && data.values && data.values.length) || 0);
             this._lastData = data;
             this._lastConfig = config;
+            /* Read early: entire updateView (incl. debug logging) must never hit an undefined smaWindow. */
+            var smaWindow = readInt(config, 'smaWindow', 3);
             if (typeof this._docHoverCleanup === 'function') {
                 this._docHoverCleanup();
                 this._docHoverCleanup = null;
@@ -495,21 +828,25 @@ define([
             var badColor = sanitizeHexColor(readConfig(config, 'badColor', '#DFA611'), '#DFA611');
             var textColor = sanitizeHexColor(readConfig(config, 'textColor', '#FFFFFF'), '#FFFFFF');
             var background = sanitizeHexColor(readConfig(config, 'background', '#0B1F3B'), '#0B1F3B');
+            var emptyText = String(readConfig(config, 'emptyText', '') || '');
 
+            // --- Empty / insufficient points (emptyText when set) ---
             if (values.length < 2) {
+                log('updateView: empty branch len=', values.length);
                 trendColors.applyTrendHostStyle(this.el, background, textColor);
                 var empty = ownerDoc.createElement('div');
-                empty.className = 'splunk-one-fixed-loaded-line-vanilla-viz__err';
-                empty.textContent =
+                empty.className = 'splunkstuff-kpi-line-viz__err';
+                var defaultEmptyMsg =
                     values.length === 0
                         ? 'No numeric results to display.'
                         : 'Need at least 2 numeric points for the line chart.';
+                empty.textContent = emptyText || defaultEmptyMsg;
                 this.el.appendChild(empty);
                 return;
             }
 
+            // --- Smoothing (none | sma) + optional maxPoints downsampling ---
             var smoothing = String(readConfig(config, 'smoothing', 'none')).toLowerCase();
-            var smaWindow = readInt(config, 'smaWindow', 3);
             var maxPoints = readInt(config, 'maxPoints', 0);
             var plotValues = values.slice();
             if (smoothing === 'sma') plotValues = sma(plotValues, smaWindow);
@@ -526,7 +863,7 @@ define([
 
             var scale = bounds(readConfig(config, 'min', 0), readConfig(config, 'max', 100));
             var stroke = sanitizeHexColor(readConfig(config, 'stroke', '#FFFFFF'), '#FFFFFF');
-            var unit = String(readConfig(config, 'unit', '%') || '');
+            var unit = String(readConfig(config, 'unit', '') || '');
             var subheader = String(readConfig(config, 'subheader', '') || '');
             var useThreshold = readBool(config, 'threshold', false);
             var thMin = useThreshold ? readFloat(config, 'thresholdMin', 20) : null;
@@ -545,7 +882,34 @@ define([
                 readConfig(config, 'drilldownQuery', 'search index=_internal | stats count') || ''
             );
 
+            var showMajor = readBool(config, 'showMajor', true);
+            var centerMajor = readBool(config, 'centerMajor', true);
+            var colorPlacement = String(readConfig(config, 'colorPlacement', 'full') || 'full').toLowerCase();
+            if (colorPlacement !== 'top') colorPlacement = 'full';
+            var strokeWidth = readFloat(config, 'strokeWidth', 2);
+            if (!isFinite(strokeWidth) || strokeWidth <= 0) strokeWidth = 2;
+            var unitScale = readFloat(config, 'unitScale', 0.6);
+            if (!isFinite(unitScale) || unitScale <= 0) unitScale = 0.6;
+            var thresholdShade = sanitizeCssColor(
+                readConfig(config, 'thresholdShade', 'rgba(0,0,0,0.12)'),
+                'rgba(0,0,0,0.12)'
+            );
+            var targetStroke = sanitizeCssColor(
+                readConfig(config, 'targetStroke', 'rgba(255,255,255,0.5)'),
+                'rgba(255,255,255,0.5)'
+            );
+            var showHoverAnnotation = readBool(config, 'showHoverAnnotation', false);
+            var padLeftCfg = readFloat(config, 'padLeft', 10);
+            var padRightCfg = readFloat(config, 'padRight', 10);
+            var padTopCfg = readFloat(config, 'padTop', 2);
+            var padBottomCfg = readFloat(config, 'padBottom', 12);
+            if (!isFinite(padLeftCfg)) padLeftCfg = 10;
+            if (!isFinite(padRightCfg)) padRightCfg = 10;
+            if (!isFinite(padTopCfg)) padTopCfg = 2;
+            if (!isFinite(padBottomCfg)) padBottomCfg = 12;
+
             var delta = trendColors.trendDelta(plotValues);
+            // Keith/ITSI-style surface: last vs previous point
             var trendBg = trendColors.trendBackground(delta, goodColor, badColor);
             trendColors.applyTrendHostStyle(this.el, trendBg, textColor);
 
@@ -557,16 +921,100 @@ define([
             var width = Math.max(120, this.el.clientWidth || 400);
             var height = Math.max(80, this.el.clientHeight || 200);
             var subheaderH = subheader ? 28 : 0;
-            var majorH = 44;
+            var majorH = showMajor ? 44 : 0;
+            var effPadL = showMajor ? Math.min(padLeftCfg, 10) : padLeftCfg;
+            var effPadR = showMajor ? Math.min(padRightCfg, 10) : padRightCfg;
+            var effPadT = showMajor ? Math.min(padTopCfg, 2) : padTopCfg;
+            var effPadB = showMajor ? Math.min(padBottomCfg, 12) : padBottomCfg;
+            var padL = effPadL;
+            var padR = effPadR;
+            var padT = effPadT;
+            var padB = effPadB;
             var chartH = Math.max(40, height - subheaderH - majorH);
-            var padL = 10;
-            var padR = 10;
-            var padT = 2;
-            var padB = 12;
 
+            var containerBg = showMajor && colorPlacement === 'top' ? background : trendBg;
+            var chartStripBg = showMajor && colorPlacement === 'top' ? background : trendBg;
+            var effectiveSmaWindow =
+                typeof smaWindow !== 'undefined' && isFinite(smaWindow)
+                    ? smaWindow
+                    : readInt(config, 'smaWindow', 3);
+
+            logEffectiveConfig({
+                goodColor: goodColor,
+                badColor: badColor,
+                textColor: textColor,
+                background: background,
+                emptyTextLen: emptyText.length,
+                smoothing: smoothing,
+                smaWindow: effectiveSmaWindow,
+                maxPoints: maxPoints,
+                plotPointCount: plotValues.length,
+                comparison: comparison,
+                yMin: scale.min,
+                yMax: scale.max,
+                stroke: stroke,
+                unit: unit || '(none)',
+                subheaderLen: subheader.length,
+                threshold: useThreshold,
+                thresholdMin: thMin,
+                thresholdMax: thMax,
+                target: target,
+                anomalies: anomalyMode,
+                anomalySensitivity: anomalySens,
+                showXAxis: showXAxis,
+                showHover: showHover,
+                drilldown: drilldown,
+                drilldownQueryLen: drilldownQuery.length,
+                showMajor: showMajor,
+                centerMajor: centerMajor,
+                colorPlacement: colorPlacement,
+                strokeWidth: strokeWidth,
+                unitScale: unitScale,
+                thresholdShade: thresholdShade,
+                targetStroke: targetStroke,
+                showHoverAnnotation: showHoverAnnotation,
+                padLeftRaw: padLeftCfg,
+                padRightRaw: padRightCfg,
+                padTopRaw: padTopCfg,
+                padBottomRaw: padBottomCfg,
+                padLeftEff: padL,
+                padRightEff: padR,
+                padTopEff: padT,
+                padBottomEff: padB,
+                chartH: chartH,
+                hostWidth: width,
+                hostHeight: height,
+                majorH: majorH,
+                subheaderH: subheaderH,
+                containerBg: containerBg,
+                chartStripBg: chartStripBg,
+                trendBg: trendBg,
+                delta: delta,
+                normTimeLike: norm.timeLike,
+            });
+
+            log(
+                'layout:',
+                'showMajor',
+                showMajor,
+                'colorPlacement',
+                colorPlacement,
+                'chartH',
+                chartH,
+                'size',
+                width + 'x' + height,
+                'hover',
+                showHover,
+                'annot',
+                showHoverAnnotation,
+                'drill',
+                drilldown
+            );
+
+            // --- Root flex column: header → major row → chart strip ---
             var root = ownerDoc.createElement('div');
-            root.className = 'splunk-one-fixed-loaded-line-vanilla-viz';
-            trendColors.applyTrendSurfaceStyle(root, trendBg);
+            root.className = 'splunkstuff-kpi-line-viz';
+            trendColors.applyTrendSurfaceStyle(root, containerBg);
             root.style.color = textColor;
             root.style.width = '100%';
             root.style.height = '100%';
@@ -575,43 +1023,51 @@ define([
 
             if (subheader) {
                 var head = ownerDoc.createElement('div');
-                head.className = 'splunk-one-fixed-loaded-line-vanilla-viz__header';
+                head.className = 'splunkstuff-kpi-line-viz__header';
                 head.textContent = subheader;
                 root.appendChild(head);
             }
 
-            var majorRow = ownerDoc.createElement('div');
-            majorRow.className = 'splunk-one-fixed-loaded-line-vanilla-viz__major';
-            var major = ownerDoc.createElement('div');
-            major.className = 'splunk-one-fixed-loaded-line-vanilla-viz__majorVal';
-            major.textContent = isFinite(last)
-                ? last.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                : '—';
-            if (unit) {
-                var unitSpan = ownerDoc.createElement('span');
-                unitSpan.className = 'splunk-one-fixed-loaded-line-vanilla-viz__unit';
-                unitSpan.textContent = unit;
-                major.appendChild(unitSpan);
+            var majorRow = null;
+            if (showMajor) {
+                majorRow = ownerDoc.createElement('div');
+                majorRow.className = 'splunkstuff-kpi-line-viz__major';
+                majorRow.style.justifyContent = centerMajor ? 'center' : 'space-between';
+                majorRow.style.textAlign = centerMajor ? 'center' : '';
+                var major = ownerDoc.createElement('div');
+                major.className = 'splunkstuff-kpi-line-viz__majorVal';
+                major.textContent = isFinite(last)
+                    ? last.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                    : '—';
+                if (unit) {
+                    var unitSpan = ownerDoc.createElement('span');
+                    unitSpan.className = 'splunkstuff-kpi-line-viz__unit';
+                    unitSpan.style.fontSize = unitScale + 'em';
+                    unitSpan.textContent = unit;
+                    major.appendChild(unitSpan);
+                }
+
+                var trend = ownerDoc.createElement('div');
+                trend.className = 'splunkstuff-kpi-line-viz__trend';
+                trend.style.marginLeft = centerMajor ? '6px' : '';
+                trend.textContent = formatDelta(delta);
+
+                trendColors.applyTrendSurfaceStyle(majorRow, trendBg);
+
+                majorRow.appendChild(major);
+                majorRow.appendChild(trend);
+                root.appendChild(majorRow);
             }
 
-            var trend = ownerDoc.createElement('div');
-            trend.className = 'splunk-one-fixed-loaded-line-vanilla-viz__trend';
-            trend.textContent = formatDelta(delta);
-
-            trendColors.applyTrendSurfaceStyle(majorRow, trendBg);
-
-            majorRow.appendChild(major);
-            majorRow.appendChild(trend);
-            root.appendChild(majorRow);
-
             var chartWrap = ownerDoc.createElement('div');
-            chartWrap.className = 'splunk-one-fixed-loaded-line-vanilla-viz__chart';
+            chartWrap.className = 'splunkstuff-kpi-line-viz__chart';
             chartWrap.style.flex = '1 1 auto';
             chartWrap.style.minHeight = chartH + 'px';
             chartWrap.style.width = '100%';
-            trendColors.applyTrendSurfaceStyle(chartWrap, trendBg);
+            trendColors.applyTrendSurfaceStyle(chartWrap, chartStripBg);
             chartWrap.style.pointerEvents = 'auto';
 
+            // --- SVG model space; screen size uses meet letterboxing in splunkstuffVizHoverMath ---
             var svg = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', String(width));
             svg.setAttribute('height', String(chartH));
@@ -627,12 +1083,12 @@ define([
             }
 
             var chartBg = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            chartBg.setAttribute('class', 'splunk-one-fixed-loaded-line-vanilla-viz__chartBg');
+            chartBg.setAttribute('class', 'splunkstuff-kpi-line-viz__chartBg');
             chartBg.setAttribute('x', '0');
             chartBg.setAttribute('y', '0');
             chartBg.setAttribute('width', String(width));
             chartBg.setAttribute('height', String(chartH));
-            chartBg.setAttribute('fill', trendBg);
+            chartBg.setAttribute('fill', chartStripBg);
             svg.appendChild(chartBg);
 
             if (useThreshold && isFinite(thMin)) {
@@ -641,7 +1097,7 @@ define([
                 rectLo.setAttribute('y', '0');
                 rectLo.setAttribute('width', String(Math.max(0, width - padL - padR)));
                 rectLo.setAttribute('height', String(Math.max(0, yFor(thMin))));
-                rectLo.setAttribute('fill', 'rgba(0,0,0,0.12)');
+                rectLo.setAttribute('fill', thresholdShade);
                 svg.appendChild(rectLo);
             }
             if (useThreshold && isFinite(thMax)) {
@@ -651,7 +1107,7 @@ define([
                 rectHi.setAttribute('y', String(Math.max(0, yHi)));
                 rectHi.setAttribute('width', String(Math.max(0, width - padL - padR)));
                 rectHi.setAttribute('height', String(Math.max(0, chartH - padB - yHi)));
-                rectHi.setAttribute('fill', 'rgba(0,0,0,0.12)');
+                rectHi.setAttribute('fill', thresholdShade);
                 svg.appendChild(rectHi);
             }
             if (useThreshold && isFinite(target)) {
@@ -661,7 +1117,7 @@ define([
                 tLine.setAttribute('y1', String(yT));
                 tLine.setAttribute('x2', String(width - padR));
                 tLine.setAttribute('y2', String(yT));
-                tLine.setAttribute('stroke', 'rgba(255,255,255,0.5)');
+                tLine.setAttribute('stroke', targetStroke);
                 tLine.setAttribute('stroke-width', '1');
                 tLine.setAttribute('stroke-dasharray', '4 3');
                 svg.appendChild(tLine);
@@ -684,7 +1140,7 @@ define([
                     cmpPath.setAttribute('d', cmpD);
                     cmpPath.setAttribute('fill', 'none');
                     cmpPath.setAttribute('stroke', 'rgba(255,255,255,0.65)');
-                    cmpPath.setAttribute('stroke-width', '2');
+                    cmpPath.setAttribute('stroke-width', String(strokeWidth));
                     cmpPath.setAttribute('stroke-dasharray', '6 4');
                     cmpPath.setAttribute('stroke-opacity', '0.55');
                     svg.appendChild(cmpPath);
@@ -707,7 +1163,7 @@ define([
                 mainPath.setAttribute('d', mainD);
                 mainPath.setAttribute('fill', 'none');
                 mainPath.setAttribute('stroke', stroke);
-                mainPath.setAttribute('stroke-width', '2');
+                mainPath.setAttribute('stroke-width', String(strokeWidth));
                 mainPath.setAttribute('vector-effect', 'non-scaling-stroke');
                 svg.appendChild(mainPath);
             }
@@ -751,8 +1207,15 @@ define([
                 }
             }
 
+            var hoverAnnEl = null;
+            if (showHoverAnnotation) {
+                hoverAnnEl = ownerDoc.createElement('div');
+                hoverAnnEl.className = 'splunkstuff-kpi-line-viz__hoverAnn';
+                hoverAnnEl.setAttribute('aria-hidden', 'true');
+            }
+
             var tooltip = ownerDoc.createElement('div');
-            tooltip.className = 'splunk-one-fixed-loaded-line-vanilla-viz__tooltip';
+            tooltip.className = 'splunkstuff-kpi-line-viz__tooltip';
             tooltip.setAttribute('role', 'status');
             tooltip.setAttribute('aria-live', 'polite');
             tooltip.setAttribute('aria-atomic', 'true');
@@ -777,11 +1240,11 @@ define([
 
             var teardownDoc = [];
 
+            // --- Document-level listeners: Splunk overlays block bubble events on the SVG ---
             if (showHover && n >= 2) {
-                /** Capture phase: Splunk overlays often sit above the viz and swallow hit targets. */
                 function onDocPointerMove(e) {
                     if (!hitTestChart(e.clientX, e.clientY)) {
-                        clearHoverOverlay(svg, tooltip);
+                        clearHoverOverlay(svg, tooltip, hoverAnnEl);
                         return;
                     }
                     var idx = hoverMath.seriesIndexFromPointerMeet(
@@ -795,7 +1258,7 @@ define([
                         n
                     );
                     if (idx === null) {
-                        clearHoverOverlay(svg, tooltip);
+                        clearHoverOverlay(svg, tooltip, hoverAnnEl);
                         return;
                     }
                     var hx = padL + idx * xStep;
@@ -816,6 +1279,8 @@ define([
                         chartWrap: chartWrap,
                         clientX: e.clientX,
                         clientY: e.clientY,
+                        showHoverAnnotation: showHoverAnnotation,
+                        hoverAnnEl: hoverAnnEl,
                     });
                 }
                 teardownDoc.push(function () {
@@ -875,33 +1340,62 @@ define([
                 };
             }
 
-            this.el.style.pointerEvents = 'auto';
+            if (this.el && this.el.style) {
+                this.el.style.pointerEvents = 'auto';
+            }
             enableAncestorPointerEvents(this.el);
 
             chartWrap.appendChild(svg);
+            if (hoverAnnEl) {
+                chartWrap.appendChild(hoverAnnEl);
+            }
             root.appendChild(chartWrap);
             this.el.appendChild(root);
 
+            // --- Re-tint after Splunk may have painted chrome over the tile (vanilla pattern + placement colors) ---
             var vizHost = this.el;
+            var repaintPass = 0;
             function repaintTrend() {
+                repaintPass += 1;
+                log('repaintTrend pass', repaintPass);
                 repaintTrendTileCompat(vizHost, root, chartWrap, majorRow, trendBg, textColor);
-                chartBg.setAttribute('fill', trendBg);
+                trendColors.applyTrendSurfaceStyle(root, containerBg);
+                trendColors.applyTrendSurfaceStyle(chartWrap, chartStripBg);
+                chartBg.setAttribute('fill', chartStripBg);
             }
             repaintTrend();
             if (typeof requestAnimationFrame === 'function') {
+                log('repaintTrend: scheduling rAF follow-up');
                 requestAnimationFrame(repaintTrend);
             }
 
-            log('updateView done', plotValues.length, 'points');
+            if (t0) {
+                log('updateView: done', plotValues.length, 'points', 'ms', (performance.now() - t0).toFixed(1));
+            } else {
+                log('updateView: done', plotValues.length, 'points');
+            }
+            } catch (err) {
+                if (err && (err.name === 'ReferenceError' || err.name === 'TypeError')) {
+                    // eslint-disable-next-line no-console
+                    console.warn('[' + VIZ_ID + '] updateView ' + err.name + ': ' + err.message);
+                }
+                if (debugEnabled()) {
+                    // eslint-disable-next-line no-console
+                    console.error('[' + VIZ_ID + '] updateView exception (full)', err);
+                }
+                throw err;
+            }
         },
 
         reflow: function () {
-            if (this._lastData && this._lastConfig) {
-                this.updateView(this._lastData, this._lastConfig);
+            log('reflow');
+            if (this._lastData) {
+                this.updateView(this._lastData, this._lastConfig == null ? {} : this._lastConfig);
             }
         },
 
         remove: function () {
+            log('remove');
             if (typeof this._docHoverCleanup === 'function') {
                 this._docHoverCleanup();
                 this._docHoverCleanup = null;

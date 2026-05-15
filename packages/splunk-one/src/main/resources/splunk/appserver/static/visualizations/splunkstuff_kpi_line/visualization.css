@@ -1,4 +1,4 @@
-.splunk-one-fixed-loaded-line-vanilla-viz {
+.splunkstuff-kpi-line-viz {
     box-sizing: border-box;
     position: absolute;
     inset: 0;
@@ -11,7 +11,7 @@
     overflow: hidden;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__header {
+.splunkstuff-kpi-line-viz__header {
     flex: 0 0 auto;
     height: 28px;
     display: flex;
@@ -23,7 +23,7 @@
     font-weight: 500;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__major {
+.splunkstuff-kpi-line-viz__major {
     flex: 0 0 auto;
     height: 44px;
     display: flex;
@@ -35,7 +35,7 @@
     text-align: center;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__majorVal {
+.splunkstuff-kpi-line-viz__majorVal {
     font-size: 28px;
     font-weight: 600;
     line-height: 1.1;
@@ -43,13 +43,13 @@
     align-items: baseline;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__unit {
+.splunkstuff-kpi-line-viz__unit {
     font-size: 0.6em;
     font-weight: 600;
     margin-left: 2px;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__trend {
+.splunkstuff-kpi-line-viz__trend {
     font-size: 11px;
     font-weight: 500;
     line-height: 1.2;
@@ -57,7 +57,7 @@
     margin-left: 6px;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__chart {
+.splunkstuff-kpi-line-viz__chart {
     flex: 1 1 auto;
     min-height: 0;
     position: relative;
@@ -66,12 +66,29 @@
     touch-action: manipulation;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__chart svg {
+.splunkstuff-kpi-line-viz__chart svg {
     display: block;
     width: 100%;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__tooltip {
+.splunkstuff-kpi-line-viz__hoverAnn {
+    position: absolute;
+    left: 10px;
+    bottom: 6px;
+    display: none;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.25;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.92;
+    max-width: calc(100% - 20px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.splunkstuff-kpi-line-viz__tooltip {
     position: absolute;
     display: none;
     padding: 6px 8px;
@@ -86,7 +103,7 @@
     z-index: 2147483646;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__hit {
+.splunkstuff-kpi-line-viz__hit {
     position: absolute;
     inset: 0;
     z-index: 3;
@@ -94,16 +111,16 @@
     cursor: default;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__tooltipValue {
+.splunkstuff-kpi-line-viz__tooltipValue {
     font-weight: 600;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__tooltipTime {
+.splunkstuff-kpi-line-viz__tooltipTime {
     opacity: 0.88;
     margin-top: 2px;
 }
 
-.splunk-one-fixed-loaded-line-vanilla-viz__err {
+.splunkstuff-kpi-line-viz__err {
     padding: 12px;
     font-size: 12px;
     opacity: 0.9;

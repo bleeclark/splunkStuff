@@ -158,4 +158,72 @@
             </table>
         </panel>
     </row>
+    <row>
+        <panel>
+            <title>KPI loaded line vanilla — full options (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_splunkstuff_kpi_line">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_kpi_line">
+                <search base="splunkstuff_gallery_splunkstuff_kpi_line" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.showHover">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.showHoverAnnotation">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.colorPlacement">top</option>
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_splunkstuff_kpi_line">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+        <panel>
+            <title>KPI loaded line verbose — documented AMD (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_splunkstuff_kpi_line_verbose">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_kpi_line_verbose">
+                <search base="splunkstuff_gallery_splunkstuff_kpi_line_verbose" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line_verbose.showHover">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line_verbose.showHoverAnnotation">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line_verbose.colorPlacement">top</option>
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_splunkstuff_kpi_line_verbose">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+    </row>
 </dashboard>

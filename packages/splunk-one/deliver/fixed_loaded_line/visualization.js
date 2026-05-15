@@ -620,6 +620,110 @@ var client = __webpack_require__(873);
 var react = __webpack_require__(41);
 // EXTERNAL MODULE: ../../node_modules/react-dom/index.js
 var react_dom = __webpack_require__(144);
+;// ./src/main/webapp/lib/splunkstuffVizHoverMath.mjs
+/**
+ * Pure hover hit-test + series index math for SplunkStuff line visualizations.
+ * Source of truth — AMD copy: appserver/static/visualizations/_shared/splunkstuffVizHoverMath.js
+ */
+
+function clamp(v, lo, hi) {
+    return Math.max(lo, Math.min(hi, v));
+}
+
+/**
+ * @param {number} clientX
+ * @param {number} clientY
+ * @param {{ left: number, top: number, right: number, bottom: number, width?: number, height?: number }} rect
+ */
+function hitTestPointInRect(clientX, clientY, rect) {
+    const w = rect.width != null ? rect.width : rect.right - rect.left;
+    const h = rect.height != null ? rect.height : rect.bottom - rect.top;
+    if (!(w > 0) || !(h > 0)) return false;
+    return (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+    );
+}
+
+/**
+ * Map pointer X to series index when the mapping rect matches the full SVG user width
+ * (no letterboxing). Prefer {@link seriesIndexFromPointerMeet} for scaled SVGs.
+ *
+ * @param {number} clientX
+ * @param {{ left: number, width: number }} mappingRect - must have width > 0
+ * @param {number} modelWidth - logical plot width (matches SVG width attribute)
+ * @param {number} padLeft
+ * @param {number} padRight
+ * @param {number} pointCount - n >= 2
+ */
+function seriesIndexFromClientX(clientX, mappingRect, modelWidth, padLeft, padRight, pointCount) {
+    const n = pointCount;
+    if (n < 2 || !mappingRect.width) return 0;
+    const innerW = Math.max(1, modelWidth - padLeft - padRight);
+    const xStep = n > 1 ? innerW / (n - 1) : innerW;
+    const scaleX = modelWidth / mappingRect.width;
+    const x = (clientX - mappingRect.left) * scaleX;
+    const relX = x - padLeft;
+    return clamp(Math.round(relX / xStep), 0, n - 1);
+}
+
+/**
+ * Viewport → SVG user space for default `preserveAspectRatio: xMidYMid meet`.
+ *
+ * @param {number} clientX
+ * @param {number} clientY
+ * @param {Element | { left: number, top: number, width: number, height: number }} rectSource - element or ClientRect-like
+ * @param {number} userW
+ * @param {number} userH
+ * @returns {{ x: number, y: number } | null}
+ */
+function viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH) {
+    const rect =
+        rectSource && typeof rectSource.getBoundingClientRect === 'function'
+            ? rectSource.getBoundingClientRect()
+            : rectSource;
+    if (
+        !rect ||
+        !rect.width ||
+        !rect.height ||
+        !Number.isFinite(userW) ||
+        !Number.isFinite(userH) ||
+        userW <= 0 ||
+        userH <= 0
+    ) {
+        return null;
+    }
+    const scale = Math.min(rect.width / userW, rect.height / userH);
+    const offX = rect.left + (rect.width - scale * userW) / 2;
+    const offY = rect.top + (rect.height - scale * userH) / 2;
+    return {
+        x: (clientX - offX) / scale,
+        y: (clientY - offY) / scale,
+    };
+}
+
+/**
+ * Series index from pointer coordinates (handles meet letterboxing).
+ */
+function seriesIndexFromPointerMeet(
+    clientX,
+    clientY,
+    rectSource,
+    userW,
+    userH,
+    padLeft,
+    padRight,
+    pointCount
+) {
+    const mapped = viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH);
+    if (!mapped || pointCount < 2) return null;
+    const innerW = Math.max(1, userW - padLeft - padRight);
+    const xStep = pointCount > 1 ? innerW / (pointCount - 1) : innerW;
+    return clamp(Math.round((mapped.x - padLeft) / xStep), 0, pointCount - 1);
+}
+
 ;// ./src/main/webapp/components/visualizations/LineChart.jsx
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
@@ -640,9 +744,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
 
 
 
-function clamp(v, lo, hi) {
-  return Math.max(lo, Math.min(hi, v));
-}
+
 function toFiniteNumbers(values) {
   return (Array.isArray(values) ? values : []).map(Number).filter(Number.isFinite);
 }
@@ -1077,12 +1179,25 @@ function LineChart(_ref3) {
     _useState2 = _slicedToArray(_useState, 2),
     hoverIdx = _useState2[0],
     setHoverIdx = _useState2[1];
-  /** Viewport coords for fixed tooltip (`createPortal`) — survives Splunk overlays + viz overflow clipping. */
+  /** Viewport coords for fixed tooltip (`createPortal`) — survives Splunk panel clipping + wrong-document body bugs. */
   var _useState3 = (0,react.useState)(null),
     _useState4 = _slicedToArray(_useState3, 2),
     tooltipViewport = _useState4[0],
     setTooltipViewport = _useState4[1];
   var chartAreaRef = (0,react.useRef)(null);
+  /** Document that actually contains the chart (critical for Splunk iframe / embedded dashboard DOM). */
+  var _useState5 = (0,react.useState)(null),
+    _useState6 = _slicedToArray(_useState5, 2),
+    vizDocument = _useState6[0],
+    setVizDocument = _useState6[1];
+  var setChartAreaEl = (0,react.useCallback)(function (node) {
+    chartAreaRef.current = node;
+    if (node) {
+      setVizDocument(node.ownerDocument || (typeof document !== 'undefined' ? document : null));
+    } else {
+      setVizDocument(null);
+    }
+  }, []);
   var innerW = Math.max(1, width - effPadLeft - effPadRight);
   var n = processed.len;
   var xStep = n > 1 ? innerW / (n - 1) : innerW;
@@ -1095,8 +1210,8 @@ function LineChart(_ref3) {
     var clamped = clamp(ratio, 0, 1);
     return effPadTop + innerH - clamped * innerH;
   }, [chartH, effPadTop, effPadBottom, domain]);
-  (0,react.useEffect)(function () {
-    if (!showHover || n < 2) return undefined;
+  (0,react.useLayoutEffect)(function () {
+    if (!showHover || n < 2 || !vizDocument || !vizDocument.defaultView) return undefined;
     function onDocPointerMove(e) {
       var el = chartAreaRef.current;
       if (!el) return;
@@ -1106,27 +1221,36 @@ function LineChart(_ref3) {
         setTooltipViewport(null);
         return;
       }
-      var scaleX = width / rect.width;
-      var x = (e.clientX - rect.left) * scaleX;
-      var relX = x - effPadLeft;
-      var idx = clamp(Math.round(relX / xStep), 0, n - 1);
+      var idx = seriesIndexFromPointerMeet(e.clientX, e.clientY, el, width, chartH, effPadLeft, effPadRight, n);
+      if (idx === null) {
+        setHoverIdx(null);
+        setTooltipViewport(null);
+        return;
+      }
       setHoverIdx(idx);
       setTooltipViewport({
         x: e.clientX,
         y: e.clientY
       });
     }
-    document.addEventListener('pointermove', onDocPointerMove, true);
-    document.addEventListener('mousemove', onDocPointerMove, true);
+    var win = vizDocument.defaultView;
+    vizDocument.addEventListener('pointermove', onDocPointerMove, true);
+    vizDocument.addEventListener('pointerdown', onDocPointerMove, true);
+    vizDocument.addEventListener('mousemove', onDocPointerMove, true);
+    win.addEventListener('mousemove', onDocPointerMove, true);
     return function () {
-      document.removeEventListener('pointermove', onDocPointerMove, true);
-      document.removeEventListener('mousemove', onDocPointerMove, true);
+      vizDocument.removeEventListener('pointermove', onDocPointerMove, true);
+      vizDocument.removeEventListener('pointerdown', onDocPointerMove, true);
+      vizDocument.removeEventListener('mousemove', onDocPointerMove, true);
+      win.removeEventListener('mousemove', onDocPointerMove, true);
       setHoverIdx(null);
       setTooltipViewport(null);
     };
-  }, [showHover, n, width, effPadLeft, xStep]);
-  (0,react.useEffect)(function () {
-    if (!drilldown || !processed.timeLike || n < 2) return undefined;
+  }, [vizDocument, showHover, n, width, chartH, effPadLeft, effPadRight]);
+  (0,react.useLayoutEffect)(function () {
+    if (!drilldown || !processed.timeLike || n < 2 || !vizDocument || !vizDocument.defaultView) {
+      return undefined;
+    }
     function onDocClick(e) {
       var el = chartAreaRef.current;
       if (!el) return;
@@ -1134,27 +1258,28 @@ function LineChart(_ref3) {
       if (!rect.width || e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
         return;
       }
-      var scaleX = width / rect.width;
-      var x = (e.clientX - rect.left) * scaleX;
-      var relX = x - effPadLeft;
-      var idx = clamp(Math.round(relX / xStep), 0, n - 1);
+      var idx = seriesIndexFromPointerMeet(e.clientX, e.clientY, el, width, chartH, effPadLeft, effPadRight, n);
+      if (idx === null) return;
       var ms = processed.ms[idx];
       if (!Number.isFinite(ms)) return;
       var prevMs = idx > 0 ? processed.ms[idx - 1] : ms;
       var nextMs = idx < processed.ms.length - 1 ? processed.ms[idx + 1] : ms;
       var earliest = Math.floor((prevMs + ms) / 2 / 1000);
       var latest = Math.floor((ms + nextMs) / 2 / 1000);
-      window.location.href = buildSearchUrl({
-        earliestSec: earliest,
-        latestSec: latest,
-        query: drilldownQuery
-      });
+      var navWin = vizDocument.defaultView;
+      if (navWin) {
+        navWin.location.href = buildSearchUrl({
+          earliestSec: earliest,
+          latestSec: latest,
+          query: drilldownQuery
+        });
+      }
     }
-    document.addEventListener('click', onDocClick, true);
+    vizDocument.addEventListener('click', onDocClick, true);
     return function () {
-      return document.removeEventListener('click', onDocClick, true);
+      return vizDocument.removeEventListener('click', onDocClick, true);
     };
-  }, [drilldown, drilldownQuery, processed.timeLike, processed.ms, n, width, effPadLeft, xStep]);
+  }, [vizDocument, drilldown, drilldownQuery, processed.timeLike, processed.ms, n, width, chartH, effPadLeft, effPadRight]);
   var goodCount = processed.series.reduce(function (acc, s) {
     return acc + s.values.length;
   }, 0);
@@ -1275,7 +1400,7 @@ function LineChart(_ref3) {
       marginLeft: centerMajor ? 6 : undefined
     }
   }, formatDelta(delta))) : null, /*#__PURE__*/react.createElement("div", {
-    ref: chartAreaRef,
+    ref: setChartAreaEl,
     "data-testid": "splunkstuff-line-chart-area",
     style: {
       position: 'relative',
@@ -1402,8 +1527,11 @@ function LineChart(_ref3) {
     style: {
       opacity: 0.9
     }
-  }, " \u2014 ", hoverTime) : null) : null, showHover && hoverIdx != null && tooltipViewport && typeof document !== 'undefined' ? /*#__PURE__*/(0,react_dom.createPortal)(/*#__PURE__*/react.createElement("div", {
+  }, " \u2014 ", hoverTime) : null) : null, showHover && hoverIdx != null && tooltipViewport && vizDocument && vizDocument.body ? /*#__PURE__*/(0,react_dom.createPortal)(/*#__PURE__*/react.createElement("div", {
     "data-testid": "splunkstuff-line-hover-tooltip",
+    role: "status",
+    "aria-live": "polite",
+    "aria-atomic": "true",
     style: {
       position: 'fixed',
       left: tooltipViewport.x,
@@ -1434,7 +1562,7 @@ function LineChart(_ref3) {
       opacity: 0.88,
       marginTop: 2
     }
-  }, hoverTime) : null), document.body) : null);
+  }, hoverTime) : null), vizDocument.body) : null);
 }
 ;// ./src/main/webapp/visualizations/fixed_loaded_line/FixedLoadedLineApp.jsx
 function FixedLoadedLineApp_slicedToArray(r, e) { return FixedLoadedLineApp_arrayWithHoles(r) || FixedLoadedLineApp_iterableToArrayLimit(r, e) || FixedLoadedLineApp_unsupportedIterableToArray(r, e) || FixedLoadedLineApp_nonIterableRest(); }

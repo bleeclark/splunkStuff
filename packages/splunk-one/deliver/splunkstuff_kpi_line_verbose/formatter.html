@@ -1,0 +1,210 @@
+<!--
+  SplunkStuff — KPI loaded line VERBOSE (formatter)
+  Folder: splunkstuff_kpi_line_verbose
+  Template token {{VIZ_NAMESPACE}} → display.visualizations.custom.<app_id>.splunkstuff_kpi_line_verbose
+
+  Option map (full Splunk key = NS + "." + shortName, NS ends with splunkstuff_kpi_line_verbose.)
+  ---------------------------------------------------------------------------
+  Y-axis scale          min, max
+  Appearance            background, goodColor, badColor, textColor, stroke, strokeWidth
+  Major + placement     showMajor, centerMajor, colorPlacement
+  Labels                subheader, unit, unitScale
+  Smoothing             smoothing, smaWindow, maxPoints
+  Comparison/thresholds comparison, threshold, thresholdMin, thresholdMax, target,
+                        thresholdShade, targetStroke
+  Anomalies             anomalies, anomalySensitivity
+  Interaction           showHover, showHoverAnnotation
+  Plot area padding     padLeft, padRight, padTop, padBottom
+  Axis + drilldown      showXAxis, drilldown, drilldownQuery
+  Empty state           emptyText
+
+  Do NOT use parentheses in section-label — Splunk builds jQuery IDs from labels.
+-->
+<form class="splunk-formatter-section" section-label="Y-axis scale">
+    <splunk-control-group label="Y min">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.min" value="0"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Y max">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.max" value="100"></splunk-text-input>
+    </splunk-control-group>
+</form>
+
+<form class="splunk-formatter-section" section-label="Appearance">
+    <splunk-control-group label="Background">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#0B1F3B"></splunk-color-picker>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        With <strong>color placement: top</strong>, this fills the chart strip when a major row is shown; the major row uses trend colors. With <strong>full</strong> (default), the whole tile uses the trend surface.
+    </div>
+    <splunk-control-group label="Up / flat trend — delta &gt;= 0">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.goodColor" value="#01417F"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Down trend — delta &lt; 0">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.badColor" value="#DFA611"></splunk-color-picker>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Keith/ITSI pattern: blue when trend &gt;= 0, gold when trend &lt; 0.
+    </div>
+    <splunk-control-group label="Text color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Line stroke">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.stroke" value="#FFFFFF"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Line stroke width, px">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.strokeWidth" value="2"></splunk-text-input>
+    </splunk-control-group>
+</form>
+
+<form class="splunk-formatter-section" section-label="Major headline and placement">
+    <splunk-control-group label="Show major value + delta row">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.showMajor" value="true"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        <strong>true</strong> or <strong>false</strong> — hide the headline row for a chart-only tile.
+    </div>
+    <splunk-control-group label="Center major + trend">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.centerMajor" value="true"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        <strong>true</strong> = centered; <strong>false</strong> = space-between (major left, delta right).
+    </div>
+    <splunk-control-group label="Color placement">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.colorPlacement" value="full"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        <strong>full</strong> — trend fill on full tile. <strong>top</strong> — trend on major row only; chart uses background color (when major row is shown).
+    </div>
+</form>
+
+<form class="splunk-formatter-section" section-label="Labels">
+    <splunk-control-group label="Subheader">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.subheader" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Unit suffix">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.unit" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Optional text after numbers (hover + major), e.g. <strong>%</strong> or <strong>ms</strong>. Leave blank for digits only.
+    </div>
+    <splunk-control-group label="Unit scale — em vs major number">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.unitScale" value="0.6"></splunk-text-input>
+    </splunk-control-group>
+</form>
+
+<form class="splunk-formatter-section" section-label="Smoothing and sampling">
+    <splunk-control-group label="Smoothing">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.smoothing" value="none"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Values: <strong>none</strong> or <strong>sma</strong>
+    </div>
+    <splunk-control-group label="SMA window">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.smaWindow" value="3"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="maxPoints downsample">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.maxPoints" value="0"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        0 disables downsampling
+    </div>
+</form>
+
+<form class="splunk-formatter-section" section-label="Comparison and thresholds">
+    <splunk-control-group label="Comparison overlay">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.comparison" value="false"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        <strong>true</strong> or <strong>false</strong> — synthetic shifted series (demo parity)
+    </div>
+    <splunk-control-group label="Thresholds + target band">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.threshold" value="false"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Enable with <strong>true</strong>; then tune min/max/target below
+    </div>
+    <splunk-control-group label="Band min">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.thresholdMin" value="20"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Band max">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.thresholdMax" value="80"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Target line">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.target" value="50"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Threshold band fill — hex or rgba">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.thresholdShade" value="rgba(0,0,0,0.12)"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Target line stroke — hex or rgba">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.targetStroke" value="rgba(255,255,255,0.5)"></splunk-text-input>
+    </splunk-control-group>
+</form>
+
+<form class="splunk-formatter-section" section-label="Anomalies">
+    <splunk-control-group label="Anomaly mode">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.anomalies" value="none"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        <strong>none</strong>, <strong>deltaZscore</strong>, or <strong>pctChange</strong>
+    </div>
+    <splunk-control-group label="Sensitivity 1–10">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.anomalySensitivity" value="3"></splunk-text-input>
+    </splunk-control-group>
+</form>
+
+<form class="splunk-formatter-section" section-label="Interaction">
+    <splunk-control-group label="Show hover crosshair and tooltip">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.showHover" value="true"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        <strong>true</strong> or <strong>false</strong> — vertical line, point marker, and floating tooltip
+    </div>
+    <splunk-control-group label="In-chart hover annotation">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.showHoverAnnotation" value="false"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        <strong>true</strong> shows value/time caption on the chart (in addition to the tooltip).
+    </div>
+</form>
+
+<form class="splunk-formatter-section" section-label="Plot area padding">
+    <splunk-control-group label="padLeft">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.padLeft" value="10"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="padRight">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.padRight" value="10"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="padTop">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.padTop" value="2"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="padBottom">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.padBottom" value="12"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        When a major row is shown, left/right/top/bottom are capped to match compact KPI layout (same as React LineChart).
+    </div>
+</form>
+
+<form class="splunk-formatter-section" section-label="Axis and drilldown">
+    <splunk-control-group label="Show X-axis ticks">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.showXAxis" value="false"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Uses parsed <strong>_time</strong> when available
+    </div>
+    <splunk-control-group label="Drilldown click opens Search">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.drilldown" value="false"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Drilldown SPL">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.drilldownQuery" value="search index=_internal | stats count"></splunk-text-input>
+    </splunk-control-group>
+</form>
+
+<form class="splunk-formatter-section" section-label="Empty state">
+    <splunk-control-group label="Custom empty message">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.emptyText" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Shown when there are no points or fewer than 2 numeric points. Leave blank for defaults.
+    </div>
+</form>

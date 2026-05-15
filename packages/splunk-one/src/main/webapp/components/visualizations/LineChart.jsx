@@ -1,10 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { trendBackground } from '../../lib/splunkstuffTrendColors';
-
-function clamp(v, lo, hi) {
-    return Math.max(lo, Math.min(hi, v));
-}
+import { clamp, seriesIndexFromPointerMeet } from '../../lib/splunkstuffVizHoverMath.mjs';
 
 function toFiniteNumbers(values) {
     return (Array.isArray(values) ? values : []).map(Number).filter(Number.isFinite);
@@ -388,9 +385,19 @@ export default function LineChart({
     }, [paths, anomalyMode, anomalySensitivity]);
 
     const [hoverIdx, setHoverIdx] = useState(null);
-    /** Viewport coords for fixed tooltip (`createPortal`) — survives Splunk overlays + viz overflow clipping. */
+    /** Viewport coords for fixed tooltip (`createPortal`) — survives Splunk panel clipping + wrong-document body bugs. */
     const [tooltipViewport, setTooltipViewport] = useState(null);
     const chartAreaRef = useRef(null);
+    /** Document that actually contains the chart (critical for Splunk iframe / embedded dashboard DOM). */
+    const [vizDocument, setVizDocument] = useState(null);
+    const setChartAreaEl = useCallback((node) => {
+        chartAreaRef.current = node;
+        if (node) {
+            setVizDocument(node.ownerDocument || (typeof document !== 'undefined' ? document : null));
+        } else {
+            setVizDocument(null);
+        }
+    }, []);
     const innerW = Math.max(1, width - effPadLeft - effPadRight);
     const n = processed.len;
     const xStep = n > 1 ? innerW / (n - 1) : innerW;
@@ -405,8 +412,8 @@ export default function LineChart({
         [chartH, effPadTop, effPadBottom, domain]
     );
 
-    useEffect(() => {
-        if (!showHover || n < 2) return undefined;
+    useLayoutEffect(() => {
+        if (!showHover || n < 2 || !vizDocument || !vizDocument.defaultView) return undefined;
 
         function onDocPointerMove(e) {
             const el = chartAreaRef.current;
@@ -423,26 +430,44 @@ export default function LineChart({
                 setTooltipViewport(null);
                 return;
             }
-            const scaleX = width / rect.width;
-            const x = (e.clientX - rect.left) * scaleX;
-            const relX = x - effPadLeft;
-            const idx = clamp(Math.round(relX / xStep), 0, n - 1);
+            const idx = seriesIndexFromPointerMeet(
+                e.clientX,
+                e.clientY,
+                el,
+                width,
+                chartH,
+                effPadLeft,
+                effPadRight,
+                n
+            );
+            if (idx === null) {
+                setHoverIdx(null);
+                setTooltipViewport(null);
+                return;
+            }
             setHoverIdx(idx);
             setTooltipViewport({ x: e.clientX, y: e.clientY });
         }
 
-        document.addEventListener('pointermove', onDocPointerMove, true);
-        document.addEventListener('mousemove', onDocPointerMove, true);
+        const win = vizDocument.defaultView;
+        vizDocument.addEventListener('pointermove', onDocPointerMove, true);
+        vizDocument.addEventListener('pointerdown', onDocPointerMove, true);
+        vizDocument.addEventListener('mousemove', onDocPointerMove, true);
+        win.addEventListener('mousemove', onDocPointerMove, true);
         return () => {
-            document.removeEventListener('pointermove', onDocPointerMove, true);
-            document.removeEventListener('mousemove', onDocPointerMove, true);
+            vizDocument.removeEventListener('pointermove', onDocPointerMove, true);
+            vizDocument.removeEventListener('pointerdown', onDocPointerMove, true);
+            vizDocument.removeEventListener('mousemove', onDocPointerMove, true);
+            win.removeEventListener('mousemove', onDocPointerMove, true);
             setHoverIdx(null);
             setTooltipViewport(null);
         };
-    }, [showHover, n, width, effPadLeft, xStep]);
+    }, [vizDocument, showHover, n, width, chartH, effPadLeft, effPadRight]);
 
-    useEffect(() => {
-        if (!drilldown || !processed.timeLike || n < 2) return undefined;
+    useLayoutEffect(() => {
+        if (!drilldown || !processed.timeLike || n < 2 || !vizDocument || !vizDocument.defaultView) {
+            return undefined;
+        }
 
         function onDocClick(e) {
             const el = chartAreaRef.current;
@@ -457,26 +482,36 @@ export default function LineChart({
             ) {
                 return;
             }
-            const scaleX = width / rect.width;
-            const x = (e.clientX - rect.left) * scaleX;
-            const relX = x - effPadLeft;
-            const idx = clamp(Math.round(relX / xStep), 0, n - 1);
+            const idx = seriesIndexFromPointerMeet(
+                e.clientX,
+                e.clientY,
+                el,
+                width,
+                chartH,
+                effPadLeft,
+                effPadRight,
+                n
+            );
+            if (idx === null) return;
             const ms = processed.ms[idx];
             if (!Number.isFinite(ms)) return;
             const prevMs = idx > 0 ? processed.ms[idx - 1] : ms;
             const nextMs = idx < processed.ms.length - 1 ? processed.ms[idx + 1] : ms;
             const earliest = Math.floor(((prevMs + ms) / 2) / 1000);
             const latest = Math.floor(((ms + nextMs) / 2) / 1000);
-            window.location.href = buildSearchUrl({
-                earliestSec: earliest,
-                latestSec: latest,
-                query: drilldownQuery,
-            });
+            const navWin = vizDocument.defaultView;
+            if (navWin) {
+                navWin.location.href = buildSearchUrl({
+                    earliestSec: earliest,
+                    latestSec: latest,
+                    query: drilldownQuery,
+                });
+            }
         }
 
-        document.addEventListener('click', onDocClick, true);
-        return () => document.removeEventListener('click', onDocClick, true);
-    }, [drilldown, drilldownQuery, processed.timeLike, processed.ms, n, width, effPadLeft, xStep]);
+        vizDocument.addEventListener('click', onDocClick, true);
+        return () => vizDocument.removeEventListener('click', onDocClick, true);
+    }, [vizDocument, drilldown, drilldownQuery, processed.timeLike, processed.ms, n, width, chartH, effPadLeft, effPadRight]);
 
     const goodCount = processed.series.reduce((acc, s) => acc + s.values.length, 0);
     if (n < 2) {
@@ -618,7 +653,7 @@ export default function LineChart({
                 ) : null}
 
                 <div
-                    ref={chartAreaRef}
+                    ref={setChartAreaEl}
                     data-testid="splunkstuff-line-chart-area"
                     style={{ position: 'relative', width: '100%', height: chartH }}
                 >
@@ -785,10 +820,17 @@ export default function LineChart({
             ) : null}
 
             {/* floating tooltip (portal avoids Splunk panel clipping + stacking under overlays) */}
-            {showHover && hoverIdx != null && tooltipViewport && typeof document !== 'undefined'
+            {showHover &&
+            hoverIdx != null &&
+            tooltipViewport &&
+            vizDocument &&
+            vizDocument.body
                 ? createPortal(
                       <div
                           data-testid="splunkstuff-line-hover-tooltip"
+                          role="status"
+                          aria-live="polite"
+                          aria-atomic="true"
                           style={{
                               position: 'fixed',
                               left: tooltipViewport.x,
@@ -815,7 +857,7 @@ export default function LineChart({
                           </div>
                           {hoverTime ? <div style={{ opacity: 0.88, marginTop: 2 }}>{hoverTime}</div> : null}
                       </div>,
-                      document.body
+                      vizDocument.body
                   )
                 : null}
         </div>

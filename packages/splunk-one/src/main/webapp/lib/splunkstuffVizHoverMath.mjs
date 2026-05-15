@@ -1,6 +1,6 @@
 /**
  * Pure hover hit-test + series index math for SplunkStuff line visualizations.
- * Keep in sync with LineChart.jsx (React) and fixed_loaded_line_vanilla/visualization.js (AMD).
+ * Source of truth — AMD copy: appserver/static/visualizations/_shared/splunkstuffVizHoverMath.js
  */
 
 export function clamp(v, lo, hi) {
@@ -25,8 +25,8 @@ export function hitTestPointInRect(clientX, clientY, rect) {
 }
 
 /**
- * Map pointer X to series index (last numeric column / primary series).
- * `mappingRect` is the element used for scaleX (usually the SVG or chart-area box aligned with the plot).
+ * Map pointer X to series index when the mapping rect matches the full SVG user width
+ * (no letterboxing). Prefer {@link seriesIndexFromPointerMeet} for scaled SVGs.
  *
  * @param {number} clientX
  * @param {{ left: number, width: number }} mappingRect - must have width > 0
@@ -44,4 +44,59 @@ export function seriesIndexFromClientX(clientX, mappingRect, modelWidth, padLeft
     const x = (clientX - mappingRect.left) * scaleX;
     const relX = x - padLeft;
     return clamp(Math.round(relX / xStep), 0, n - 1);
+}
+
+/**
+ * Viewport → SVG user space for default `preserveAspectRatio: xMidYMid meet`.
+ *
+ * @param {number} clientX
+ * @param {number} clientY
+ * @param {Element | { left: number, top: number, width: number, height: number }} rectSource - element or ClientRect-like
+ * @param {number} userW
+ * @param {number} userH
+ * @returns {{ x: number, y: number } | null}
+ */
+export function viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH) {
+    const rect =
+        rectSource && typeof rectSource.getBoundingClientRect === 'function'
+            ? rectSource.getBoundingClientRect()
+            : rectSource;
+    if (
+        !rect ||
+        !rect.width ||
+        !rect.height ||
+        !Number.isFinite(userW) ||
+        !Number.isFinite(userH) ||
+        userW <= 0 ||
+        userH <= 0
+    ) {
+        return null;
+    }
+    const scale = Math.min(rect.width / userW, rect.height / userH);
+    const offX = rect.left + (rect.width - scale * userW) / 2;
+    const offY = rect.top + (rect.height - scale * userH) / 2;
+    return {
+        x: (clientX - offX) / scale,
+        y: (clientY - offY) / scale,
+    };
+}
+
+/**
+ * Series index from pointer coordinates (handles meet letterboxing).
+ */
+export function seriesIndexFromPointerMeet(
+    clientX,
+    clientY,
+    rectSource,
+    userW,
+    userH,
+    padLeft,
+    padRight,
+    pointCount
+) {
+    const mapped = viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH);
+    if (!mapped || pointCount < 2) return null;
+    const innerW = Math.max(1, userW - padLeft - padRight);
+    const xStep = pointCount > 1 ? innerW / (pointCount - 1) : innerW;
+    return clamp(Math.round((mapped.x - padLeft) / xStep), 0, pointCount - 1);
 }

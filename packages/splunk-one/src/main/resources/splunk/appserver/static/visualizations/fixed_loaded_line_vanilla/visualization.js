@@ -8,7 +8,8 @@
 define([
     'api/SplunkVisualizationBase',
     '../_shared/splunkstuffTrendColors',
-], function (SplunkVisualizationBase, trendColors) {
+    '../_shared/splunkstuffVizHoverMath',
+], function (SplunkVisualizationBase, trendColors, hoverMath) {
     var DEBUG = false;
     var VIZ_ID = 'fixed_loaded_line_vanilla';
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line_vanilla.';
@@ -56,6 +57,23 @@ define([
         var s = raw.trim();
         if (/^#[0-9A-Fa-f]{6}$/.test(s)) return s;
         return fallback;
+    }
+
+    /**
+     * Older _shared/splunkstuffTrendColors.js may lack repaintTrendTile; inline equivalent.
+     */
+    function repaintTrendTileCompat(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
+        trendColors.applyTrendHostStyle(hostEl, bg, textColor);
+        if (rootEl) trendColors.applyTrendSurfaceStyle(rootEl, bg);
+        if (majorEl) trendColors.applyTrendSurfaceStyle(majorEl, bg);
+        if (chartEl) trendColors.applyTrendSurfaceStyle(chartEl, bg);
+        var p = hostEl ? hostEl.parentElement : null;
+        var depth = 0;
+        while (p && depth < 4) {
+            trendColors.applyTrendSurfaceStyle(p, bg);
+            p = p.parentElement;
+            depth += 1;
+        }
     }
 
     /** Splunk dashboard wrappers often set pointer-events:none on viz hosts; don't stop early. */
@@ -346,7 +364,7 @@ define([
         }
     }
 
-    function updateHoverOverlay(svg, tooltip, opts) {
+    function updateHoverOverlay(svg, tooltip, ownerDoc, opts) {
         var hx = opts.hx;
         var hy = opts.hy;
         var padT = opts.padT;
@@ -360,13 +378,15 @@ define([
         var unit = opts.unit;
         var width = opts.width;
 
+        var svgDoc = svg.ownerDocument || ownerDoc;
+
         clearHoverOverlay(svg, tooltip);
 
-        var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        var g = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('class', 'splunk-one-fixed-loaded-line-vanilla-viz__hover');
         g.setAttribute('pointer-events', 'none');
 
-        var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        var line = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.setAttribute('x1', hx.toFixed(1));
         line.setAttribute('x2', hx.toFixed(1));
         line.setAttribute('y1', String(padT));
@@ -375,7 +395,7 @@ define([
         line.setAttribute('stroke-width', '1');
         g.appendChild(line);
 
-        var dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        var dot = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
         dot.setAttribute('cx', hx.toFixed(1));
         dot.setAttribute('cy', hy.toFixed(1));
         dot.setAttribute('r', '4');
@@ -391,12 +411,12 @@ define([
         var valueLabel = formatHoverValue(v, unit);
 
         tooltip.innerHTML = '';
-        var valEl = document.createElement('div');
+        var valEl = ownerDoc.createElement('div');
         valEl.className = 'splunk-one-fixed-loaded-line-vanilla-viz__tooltipValue';
         valEl.textContent = valueLabel;
         tooltip.appendChild(valEl);
         if (timeLabel) {
-            var timeEl = document.createElement('div');
+            var timeEl = ownerDoc.createElement('div');
             timeEl.className = 'splunk-one-fixed-loaded-line-vanilla-viz__tooltipTime';
             timeEl.textContent = timeLabel;
             tooltip.appendChild(timeEl);
@@ -424,8 +444,9 @@ define([
             tooltip.style.top = topPx + 'px';
             tooltip.style.transform = 'translate(-50%, -100%)';
         }
-        if (tooltip.parentNode !== document.body) {
-            document.body.appendChild(tooltip);
+        var bodyEl = ownerDoc.body || ownerDoc.documentElement;
+        if (bodyEl && tooltip.parentNode !== bodyEl) {
+            bodyEl.appendChild(tooltip);
         }
     }
 
@@ -466,6 +487,8 @@ define([
             }
             this.el.innerHTML = '';
 
+            var ownerDoc = (this.el && this.el.ownerDocument) || document;
+
             var values = (data && data.values) || [];
             var times = (data && data.times) || [];
             var goodColor = sanitizeHexColor(readConfig(config, 'goodColor', '#01417F'), '#01417F');
@@ -475,7 +498,7 @@ define([
 
             if (values.length < 2) {
                 trendColors.applyTrendHostStyle(this.el, background, textColor);
-                var empty = document.createElement('div');
+                var empty = ownerDoc.createElement('div');
                 empty.className = 'splunk-one-fixed-loaded-line-vanilla-viz__err';
                 empty.textContent =
                     values.length === 0
@@ -541,7 +564,7 @@ define([
             var padT = 2;
             var padB = 12;
 
-            var root = document.createElement('div');
+            var root = ownerDoc.createElement('div');
             root.className = 'splunk-one-fixed-loaded-line-vanilla-viz';
             trendColors.applyTrendSurfaceStyle(root, trendBg);
             root.style.color = textColor;
@@ -551,27 +574,27 @@ define([
             root.style.pointerEvents = 'auto';
 
             if (subheader) {
-                var head = document.createElement('div');
+                var head = ownerDoc.createElement('div');
                 head.className = 'splunk-one-fixed-loaded-line-vanilla-viz__header';
                 head.textContent = subheader;
                 root.appendChild(head);
             }
 
-            var majorRow = document.createElement('div');
+            var majorRow = ownerDoc.createElement('div');
             majorRow.className = 'splunk-one-fixed-loaded-line-vanilla-viz__major';
-            var major = document.createElement('div');
+            var major = ownerDoc.createElement('div');
             major.className = 'splunk-one-fixed-loaded-line-vanilla-viz__majorVal';
             major.textContent = isFinite(last)
                 ? last.toLocaleString(undefined, { maximumFractionDigits: 2 })
                 : '—';
             if (unit) {
-                var unitSpan = document.createElement('span');
+                var unitSpan = ownerDoc.createElement('span');
                 unitSpan.className = 'splunk-one-fixed-loaded-line-vanilla-viz__unit';
                 unitSpan.textContent = unit;
                 major.appendChild(unitSpan);
             }
 
-            var trend = document.createElement('div');
+            var trend = ownerDoc.createElement('div');
             trend.className = 'splunk-one-fixed-loaded-line-vanilla-viz__trend';
             trend.textContent = formatDelta(delta);
 
@@ -581,7 +604,7 @@ define([
             majorRow.appendChild(trend);
             root.appendChild(majorRow);
 
-            var chartWrap = document.createElement('div');
+            var chartWrap = ownerDoc.createElement('div');
             chartWrap.className = 'splunk-one-fixed-loaded-line-vanilla-viz__chart';
             chartWrap.style.flex = '1 1 auto';
             chartWrap.style.minHeight = chartH + 'px';
@@ -589,7 +612,7 @@ define([
             trendColors.applyTrendSurfaceStyle(chartWrap, trendBg);
             chartWrap.style.pointerEvents = 'auto';
 
-            var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            var svg = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', String(width));
             svg.setAttribute('height', String(chartH));
             svg.style.display = 'block';
@@ -603,7 +626,7 @@ define([
                 return padT + ih - clamp(ratio, 0, 1) * ih;
             }
 
-            var chartBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            var chartBg = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
             chartBg.setAttribute('class', 'splunk-one-fixed-loaded-line-vanilla-viz__chartBg');
             chartBg.setAttribute('x', '0');
             chartBg.setAttribute('y', '0');
@@ -613,7 +636,7 @@ define([
             svg.appendChild(chartBg);
 
             if (useThreshold && isFinite(thMin)) {
-                var rectLo = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                var rectLo = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
                 rectLo.setAttribute('x', String(padL));
                 rectLo.setAttribute('y', '0');
                 rectLo.setAttribute('width', String(Math.max(0, width - padL - padR)));
@@ -623,7 +646,7 @@ define([
             }
             if (useThreshold && isFinite(thMax)) {
                 var yHi = yFor(thMax);
-                var rectHi = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                var rectHi = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
                 rectHi.setAttribute('x', String(padL));
                 rectHi.setAttribute('y', String(Math.max(0, yHi)));
                 rectHi.setAttribute('width', String(Math.max(0, width - padL - padR)));
@@ -633,7 +656,7 @@ define([
             }
             if (useThreshold && isFinite(target)) {
                 var yT = yFor(target);
-                var tLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                var tLine = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
                 tLine.setAttribute('x1', String(padL));
                 tLine.setAttribute('y1', String(yT));
                 tLine.setAttribute('x2', String(width - padR));
@@ -645,7 +668,7 @@ define([
             }
 
             if (cmpValues) {
-                var cmpPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                var cmpPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
                 var cmpD = buildPath(
                     cmpValues,
                     width,
@@ -680,7 +703,7 @@ define([
                 scale.max
             );
             if (mainD) {
-                var mainPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                var mainPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
                 mainPath.setAttribute('d', mainD);
                 mainPath.setAttribute('fill', 'none');
                 mainPath.setAttribute('stroke', stroke);
@@ -697,7 +720,7 @@ define([
                 if (!anomalyFlags[ai]) continue;
                 var ax = padL + ai * xStep;
                 var ay = yFor(plotValues[ai]);
-                var dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                var dot = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 dot.setAttribute('cx', ax.toFixed(1));
                 dot.setAttribute('cy', ay.toFixed(1));
                 dot.setAttribute('r', '3');
@@ -711,7 +734,7 @@ define([
                 for (ti = 0; ti < tickCount; ti += 1) {
                     var idx = Math.round((ti * (n - 1)) / (tickCount - 1));
                     var tx = padL + idx * xStep;
-                    var tick = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    var tick = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'text');
                     tick.setAttribute('x', tx.toFixed(1));
                     tick.setAttribute('y', String(chartH - 2));
                     tick.setAttribute('fill', 'rgba(255,255,255,0.55)');
@@ -728,8 +751,11 @@ define([
                 }
             }
 
-            var tooltip = document.createElement('div');
+            var tooltip = ownerDoc.createElement('div');
             tooltip.className = 'splunk-one-fixed-loaded-line-vanilla-viz__tooltip';
+            tooltip.setAttribute('role', 'status');
+            tooltip.setAttribute('aria-live', 'polite');
+            tooltip.setAttribute('aria-atomic', 'true');
             tooltip.style.display = 'none';
             tooltip.style.position = 'fixed';
             this._hoverTooltipEl = tooltip;
@@ -758,13 +784,23 @@ define([
                         clearHoverOverlay(svg, tooltip);
                         return;
                     }
-                    var rect = svg.getBoundingClientRect();
-                    var scaleX = width / rect.width;
-                    var x = (e.clientX - rect.left) * scaleX;
-                    var idx = clamp(Math.round((x - padL) / xStep), 0, n - 1);
+                    var idx = hoverMath.seriesIndexFromPointerMeet(
+                        e.clientX,
+                        e.clientY,
+                        svg,
+                        width,
+                        chartH,
+                        padL,
+                        padR,
+                        n
+                    );
+                    if (idx === null) {
+                        clearHoverOverlay(svg, tooltip);
+                        return;
+                    }
                     var hx = padL + idx * xStep;
                     var hy = yFor(plotValues[idx]);
-                    updateHoverOverlay(svg, tooltip, {
+                    updateHoverOverlay(svg, tooltip, ownerDoc, {
                         hx: hx,
                         hy: hy,
                         padT: padT,
@@ -783,22 +819,36 @@ define([
                     });
                 }
                 teardownDoc.push(function () {
-                    document.removeEventListener('pointermove', onDocPointerMove, true);
-                    document.removeEventListener('mousemove', onDocPointerMove, true);
+                    ownerDoc.removeEventListener('pointermove', onDocPointerMove, true);
+                    ownerDoc.removeEventListener('pointerdown', onDocPointerMove, true);
+                    ownerDoc.removeEventListener('mousemove', onDocPointerMove, true);
+                    if (ownerDoc.defaultView) {
+                        ownerDoc.defaultView.removeEventListener('mousemove', onDocPointerMove, true);
+                    }
                 });
-                document.addEventListener('pointermove', onDocPointerMove, true);
-                document.addEventListener('mousemove', onDocPointerMove, true);
+                ownerDoc.addEventListener('pointermove', onDocPointerMove, true);
+                ownerDoc.addEventListener('pointerdown', onDocPointerMove, true);
+                ownerDoc.addEventListener('mousemove', onDocPointerMove, true);
+                if (ownerDoc.defaultView) {
+                    ownerDoc.defaultView.addEventListener('mousemove', onDocPointerMove, true);
+                }
             }
 
             // Same stacking issue breaks svg.onclick on dashboards.
             if (drilldown && norm.timeLike) {
                 function onDocClick(e) {
                     if (!hitTestChart(e.clientX, e.clientY)) return;
-                    var rect = svg.getBoundingClientRect();
-                    if (!rect.width) return;
-                    var scaleX = width / rect.width;
-                    var x = (e.clientX - rect.left) * scaleX;
-                    var idx = clamp(Math.round((x - padL) / xStep), 0, n - 1);
+                    var idx = hoverMath.seriesIndexFromPointerMeet(
+                        e.clientX,
+                        e.clientY,
+                        svg,
+                        width,
+                        chartH,
+                        padL,
+                        padR,
+                        n
+                    );
+                    if (idx === null) return;
                     var ms = norm.ms[idx];
                     if (!isFinite(ms)) return;
                     var prevMs = idx > 0 ? norm.ms[idx - 1] : ms;
@@ -809,12 +859,13 @@ define([
                     params.set('q', drilldownQuery || '*');
                     params.set('earliest', String(earliest));
                     params.set('latest', String(latest));
-                    window.location.href = '/app/search/search?' + params.toString();
+                    var navWin = ownerDoc.defaultView || window;
+                    navWin.location.href = '/app/search/search?' + params.toString();
                 }
                 teardownDoc.push(function () {
-                    document.removeEventListener('click', onDocClick, true);
+                    ownerDoc.removeEventListener('click', onDocClick, true);
                 });
-                document.addEventListener('click', onDocClick, true);
+                ownerDoc.addEventListener('click', onDocClick, true);
             }
 
             if (teardownDoc.length) {
@@ -833,7 +884,7 @@ define([
 
             var vizHost = this.el;
             function repaintTrend() {
-                trendColors.repaintTrendTile(vizHost, root, chartWrap, majorRow, trendBg, textColor);
+                repaintTrendTileCompat(vizHost, root, chartWrap, majorRow, trendBg, textColor);
                 chartBg.setAttribute('fill', trendBg);
             }
             repaintTrend();

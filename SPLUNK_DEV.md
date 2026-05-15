@@ -95,7 +95,7 @@ If a panel still shows inverted colors, open **Format** and reset to defaults (s
 
 Use this when changing **LineChart** or **`fixed_loaded_line_vanilla`** hover behavior. Fast checks before you call a task done:
 
-1. **Node — hit-test + series index math** (includes the **`chartWrap` taller than `svg`** case for vanilla AMD):
+1. **Node — hit-test + series index math** (includes **`chartWrap` taller than `svg`** for vanilla AMD, **SVG `meet` letterboxing**, and **`seriesIndexFromPointerMeet`** — source: `src/main/webapp/lib/splunkstuffVizHoverMath.mjs`, AMD twin: `static/visualizations/_shared/splunkstuffVizHoverMath.js`):
 
    ```bash
    cd packages/splunk-one
