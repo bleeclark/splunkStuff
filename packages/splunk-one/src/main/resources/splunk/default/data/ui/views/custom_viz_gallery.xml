@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<dashboard version="1.1">
+    <label>SplunkStuff custom viz gallery</label>
+    <description>Simple XML demo for splunk-one custom dashboard visualizations. Search dashboards for SplunkStuff. In Search and Reporting, open Visualization and filter by SplunkStuff.</description>
+    <row>
+        <panel>
+            <title>Line single value (SplunkStuff)</title>
+            <viz type="splunk-one.line_single_value">
+                <search id="splunkstuff_gallery_line_single_value">
+                    <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 22 + ((n * 11) % 58)
+| fields _time value
+                    </query>
+                    <earliest>-4h@h</earliest>
+                    <latest>now</latest>
+                </search>
+            </viz>
+        </panel>
+        <panel>
+            <title>Fixed single value (SplunkStuff)</title>
+            <viz type="splunk-one.fixed_single_value">
+                <search id="splunkstuff_gallery_fixed_single_value">
+                    <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 18 + ((n * 9) % 62)
+| fields _time value
+                    </query>
+                    <earliest>-4h@h</earliest>
+                    <latest>now</latest>
+                </search>
+            </viz>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>Fixed single value React (SplunkStuff)</title>
+            <viz type="splunk-one.fixed_single_value_react">
+                <search id="splunkstuff_gallery_fixed_single_value_react">
+                    <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 30 + ((n * 5) % 55)
+| fields _time value
+                    </query>
+                    <earliest>-4h@h</earliest>
+                    <latest>now</latest>
+                </search>
+            </viz>
+        </panel>
+        <panel>
+            <title>Fixed loaded line React (SplunkStuff)</title>
+            <viz type="splunk-one.fixed_loaded_line">
+                <search id="splunkstuff_gallery_fixed_loaded_line">
+                    <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+                    </query>
+                    <earliest>-4h@h</earliest>
+                    <latest>now</latest>
+                </search>
+            </viz>
+        </panel>
+    </row>
+</dashboard>

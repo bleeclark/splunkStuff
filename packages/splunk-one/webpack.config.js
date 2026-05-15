@@ -44,6 +44,13 @@ const pagesConfig = webpackMerge(baseConfig, {
                     ),
                     to: path.join(__dirname, 'deliver/line_single_value'),
                 },
+                {
+                    from: path.join(
+                        __dirname,
+                        'src/main/resources/splunk/default/data/ui/views/custom_viz_gallery.xml'
+                    ),
+                    to: path.join(__dirname, 'deliver/splunkstuff_viz_kit/custom_viz_gallery.xml'),
+                },
             ],
         }),
     ],
