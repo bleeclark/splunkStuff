@@ -76,9 +76,10 @@ const fixedLoadedLineDeliverConfig = createFixedLoadedLineVizConfig({
 });
 
 module.exports = [
-    pagesConfig,
     reactVizSplunkAppConfig,
     reactVizDeliverConfig,
     fixedLoadedLineAppConfig,
     fixedLoadedLineDeliverConfig,
+    // Copy static Splunk tree last so stage/ picks up freshly built visualization.js files.
+    pagesConfig,
 ];

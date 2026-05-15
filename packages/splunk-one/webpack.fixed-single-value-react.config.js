@@ -16,8 +16,10 @@ const staticVizAssets = path.join(
 /**
  * Splunk custom visualization bundle (React + react-dom embedded).
  *
- * Output must be AMD (`define(...)`) because Splunk Web loads viz code via RequireJS.
- * Splunk-provided modules should remain external (not bundled).
+ * `output.library.type: "umd"` so Splunk gets a single AMD `define([deps], factory)` branch.
+ * Entry must keep `import SplunkVisualizationBase from "api/SplunkVisualizationBase"` and
+ * `export default SplunkVisualizationBase.extend({...})` so Webpack emits the dependency array
+ * and the factory returns the viz class. Viz configs run before `pagesConfig` copy.
  */
 function createFixedSingleValueReactVizConfig({ outputDir }) {
     return webpackMerge(baseConfig, {
@@ -28,7 +30,11 @@ function createFixedSingleValueReactVizConfig({ outputDir }) {
         output: {
             path: outputDir,
             filename: '[name].js',
-            libraryTarget: 'amd',
+            library: {
+                type: 'umd',
+                export: 'default',
+            },
+            globalObject: 'this',
         },
         externals: {
             'api/SplunkVisualizationBase': 'api/SplunkVisualizationBase',

@@ -10,6 +10,10 @@ const staticVizAssets = path.join(
     'src/main/resources/splunk/appserver/static/visualizations/fixed_loaded_line'
 );
 
+/**
+ * Splunk custom visualization bundle (React LineChart). Same UMD + factory export
+ * pattern as webpack.fixed-single-value-react.config.js.
+ */
 function createFixedLoadedLineVizConfig({ outputDir }) {
     return webpackMerge(baseConfig, {
         name: `fixed_loaded_line:${path.basename(outputDir)}`,
@@ -19,7 +23,11 @@ function createFixedLoadedLineVizConfig({ outputDir }) {
         output: {
             path: outputDir,
             filename: '[name].js',
-            libraryTarget: 'amd',
+            library: {
+                type: 'umd',
+                export: 'default',
+            },
+            globalObject: 'this',
         },
         externals: {
             'api/SplunkVisualizationBase': 'api/SplunkVisualizationBase',
