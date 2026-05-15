@@ -67,6 +67,47 @@ function findTimeColumnIndex(rawData) {
     return -1;
 }
 
+function timeSortKey(rawData, timeIdx, rowIdx) {
+    const cell = rawData.columns[timeIdx][rowIdx];
+    if (cell == null || cell === '') return 0;
+    if (typeof cell === 'number' && Number.isFinite(cell)) return cell;
+    const s = String(cell).trim();
+    if (/^-?\d+(\.\d+)?$/.test(s)) {
+        const n = parseFloat(s, 10);
+        return Number.isFinite(n) ? n : 0;
+    }
+    const ms = Date.parse(s);
+    if (Number.isFinite(ms)) return ms / 1000;
+    const fb = parseFloat(s, 10);
+    return Number.isFinite(fb) ? fb : 0;
+}
+
+/** Keep `values` and `times` row-aligned after sorting by _time ascending. */
+function reorderValuesAndTimesByTime(rawData, valueIdx, timeIdx) {
+    const valCol = rawData.columns[valueIdx];
+    const n = valCol ? valCol.length : 0;
+    if (!n) {
+        return { values: [], times: [] };
+    }
+    if (timeIdx < 0 || !rawData.columns[timeIdx] || rawData.columns[timeIdx].length !== n) {
+        return {
+            values: valCol.map((v) => parseFloat(v, 10)),
+            times: [],
+        };
+    }
+    const tcol = rawData.columns[timeIdx];
+    const order = [...Array(n).keys()].sort((a, b) => {
+        const ka = timeSortKey(rawData, timeIdx, a);
+        const kb = timeSortKey(rawData, timeIdx, b);
+        if (ka !== kb) return ka - kb;
+        return a - b;
+    });
+    return {
+        values: order.map((ri) => parseFloat(valCol[ri], 10)),
+        times: order.map((ri) => tcol[ri]),
+    };
+}
+
 function pickNumericColumnIndex(rawData) {
     if (!rawData || !rawData.columns || !rawData.fields) {
         return -1;
@@ -120,13 +161,8 @@ export default SplunkVisualizationBase.extend({
                 'Fixed loaded line requires at least one all-numeric column (excluding _time) in results.'
             );
         }
-        const vals = rawData.columns[idx].map((v) => parseFloat(v, 10));
         const tIdx = findTimeColumnIndex(rawData);
-        let times = [];
-        if (tIdx >= 0 && rawData.columns[tIdx] && rawData.columns[tIdx].length === vals.length) {
-            times = rawData.columns[tIdx].slice();
-        }
-        return { values: vals, times };
+        return reorderValuesAndTimesByTime(rawData, idx, tIdx);
     },
 
     updateView(data, config) {

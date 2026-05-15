@@ -1,73 +1,129 @@
 <?xml version="1.0"?>
 <dashboard version="1.1">
     <label>SplunkStuff custom viz gallery</label>
-    <description>Simple XML demo for splunk-one custom dashboard visualizations. Search dashboards for SplunkStuff. In Search and Reporting, open Visualization and filter by SplunkStuff.</description>
+    <description>Simple XML demo for splunk-one custom dashboard visualizations. Each panel uses one base search: the custom viz sorts by _time so the line matches chronology; the table shows the latest 20 points in time order (bottom row = headline / right end of the sparkline). Search dashboards for SplunkStuff. In Search and Reporting, open Visualization and filter by SplunkStuff.</description>
     <row>
         <panel>
             <title>Line single value (SplunkStuff)</title>
-            <viz type="splunk-one.line_single_value">
-                <search id="splunkstuff_gallery_line_single_value">
-                    <query>
+            <search id="splunkstuff_gallery_line_single_value">
+                <query>
 | makeresults count=72
 | streamstats count as n
 | eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
 | eval value = 22 + ((n * 11) % 58)
 | fields _time value
-                    </query>
-                    <earliest>-4h@h</earliest>
-                    <latest>now</latest>
-                </search>
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="splunk-one.line_single_value">
+                <search base="splunkstuff_gallery_line_single_value" />
             </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_line_single_value">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
         </panel>
         <panel>
             <title>Fixed single value (SplunkStuff)</title>
-            <viz type="splunk-one.fixed_single_value">
-                <search id="splunkstuff_gallery_fixed_single_value">
-                    <query>
+            <search id="splunkstuff_gallery_fixed_single_value">
+                <query>
 | makeresults count=72
 | streamstats count as n
 | eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
 | eval value = 18 + ((n * 9) % 62)
 | fields _time value
-                    </query>
-                    <earliest>-4h@h</earliest>
-                    <latest>now</latest>
-                </search>
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="splunk-one.fixed_single_value">
+                <search base="splunkstuff_gallery_fixed_single_value" />
             </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_fixed_single_value">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
         </panel>
     </row>
     <row>
         <panel>
             <title>Fixed single value React (SplunkStuff)</title>
-            <viz type="splunk-one.fixed_single_value_react">
-                <search id="splunkstuff_gallery_fixed_single_value_react">
-                    <query>
+            <search id="splunkstuff_gallery_fixed_single_value_react">
+                <query>
 | makeresults count=72
 | streamstats count as n
 | eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
 | eval value = 30 + ((n * 5) % 55)
 | fields _time value
-                    </query>
-                    <earliest>-4h@h</earliest>
-                    <latest>now</latest>
-                </search>
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="splunk-one.fixed_single_value_react">
+                <search base="splunkstuff_gallery_fixed_single_value_react" />
             </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_fixed_single_value_react">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
         </panel>
         <panel>
             <title>Fixed loaded line React (SplunkStuff)</title>
-            <viz type="splunk-one.fixed_loaded_line">
-                <search id="splunkstuff_gallery_fixed_loaded_line">
-                    <query>
+            <search id="splunkstuff_gallery_fixed_loaded_line">
+                <query>
 | makeresults count=72
 | streamstats count as n
 | eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
 | eval value = 28 + ((n * 13) % 52)
 | fields _time value
-                    </query>
-                    <earliest>-4h@h</earliest>
-                    <latest>now</latest>
-                </search>
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="splunk-one.fixed_loaded_line">
+                <search base="splunkstuff_gallery_fixed_loaded_line" />
             </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_fixed_loaded_line">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
         </panel>
     </row>
 </dashboard>

@@ -6,7 +6,9 @@
  *
  * Data flow (important):
  * - Splunk runs the panel's SPL search and passes results to `formatData` in COLUMN_MAJOR form.
- * - `formatData` picks a numeric column and returns `{ values: number[] }` as the viz model.
+ * - `formatData` picks a numeric column (not `_time`), sorts rows by `_time` ascending, and
+ *   returns `{ values: number[] }` so the sparkline reads oldest→newest left→right and the
+ *   headline uses the latest `_time` point.
  * - `updateView` renders the DOM + sparkline based on `{ values }` and formatter props in `config`.
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
@@ -21,6 +23,91 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
      *   display.visualizations.custom.splunk-one.fixed_single_value
      */
     var NS = 'display.visualizations.custom.splunk-one.fixed_single_value.';
+
+    function fieldName(fields, idx) {
+        if (!fields || idx < 0 || idx >= fields.length) {
+            return '';
+        }
+        var f = fields[idx];
+        if (typeof f === 'string') {
+            return f;
+        }
+        if (f != null && f.name != null) {
+            return String(f.name);
+        }
+        return '';
+    }
+
+    function findTimeColumnIndex(rawData) {
+        if (!rawData || !rawData.fields) {
+            return -1;
+        }
+        var i;
+        for (i = 0; i < rawData.fields.length; i += 1) {
+            if (fieldName(rawData.fields, i) === '_time') {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function timeSortKey(rawData, timeIdx, rowIdx) {
+        var cell = rawData.columns[timeIdx][rowIdx];
+        if (cell == null || cell === '') {
+            return 0;
+        }
+        if (typeof cell === 'number' && isFinite(cell)) {
+            return cell;
+        }
+        var s = String(cell).trim();
+        // Splunk often sends human-readable _time. parseFloat("2026-05-14 ...") === 2026 for
+        // every row, which breaks ordering and makes sparklines not match the data.
+        if (/^-?\d+(\.\d+)?$/.test(s)) {
+            var n = parseFloat(s, 10);
+            return isFinite(n) ? n : 0;
+        }
+        var ms = Date.parse(s);
+        if (isFinite(ms)) {
+            return ms / 1000;
+        }
+        var fb = parseFloat(s, 10);
+        return isFinite(fb) ? fb : 0;
+    }
+
+    /**
+     * Splunk row order is not guaranteed to match chronological order. Plot and headline
+     * use array index, so sort by _time ascending: sparkline left→older, right→newer;
+     * last point = headline = latest _time.
+     */
+    function reorderNumericColumnByTime(rawData, valueIdx) {
+        var col = rawData.columns[valueIdx];
+        if (!col || col.length === 0) {
+            return [];
+        }
+        var n = col.length;
+        var tIdx = findTimeColumnIndex(rawData);
+        if (tIdx < 0 || !rawData.columns[tIdx] || rawData.columns[tIdx].length !== n) {
+            return col.map(function (v) {
+                return parseFloat(v, 10);
+            });
+        }
+        var order = [];
+        var r;
+        for (r = 0; r < n; r += 1) {
+            order.push(r);
+        }
+        order.sort(function (a, b) {
+            var ka = timeSortKey(rawData, tIdx, a);
+            var kb = timeSortKey(rawData, tIdx, b);
+            if (ka !== kb) {
+                return ka - kb;
+            }
+            return a - b;
+        });
+        return order.map(function (ri) {
+            return parseFloat(rawData.columns[valueIdx][ri], 10);
+        });
+    }
 
     /** Read a formatter prop from Splunk config with a default fallback. */
     function readConfig(config, prop, defaultVal) {
@@ -76,6 +163,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
         var best = -1;
         for (var c = 0; c < rawData.columns.length; c += 1) {
+            if (fieldName(rawData.fields, c) === '_time') {
+                continue;
+            }
             var col = rawData.columns[c];
             if (!col || col.length === 0) {
                 continue;
@@ -140,9 +230,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     'Fixed single value requires at least one all-numeric column in results.'
                 );
             }
-            var vals = rawData.columns[idx].map(function (v) {
-                return parseFloat(v, 10);
-            });
+            var vals = reorderNumericColumnByTime(rawData, idx);
             return {
                 values: vals,
                 fieldName:
@@ -173,7 +261,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var unit = String(readConfig(config, 'unit', '%') || '');
             var subheader = String(readConfig(config, 'subheader', '') || '');
 
-            // Series semantics: last point is the "major" value; delta = last - previous point.
+            // Series semantics: last point in time order = latest _time = "major" value.
             var last = values[values.length - 1];
             var prev = values.length > 1 ? values[values.length - 2] : last;
             var delta = last - prev;

@@ -724,6 +724,12 @@ function unmountViz(el) {
   roots["delete"](el);
 }
 ;// ./src/main/webapp/visualizations/fixed_single_value_react/visualization.amd.jsx
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 /* eslint-disable */
 /**
  * Splunk custom visualization entry — React implementation.
@@ -734,6 +740,57 @@ function unmountViz(el) {
 
 
 var NS = 'display.visualizations.custom.splunk-one.fixed_single_value_react.';
+function fieldName(fields, idx) {
+  if (!fields || idx < 0 || idx >= fields.length) return '';
+  var f = fields[idx];
+  if (typeof f === 'string') return f;
+  if (f != null && f.name != null) return String(f.name);
+  return '';
+}
+function timeSortKey(rawData, timeIdx, rowIdx) {
+  var cell = rawData.columns[timeIdx][rowIdx];
+  if (cell == null || cell === '') return 0;
+  if (typeof cell === 'number' && Number.isFinite(cell)) return cell;
+  var s = String(cell).trim();
+  if (/^-?\d+(\.\d+)?$/.test(s)) {
+    var n = parseFloat(s, 10);
+    return Number.isFinite(n) ? n : 0;
+  }
+  var ms = Date.parse(s);
+  if (Number.isFinite(ms)) return ms / 1000;
+  var fb = parseFloat(s, 10);
+  return Number.isFinite(fb) ? fb : 0;
+}
+
+/** Value column entries reordered by _time ascending (sparkline / headline = chronological). */
+function reorderValuesByTime(rawData, valueIdx) {
+  var col = rawData.columns[valueIdx];
+  if (!col || col.length === 0) return [];
+  var n = col.length;
+  var tIdx = -1;
+  if (rawData.fields) {
+    for (var i = 0; i < rawData.fields.length; i += 1) {
+      if (fieldName(rawData.fields, i) === '_time') {
+        tIdx = i;
+        break;
+      }
+    }
+  }
+  if (tIdx < 0 || !rawData.columns[tIdx] || rawData.columns[tIdx].length !== n) {
+    return col.map(function (v) {
+      return parseFloat(v, 10);
+    });
+  }
+  var order = _toConsumableArray(Array(n).keys()).sort(function (a, b) {
+    var ka = timeSortKey(rawData, tIdx, a);
+    var kb = timeSortKey(rawData, tIdx, b);
+    if (ka !== kb) return ka - kb;
+    return a - b;
+  });
+  return order.map(function (ri) {
+    return parseFloat(rawData.columns[valueIdx][ri], 10);
+  });
+}
 function readConfig(config, prop, defaultVal) {
   var v = config[NS + prop];
   if (v === undefined || v === null || v === '') {
@@ -747,6 +804,9 @@ function pickNumericColumnIndex(rawData) {
   }
   var best = -1;
   for (var c = 0; c < rawData.columns.length; c += 1) {
+    if (fieldName(rawData.fields, c) === '_time') {
+      continue;
+    }
     var col = rawData.columns[c];
     if (!col || col.length === 0) {
       continue;
@@ -781,9 +841,7 @@ function pickNumericColumnIndex(rawData) {
     if (idx < 0) {
       throw new (SplunkVisualizationBase_default()).VisualizationError('Fixed single value (React) requires at least one all-numeric column in results.');
     }
-    var vals = rawData.columns[idx].map(function (v) {
-      return parseFloat(v, 10);
-    });
+    var vals = reorderValuesByTime(rawData, idx);
     return {
       values: vals
     };

@@ -10,6 +10,55 @@ import { mountViz, unmountViz } from './vizMount';
 
 const NS = 'display.visualizations.custom.splunk-one.fixed_single_value_react.';
 
+function fieldName(fields, idx) {
+    if (!fields || idx < 0 || idx >= fields.length) return '';
+    const f = fields[idx];
+    if (typeof f === 'string') return f;
+    if (f != null && f.name != null) return String(f.name);
+    return '';
+}
+
+function timeSortKey(rawData, timeIdx, rowIdx) {
+    const cell = rawData.columns[timeIdx][rowIdx];
+    if (cell == null || cell === '') return 0;
+    if (typeof cell === 'number' && Number.isFinite(cell)) return cell;
+    const s = String(cell).trim();
+    if (/^-?\d+(\.\d+)?$/.test(s)) {
+        const n = parseFloat(s, 10);
+        return Number.isFinite(n) ? n : 0;
+    }
+    const ms = Date.parse(s);
+    if (Number.isFinite(ms)) return ms / 1000;
+    const fb = parseFloat(s, 10);
+    return Number.isFinite(fb) ? fb : 0;
+}
+
+/** Value column entries reordered by _time ascending (sparkline / headline = chronological). */
+function reorderValuesByTime(rawData, valueIdx) {
+    const col = rawData.columns[valueIdx];
+    if (!col || col.length === 0) return [];
+    const n = col.length;
+    let tIdx = -1;
+    if (rawData.fields) {
+        for (let i = 0; i < rawData.fields.length; i += 1) {
+            if (fieldName(rawData.fields, i) === '_time') {
+                tIdx = i;
+                break;
+            }
+        }
+    }
+    if (tIdx < 0 || !rawData.columns[tIdx] || rawData.columns[tIdx].length !== n) {
+        return col.map((v) => parseFloat(v, 10));
+    }
+    const order = [...Array(n).keys()].sort((a, b) => {
+        const ka = timeSortKey(rawData, tIdx, a);
+        const kb = timeSortKey(rawData, tIdx, b);
+        if (ka !== kb) return ka - kb;
+        return a - b;
+    });
+    return order.map((ri) => parseFloat(rawData.columns[valueIdx][ri], 10));
+}
+
 function readConfig(config, prop, defaultVal) {
     const v = config[NS + prop];
     if (v === undefined || v === null || v === '') {
@@ -24,6 +73,9 @@ function pickNumericColumnIndex(rawData) {
     }
     let best = -1;
     for (let c = 0; c < rawData.columns.length; c += 1) {
+        if (fieldName(rawData.fields, c) === '_time') {
+            continue;
+        }
         const col = rawData.columns[c];
         if (!col || col.length === 0) {
             continue;
@@ -60,7 +112,7 @@ export default SplunkVisualizationBase.extend({
                 'Fixed single value (React) requires at least one all-numeric column in results.'
             );
         }
-        const vals = rawData.columns[idx].map((v) => parseFloat(v, 10));
+        const vals = reorderValuesByTime(rawData, idx);
         return { values: vals };
     },
 

@@ -1463,6 +1463,12 @@ function unmountViz(el) {
   roots["delete"](el);
 }
 ;// ./src/main/webapp/visualizations/fixed_loaded_line/visualization.amd.jsx
+function visualization_amd_toConsumableArray(r) { return visualization_amd_arrayWithoutHoles(r) || visualization_amd_iterableToArray(r) || visualization_amd_unsupportedIterableToArray(r) || visualization_amd_nonIterableSpread(); }
+function visualization_amd_nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function visualization_amd_unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return visualization_amd_arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? visualization_amd_arrayLikeToArray(r, a) : void 0; } }
+function visualization_amd_iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function visualization_amd_arrayWithoutHoles(r) { if (Array.isArray(r)) return visualization_amd_arrayLikeToArray(r); }
+function visualization_amd_arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 /* eslint-disable */
 /**
  * Splunk custom visualization entry — React LineChart bundle.
@@ -1524,6 +1530,55 @@ function findTimeColumnIndex(rawData) {
   }
   return -1;
 }
+function timeSortKey(rawData, timeIdx, rowIdx) {
+  var cell = rawData.columns[timeIdx][rowIdx];
+  if (cell == null || cell === '') return 0;
+  if (typeof cell === 'number' && Number.isFinite(cell)) return cell;
+  var s = String(cell).trim();
+  if (/^-?\d+(\.\d+)?$/.test(s)) {
+    var n = parseFloat(s, 10);
+    return Number.isFinite(n) ? n : 0;
+  }
+  var ms = Date.parse(s);
+  if (Number.isFinite(ms)) return ms / 1000;
+  var fb = parseFloat(s, 10);
+  return Number.isFinite(fb) ? fb : 0;
+}
+
+/** Keep `values` and `times` row-aligned after sorting by _time ascending. */
+function reorderValuesAndTimesByTime(rawData, valueIdx, timeIdx) {
+  var valCol = rawData.columns[valueIdx];
+  var n = valCol ? valCol.length : 0;
+  if (!n) {
+    return {
+      values: [],
+      times: []
+    };
+  }
+  if (timeIdx < 0 || !rawData.columns[timeIdx] || rawData.columns[timeIdx].length !== n) {
+    return {
+      values: valCol.map(function (v) {
+        return parseFloat(v, 10);
+      }),
+      times: []
+    };
+  }
+  var tcol = rawData.columns[timeIdx];
+  var order = visualization_amd_toConsumableArray(Array(n).keys()).sort(function (a, b) {
+    var ka = timeSortKey(rawData, timeIdx, a);
+    var kb = timeSortKey(rawData, timeIdx, b);
+    if (ka !== kb) return ka - kb;
+    return a - b;
+  });
+  return {
+    values: order.map(function (ri) {
+      return parseFloat(valCol[ri], 10);
+    }),
+    times: order.map(function (ri) {
+      return tcol[ri];
+    })
+  };
+}
 function pickNumericColumnIndex(rawData) {
   if (!rawData || !rawData.columns || !rawData.fields) {
     return -1;
@@ -1575,18 +1630,8 @@ function buildComparisonValues(values) {
     if (idx < 0) {
       throw new (SplunkVisualizationBase_default()).VisualizationError('Fixed loaded line requires at least one all-numeric column (excluding _time) in results.');
     }
-    var vals = rawData.columns[idx].map(function (v) {
-      return parseFloat(v, 10);
-    });
     var tIdx = findTimeColumnIndex(rawData);
-    var times = [];
-    if (tIdx >= 0 && rawData.columns[tIdx] && rawData.columns[tIdx].length === vals.length) {
-      times = rawData.columns[tIdx].slice();
-    }
-    return {
-      values: vals,
-      times: times
-    };
+    return reorderValuesAndTimesByTime(rawData, idx, tIdx);
   },
   updateView: function updateView(data, config) {
     var values = data && data.values || [];
