@@ -2,8 +2,8 @@
 /**
  * Splunk custom visualization entry — React implementation.
  *
- * Default export is the `SplunkVisualizationBase.extend({...})` class. Keep the
- * `api/SplunkVisualizationBase` import so Webpack emits `define([deps], factory)`.
+ * Export the extended class as default (Splunk loads this as an AMD module).
+ * Build with `output.library.type: "amd"` so `api/SplunkVisualizationBase` binds correctly.
  */
 import SplunkVisualizationBase from 'api/SplunkVisualizationBase';
 import { mountViz, unmountViz } from './vizMount';

@@ -16,10 +16,11 @@ const staticVizAssets = path.join(
 /**
  * Splunk custom visualization bundle (React + react-dom embedded).
  *
- * `output.library.type: "umd"` so Splunk gets a single AMD `define([deps], factory)` branch.
- * Entry must keep `import SplunkVisualizationBase from "api/SplunkVisualizationBase"` and
- * `export default SplunkVisualizationBase.extend({...})` so Webpack emits the dependency array
- * and the factory returns the viz class. Viz configs run before `pagesConfig` copy.
+ * - `output.library.type: "amd"` (not UMD): Splunk loads the file as an AMD module; UMD can
+ *   pair badly with the external stub in some builds.
+ * - `optimization.minimize: false`: with minification on, Terser can rewrite the webpack
+ *   external stub into `module.exports = e` where `e` is the wrong binding, so
+ *   `api/SplunkVisualizationBase` resolves to `window` and the viz fails at runtime.
  */
 function createFixedSingleValueReactVizConfig({ outputDir }) {
     return webpackMerge(baseConfig, {
@@ -31,10 +32,9 @@ function createFixedSingleValueReactVizConfig({ outputDir }) {
             path: outputDir,
             filename: '[name].js',
             library: {
-                type: 'umd',
+                type: 'amd',
                 export: 'default',
             },
-            globalObject: 'this',
         },
         externals: {
             'api/SplunkVisualizationBase': 'api/SplunkVisualizationBase',
@@ -66,6 +66,14 @@ function createFixedSingleValueReactVizConfig({ outputDir }) {
             }),
         ],
         devtool: false,
+        /**
+         * Minification must stay off: Terser rewrites the small webpack "external"
+         * stub into `module.exports = e` where `e` is the wrong lexical binding, so
+         * `api/SplunkVisualizationBase` becomes `window` and the viz fails at runtime.
+         */
+        optimization: {
+            minimize: false,
+        },
         module: {
             rules: [{ test: /\.css$/, use: 'css-loader' }],
         },

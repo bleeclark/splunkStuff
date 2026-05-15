@@ -1,8 +1,7 @@
 /* eslint-disable */
 /**
  * Splunk custom visualization entry — React LineChart bundle.
- *
- * Default export is `SplunkVisualizationBase.extend({...})`. Keep the external import.
+ * Same `SplunkVisualizationBase.extend` + AMD library output as fixed_single_value_react.
  */
 import SplunkVisualizationBase from 'api/SplunkVisualizationBase';
 import { mountViz, unmountViz } from './vizMount';
