@@ -1,4 +1,4 @@
 <?xml version="1.0"?>
-<view template="splunk-one:/templates/integration.html" type="html">
+<view template="so_BUI_pickulationts:/templates/integration.html" type="html">
     <label>Integration</label>
 </view>

@@ -4,9 +4,24 @@
  * Same `SplunkVisualizationBase.extend` + AMD library output as fixed_single_value_react.
  */
 import SplunkVisualizationBase from 'api/SplunkVisualizationBase';
+import {
+    applyTrendHostStyle,
+    trendBackground,
+    trendDelta,
+} from '../../lib/splunkstuffTrendColors';
 import { mountViz, unmountViz } from './vizMount';
 
-const NS = 'display.visualizations.custom.splunk-one.fixed_loaded_line.';
+const NS = 'display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line.';
+
+function enableAncestorPointerEvents(el, maxDepth = 24) {
+    let node = el;
+    let depth = 0;
+    while (node && depth < maxDepth) {
+        node.style.pointerEvents = 'auto';
+        node = node.parentElement;
+        depth += 1;
+    }
+}
 
 function readConfig(config, prop, defaultVal) {
     const v = config[NS + prop];
@@ -184,17 +199,35 @@ export default SplunkVisualizationBase.extend({
 
         const useThreshold = readBool(config, 'threshold', false);
 
+        const goodColor = readConfig(config, 'goodColor', '#01417F');
+        const badColor = readConfig(config, 'badColor', '#DFA611');
+        const textColor = readConfig(config, 'textColor', '#FFFFFF');
+        const background = readConfig(config, 'background', '#0B1F3B');
+
+        if (values.length >= 2) {
+            const delta = trendDelta(values);
+            applyTrendHostStyle(
+                this.el,
+                trendBackground(delta, goodColor, badColor),
+                textColor
+            );
+        } else {
+            applyTrendHostStyle(this.el, background, textColor);
+        }
+        this.el.style.pointerEvents = 'auto';
+        enableAncestorPointerEvents(this.el);
+
         mountViz(this.el, {
             values,
             times,
             comparisonSeries,
             min: readFloat(config, 'min', 0),
             max: readFloat(config, 'max', 100),
-            goodColor: readConfig(config, 'goodColor', '#01417F'),
-            badColor: readConfig(config, 'badColor', '#DFA611'),
-            textColor: readConfig(config, 'textColor', '#FFFFFF'),
+            goodColor,
+            badColor,
+            textColor,
             stroke: readConfig(config, 'stroke', '#FFFFFF'),
-            background: readConfig(config, 'background', '#0B1F3B'),
+            background,
             unit: readConfig(config, 'unit', '%'),
             subheader: readConfig(config, 'subheader', ''),
             smoothing: readConfig(config, 'smoothing', 'none'),
@@ -206,6 +239,7 @@ export default SplunkVisualizationBase.extend({
             anomalyMode: readConfig(config, 'anomalies', 'none'),
             anomalySensitivity: readInt(config, 'anomalySensitivity', 3),
             showXAxis: readBool(config, 'showXAxis', false),
+            showHover: readBool(config, 'showHover', true),
             drilldown: readBool(config, 'drilldown', false),
             drilldownQuery: readConfig(
                 config,

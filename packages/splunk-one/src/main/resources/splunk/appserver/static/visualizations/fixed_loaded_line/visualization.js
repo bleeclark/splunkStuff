@@ -542,10 +542,84 @@ __webpack_require__.d(__webpack_exports__, {
 // EXTERNAL MODULE: external "api/SplunkVisualizationBase"
 var SplunkVisualizationBase_ = __webpack_require__(879);
 var SplunkVisualizationBase_default = /*#__PURE__*/__webpack_require__.n(SplunkVisualizationBase_);
+;// ./src/main/webapp/lib/splunkstuffTrendColors.js
+/**
+ * Keith/ITSI trend background contract for SplunkStuff visualizations.
+ * delta >= 0 → up color (blue); delta < 0 → down color (gold).
+ */
+
+var DEFAULT_UP_COLOR = '#01417F';
+var DEFAULT_DOWN_COLOR = '#DFA611';
+function trendDelta(values) {
+  if (!values || !values.length) {
+    return NaN;
+  }
+  var len = values.length;
+  var last = Number(values[len - 1]);
+  var prev = len > 1 ? Number(values[len - 2]) : last;
+  if (!Number.isFinite(last) || !Number.isFinite(prev)) {
+    return NaN;
+  }
+  return last - prev;
+}
+
+/** @param {number} delta @param {string} upColor @param {string} downColor */
+function trendBackground(delta, upColor, downColor) {
+  var isUp = Number.isFinite(delta) ? delta >= 0 : true;
+  return isUp ? upColor : downColor;
+}
+
+/** Paint a surface with trend background; overrides Splunk formatter `background`. */
+function applyTrendSurfaceStyle(el, bg) {
+  if (!el) {
+    return;
+  }
+  el.style.backgroundColor = bg;
+  el.style.setProperty('background-color', bg, 'important');
+}
+
+/** Override Splunk formatter background on the viz host element. */
+function applyTrendHostStyle(el, bg, textColor) {
+  if (!el) {
+    return;
+  }
+  el.style.position = 'relative';
+  applyTrendSurfaceStyle(el, bg);
+  el.style.setProperty('background', bg, 'important');
+  el.style.color = textColor;
+  el.style.overflow = 'hidden';
+  el.style.width = '100%';
+  el.style.height = '100%';
+  el.style.minHeight = '100%';
+  el.style.boxSizing = 'border-box';
+}
+
+/** Re-apply trend bg after Splunk formatter may have painted host/parent navy. */
+function repaintTrendTile(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
+  applyTrendHostStyle(hostEl, bg, textColor);
+  if (rootEl) {
+    applyTrendSurfaceStyle(rootEl, bg);
+  }
+  if (majorEl) {
+    applyTrendSurfaceStyle(majorEl, bg);
+  }
+  if (chartEl) {
+    applyTrendSurfaceStyle(chartEl, bg);
+  }
+  var p = hostEl ? hostEl.parentElement : null;
+  var depth = 0;
+  while (p && depth < 4) {
+    applyTrendSurfaceStyle(p, bg);
+    p = p.parentElement;
+    depth += 1;
+  }
+}
 // EXTERNAL MODULE: ../../node_modules/react-dom/client.js
 var client = __webpack_require__(873);
 // EXTERNAL MODULE: ../../node_modules/react/index.js
 var react = __webpack_require__(41);
+// EXTERNAL MODULE: ../../node_modules/react-dom/index.js
+var react_dom = __webpack_require__(144);
 ;// ./src/main/webapp/components/visualizations/LineChart.jsx
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
@@ -563,6 +637,8 @@ function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) 
 function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
 function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+
+
 
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
@@ -896,8 +972,7 @@ function LineChart(_ref3) {
   var last = primaryValues.length ? primaryValues[primaryValues.length - 1] : NaN;
   var prev = primaryValues.length > 1 ? primaryValues[primaryValues.length - 2] : last;
   var delta = last - prev;
-  var isGood = Number.isFinite(delta) ? delta >= 0 : true;
-  var trendBg = isGood ? goodColor : badColor;
+  var trendBg = trendBackground(delta, goodColor, badColor);
   var containerBg = showMajor ? colorPlacement === 'top' ? background : trendBg : background;
   var subheaderBg = 'rgba(0, 0, 0, 0.52)';
   var majorBg = showMajor && colorPlacement === 'top' ? trendBg : 'transparent';
@@ -1002,6 +1077,12 @@ function LineChart(_ref3) {
     _useState2 = _slicedToArray(_useState, 2),
     hoverIdx = _useState2[0],
     setHoverIdx = _useState2[1];
+  /** Viewport coords for fixed tooltip (`createPortal`) — survives Splunk overlays + viz overflow clipping. */
+  var _useState3 = (0,react.useState)(null),
+    _useState4 = _slicedToArray(_useState3, 2),
+    tooltipViewport = _useState4[0],
+    setTooltipViewport = _useState4[1];
+  var chartAreaRef = (0,react.useRef)(null);
   var innerW = Math.max(1, width - effPadLeft - effPadRight);
   var n = processed.len;
   var xStep = n > 1 ? innerW / (n - 1) : innerW;
@@ -1014,34 +1095,66 @@ function LineChart(_ref3) {
     var clamped = clamp(ratio, 0, 1);
     return effPadTop + innerH - clamped * innerH;
   }, [chartH, effPadTop, effPadBottom, domain]);
-  var onMove = (0,react.useCallback)(function (e) {
-    if (!showHover || n < 2) return;
-    var svg = e.currentTarget;
-    var rect = svg.getBoundingClientRect();
-    if (!rect.width) return;
-    var scaleX = width / rect.width;
-    var x = (e.clientX - rect.left) * scaleX;
-    var relX = x - effPadLeft;
-    var idx = clamp(Math.round(relX / xStep), 0, n - 1);
-    setHoverIdx(idx);
+  (0,react.useEffect)(function () {
+    if (!showHover || n < 2) return undefined;
+    function onDocPointerMove(e) {
+      var el = chartAreaRef.current;
+      if (!el) return;
+      var rect = el.getBoundingClientRect();
+      if (!rect.width || e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+        setHoverIdx(null);
+        setTooltipViewport(null);
+        return;
+      }
+      var scaleX = width / rect.width;
+      var x = (e.clientX - rect.left) * scaleX;
+      var relX = x - effPadLeft;
+      var idx = clamp(Math.round(relX / xStep), 0, n - 1);
+      setHoverIdx(idx);
+      setTooltipViewport({
+        x: e.clientX,
+        y: e.clientY
+      });
+    }
+    document.addEventListener('pointermove', onDocPointerMove, true);
+    document.addEventListener('mousemove', onDocPointerMove, true);
+    return function () {
+      document.removeEventListener('pointermove', onDocPointerMove, true);
+      document.removeEventListener('mousemove', onDocPointerMove, true);
+      setHoverIdx(null);
+      setTooltipViewport(null);
+    };
   }, [showHover, n, width, effPadLeft, xStep]);
-  var onLeave = (0,react.useCallback)(function () {
-    return setHoverIdx(null);
-  }, []);
-  var onClick = (0,react.useCallback)(function () {
-    if (!drilldown || hoverIdx == null || !processed.timeLike) return;
-    var ms = processed.ms[hoverIdx];
-    if (!Number.isFinite(ms)) return;
-    var prevMs = hoverIdx > 0 ? processed.ms[hoverIdx - 1] : ms;
-    var nextMs = hoverIdx < processed.ms.length - 1 ? processed.ms[hoverIdx + 1] : ms;
-    var earliest = Math.floor((prevMs + ms) / 2 / 1000);
-    var latest = Math.floor((ms + nextMs) / 2 / 1000);
-    window.location.href = buildSearchUrl({
-      earliestSec: earliest,
-      latestSec: latest,
-      query: drilldownQuery
-    });
-  }, [drilldown, hoverIdx, processed, drilldownQuery]);
+  (0,react.useEffect)(function () {
+    if (!drilldown || !processed.timeLike || n < 2) return undefined;
+    function onDocClick(e) {
+      var el = chartAreaRef.current;
+      if (!el) return;
+      var rect = el.getBoundingClientRect();
+      if (!rect.width || e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+        return;
+      }
+      var scaleX = width / rect.width;
+      var x = (e.clientX - rect.left) * scaleX;
+      var relX = x - effPadLeft;
+      var idx = clamp(Math.round(relX / xStep), 0, n - 1);
+      var ms = processed.ms[idx];
+      if (!Number.isFinite(ms)) return;
+      var prevMs = idx > 0 ? processed.ms[idx - 1] : ms;
+      var nextMs = idx < processed.ms.length - 1 ? processed.ms[idx + 1] : ms;
+      var earliest = Math.floor((prevMs + ms) / 2 / 1000);
+      var latest = Math.floor((ms + nextMs) / 2 / 1000);
+      window.location.href = buildSearchUrl({
+        earliestSec: earliest,
+        latestSec: latest,
+        query: drilldownQuery
+      });
+    }
+    document.addEventListener('click', onDocClick, true);
+    return function () {
+      return document.removeEventListener('click', onDocClick, true);
+    };
+  }, [drilldown, drilldownQuery, processed.timeLike, processed.ms, n, width, effPadLeft, xStep]);
   var goodCount = processed.series.reduce(function (acc, s) {
     return acc + s.values.length;
   }, 0);
@@ -1161,16 +1274,21 @@ function LineChart(_ref3) {
       opacity: 0.95,
       marginLeft: centerMajor ? 6 : undefined
     }
-  }, formatDelta(delta))) : null, /*#__PURE__*/react.createElement("svg", {
+  }, formatDelta(delta))) : null, /*#__PURE__*/react.createElement("div", {
+    ref: chartAreaRef,
+    "data-testid": "splunkstuff-line-chart-area",
+    style: {
+      position: 'relative',
+      width: '100%',
+      height: chartH
+    }
+  }, /*#__PURE__*/react.createElement("svg", {
     width: width,
     height: chartH,
     style: {
       display: 'block',
-      cursor: drilldown ? 'pointer' : 'default'
-    },
-    onMouseMove: showHover ? onMove : undefined,
-    onMouseLeave: showHover ? onLeave : undefined,
-    onClick: drilldown ? onClick : undefined
+      pointerEvents: 'none'
+    }
   }, thLo != null ? /*#__PURE__*/react.createElement("rect", {
     x: effPadLeft,
     y: 0,
@@ -1261,7 +1379,7 @@ function LineChart(_ref3) {
     fill: stroke,
     stroke: "rgba(0,0,0,0.35)",
     strokeWidth: 1
-  })) : null)), showHover && showHoverAnnotation && hoverIdx != null ? /*#__PURE__*/react.createElement("div", {
+  })) : null))), showHover && showHoverAnnotation && hoverIdx != null ? /*#__PURE__*/react.createElement("div", {
     style: {
       position: 'absolute',
       left: 10,
@@ -1284,12 +1402,13 @@ function LineChart(_ref3) {
     style: {
       opacity: 0.9
     }
-  }, " \u2014 ", hoverTime) : null) : null, showHover && hoverIdx != null ? /*#__PURE__*/react.createElement("div", {
+  }, " \u2014 ", hoverTime) : null) : null, showHover && hoverIdx != null && tooltipViewport && typeof document !== 'undefined' ? /*#__PURE__*/(0,react_dom.createPortal)(/*#__PURE__*/react.createElement("div", {
+    "data-testid": "splunkstuff-line-hover-tooltip",
     style: {
-      position: 'absolute',
-      left: clamp(hx, 8, width - 8),
-      top: headerH + Math.max(8, hy - 8),
-      transform: 'translate(-50%, -100%)',
+      position: 'fixed',
+      left: tooltipViewport.x,
+      top: tooltipViewport.y,
+      transform: 'translate(-50%, calc(-100% - 8px))',
       pointerEvents: 'none',
       background: 'rgba(15, 25, 45, 0.96)',
       color: '#fff',
@@ -1299,7 +1418,7 @@ function LineChart(_ref3) {
       borderRadius: 4,
       boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
       whiteSpace: 'nowrap',
-      zIndex: 2
+      zIndex: 2147483646
     }
   }, /*#__PURE__*/react.createElement("div", {
     style: {
@@ -1315,7 +1434,7 @@ function LineChart(_ref3) {
       opacity: 0.88,
       marginTop: 2
     }
-  }, hoverTime) : null) : null);
+  }, hoverTime) : null), document.body) : null);
 }
 ;// ./src/main/webapp/visualizations/fixed_loaded_line/FixedLoadedLineApp.jsx
 function FixedLoadedLineApp_slicedToArray(r, e) { return FixedLoadedLineApp_arrayWithHoles(r) || FixedLoadedLineApp_iterableToArrayLimit(r, e) || FixedLoadedLineApp_unsupportedIterableToArray(r, e) || FixedLoadedLineApp_nonIterableRest(); }
@@ -1366,7 +1485,9 @@ function FixedLoadedLineApp(_ref) {
     drilldown = _ref$drilldown === void 0 ? false : _ref$drilldown,
     drilldownQuery = _ref.drilldownQuery,
     _ref$showXAxis = _ref.showXAxis,
-    showXAxis = _ref$showXAxis === void 0 ? false : _ref$showXAxis;
+    showXAxis = _ref$showXAxis === void 0 ? false : _ref$showXAxis,
+    _ref$showHover = _ref.showHover,
+    showHover = _ref$showHover === void 0 ? true : _ref$showHover;
   var hostRef = (0,react.useRef)(null);
   var _useState = (0,react.useState)({
       width: 400,
@@ -1407,7 +1528,8 @@ function FixedLoadedLineApp(_ref) {
       width: '100%',
       height: '100%',
       minHeight: 80,
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      pointerEvents: 'auto'
     }
   }, /*#__PURE__*/react.createElement(LineChart, {
     values: values,
@@ -1438,7 +1560,8 @@ function FixedLoadedLineApp(_ref) {
     anomalySensitivity: anomalySensitivity,
     drilldown: drilldown,
     drilldownQuery: drilldownQuery,
-    showXAxis: showXAxis
+    showXAxis: showXAxis,
+    showHover: showHover
   }));
 }
 ;// ./src/main/webapp/visualizations/fixed_loaded_line/vizMount.jsx
@@ -1476,7 +1599,18 @@ function visualization_amd_arrayLikeToArray(r, a) { (null == a || a > r.length) 
  */
 
 
-var NS = 'display.visualizations.custom.splunk-one.fixed_loaded_line.';
+
+var NS = 'display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line.';
+function enableAncestorPointerEvents(el) {
+  var maxDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 24;
+  var node = el;
+  var depth = 0;
+  while (node && depth < maxDepth) {
+    node.style.pointerEvents = 'auto';
+    node = node.parentElement;
+    depth += 1;
+  }
+}
 function readConfig(config, prop, defaultVal) {
   var v = config[NS + prop];
   if (v === undefined || v === null || v === '') {
@@ -1647,17 +1781,29 @@ function buildComparisonValues(values) {
       }];
     }
     var useThreshold = readBool(config, 'threshold', false);
+    var goodColor = readConfig(config, 'goodColor', '#01417F');
+    var badColor = readConfig(config, 'badColor', '#DFA611');
+    var textColor = readConfig(config, 'textColor', '#FFFFFF');
+    var background = readConfig(config, 'background', '#0B1F3B');
+    if (values.length >= 2) {
+      var delta = trendDelta(values);
+      applyTrendHostStyle(this.el, trendBackground(delta, goodColor, badColor), textColor);
+    } else {
+      applyTrendHostStyle(this.el, background, textColor);
+    }
+    this.el.style.pointerEvents = 'auto';
+    enableAncestorPointerEvents(this.el);
     mountViz(this.el, {
       values: values,
       times: times,
       comparisonSeries: comparisonSeries,
       min: readFloat(config, 'min', 0),
       max: readFloat(config, 'max', 100),
-      goodColor: readConfig(config, 'goodColor', '#01417F'),
-      badColor: readConfig(config, 'badColor', '#DFA611'),
-      textColor: readConfig(config, 'textColor', '#FFFFFF'),
+      goodColor: goodColor,
+      badColor: badColor,
+      textColor: textColor,
       stroke: readConfig(config, 'stroke', '#FFFFFF'),
-      background: readConfig(config, 'background', '#0B1F3B'),
+      background: background,
       unit: readConfig(config, 'unit', '%'),
       subheader: readConfig(config, 'subheader', ''),
       smoothing: readConfig(config, 'smoothing', 'none'),
@@ -1669,6 +1815,7 @@ function buildComparisonValues(values) {
       anomalyMode: readConfig(config, 'anomalies', 'none'),
       anomalySensitivity: readInt(config, 'anomalySensitivity', 3),
       showXAxis: readBool(config, 'showXAxis', false),
+      showHover: readBool(config, 'showHover', true),
       drilldown: readBool(config, 'drilldown', false),
       drilldownQuery: readConfig(config, 'drilldownQuery', 'search index=_internal | stats count')
     });

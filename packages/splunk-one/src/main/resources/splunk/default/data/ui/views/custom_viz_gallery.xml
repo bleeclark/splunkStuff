@@ -18,7 +18,7 @@
                 <earliest>-4h@h</earliest>
                 <latest>now</latest>
             </search>
-            <viz type="splunk-one.line_single_value">
+            <viz type="so_BUI_pickulationts.line_single_value">
                 <search base="splunkstuff_gallery_line_single_value" />
             </viz>
             <table>
@@ -48,7 +48,7 @@
                 <earliest>-4h@h</earliest>
                 <latest>now</latest>
             </search>
-            <viz type="splunk-one.fixed_single_value">
+            <viz type="so_BUI_pickulationts.fixed_single_value">
                 <search base="splunkstuff_gallery_fixed_single_value" />
             </viz>
             <table>
@@ -80,7 +80,7 @@
                 <earliest>-4h@h</earliest>
                 <latest>now</latest>
             </search>
-            <viz type="splunk-one.fixed_single_value_react">
+            <viz type="so_BUI_pickulationts.fixed_single_value_react">
                 <search base="splunkstuff_gallery_fixed_single_value_react" />
             </viz>
             <table>
@@ -110,12 +110,44 @@
                 <earliest>-4h@h</earliest>
                 <latest>now</latest>
             </search>
-            <viz type="splunk-one.fixed_loaded_line">
+            <viz type="so_BUI_pickulationts.fixed_loaded_line">
                 <search base="splunkstuff_gallery_fixed_loaded_line" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line.showHover">true</option>
             </viz>
             <table>
                 <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
                 <search base="splunkstuff_gallery_fixed_loaded_line">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Fixed loaded line vanilla AMD (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_fixed_loaded_line_vanilla">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.fixed_loaded_line_vanilla">
+                <search base="splunkstuff_gallery_fixed_loaded_line_vanilla" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line_vanilla.showHover">true</option>
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_fixed_loaded_line_vanilla">
                     <query>| sort 0 _time | tail 20</query>
                 </search>
                 <option name="count">20</option>

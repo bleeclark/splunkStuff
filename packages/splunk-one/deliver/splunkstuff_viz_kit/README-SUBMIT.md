@@ -4,7 +4,7 @@ Splunk does not use a single “viz file.” A dashboard custom visualization is
 
 ## What ships in this repo
 
-| Role | Path (inside the Splunk app, e.g. `splunk-one`) |
+| Role | Path (inside the Splunk app, e.g. `so_BUI_pickulationts`) |
 | --- | --- |
 | Viz logic | `appserver/static/visualizations/<viz_id>/visualization.js` |
 | Format editor UI | `appserver/static/visualizations/<viz_id>/formatter.html` |

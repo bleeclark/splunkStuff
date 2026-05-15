@@ -196,14 +196,14 @@ getUserTheme()
                 </Card>
 
                 <Heading level={2} style={{ marginBottom: 12 }}>
-                    2. Directory layout (inside the app, e.g. splunk-one)
+                    2. Directory layout (inside the app, e.g. so_BUI_pickulationts)
                 </Heading>
                 <Card style={{ marginBottom: 24 }}>
                     <Card.Body>
                         <Paragraph style={{ marginTop: 0 }}>
                             Per Splunk&apos;s layout (see API reference), add:
                         </Paragraph>
-                        <Pre>{`$SPLUNK_HOME/etc/apps/splunk-one/
+                        <Pre>{`$SPLUNK_HOME/etc/apps/so_BUI_pickulationts/
   appserver/static/visualizations/<viz_stanza_name>/
     src/visualization_source.js
     webpack.config.js
@@ -349,8 +349,8 @@ search_fragment = | timechart span=1h avg(metric) as value`}</Pre>
                             Optional defaults live in <Code>savedsearches.conf</Code> using the
                             full namespace, for example:
                         </Paragraph>
-                        <Pre>{`display.visualizations.custom.splunk-one.fixed_single_value.sparkMin = 0
-display.visualizations.custom.splunk-one.fixed_single_value.sparkMax = 100`}</Pre>
+                        <Pre>{`display.visualizations.custom.so_BUI_pickulationts.fixed_single_value.sparkMin = 0
+display.visualizations.custom.so_BUI_pickulationts.fixed_single_value.sparkMax = 100`}</Pre>
                     </Card.Body>
                 </Card>
 
@@ -394,7 +394,7 @@ display.visualizations.custom.splunk-one.fixed_single_value.sparkMax = 100`}</Pr
                             </List.Item>
                             <List.Item>
                                 Check the browser network tab for 404s on{' '}
-                                <Code>/static/app/splunk-one/visualizations/...</Code>.
+                                <Code>/static/app/so_BUI_pickulationts/visualizations/...</Code>.
                             </List.Item>
                         </List>
                     </Card.Body>

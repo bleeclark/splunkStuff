@@ -8,7 +8,7 @@
 import SplunkVisualizationBase from 'api/SplunkVisualizationBase';
 import { mountViz, unmountViz } from './vizMount';
 
-const NS = 'display.visualizations.custom.splunk-one.fixed_single_value_react.';
+const NS = 'display.visualizations.custom.so_BUI_pickulationts.fixed_single_value_react.';
 
 function fieldName(fields, idx) {
     if (!fields || idx < 0 || idx >= fields.length) return '';

@@ -11,7 +11,10 @@
  *   headline uses the latest `_time` point.
  * - `updateView` renders the DOM + sparkline based on `{ values }` and formatter props in `config`.
  */
-define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
+define([
+    'api/SplunkVisualizationBase',
+    '../_shared/splunkstuffTrendColors',
+], function (SplunkVisualizationBase, trendColors) {
     /**
      * Formatter property namespace.
      *
@@ -20,9 +23,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
      *   "display.visualizations.custom.<app>.<viz_name>"
      *
      * For this app/viz, that becomes:
-     *   display.visualizations.custom.splunk-one.fixed_single_value
+     *   display.visualizations.custom.so_BUI_pickulationts.fixed_single_value
      */
-    var NS = 'display.visualizations.custom.splunk-one.fixed_single_value.';
+    var NS = 'display.visualizations.custom.so_BUI_pickulationts.fixed_single_value.';
 
     function fieldName(fields, idx) {
         if (!fields || idx < 0 || idx >= fields.length) {
@@ -261,12 +264,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var unit = String(readConfig(config, 'unit', '%') || '');
             var subheader = String(readConfig(config, 'subheader', '') || '');
 
-            // Series semantics: last point in time order = latest _time = "major" value.
+            var delta = trendColors.trendDelta(values);
+            var bg = trendColors.trendBackground(delta, goodColor, badColor);
+            trendColors.applyTrendHostStyle(this.el, bg, textColor);
+
             var last = values[values.length - 1];
-            var prev = values.length > 1 ? values[values.length - 2] : last;
-            var delta = last - prev;
-            var isGood = delta >= 0;
-            var bg = isGood ? goodColor : badColor;
 
             var root = document.createElement('div');
             root.className = 'splunk-one-fixed-single-value-viz';

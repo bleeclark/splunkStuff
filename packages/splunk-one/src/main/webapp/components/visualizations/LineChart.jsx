@@ -1,4 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { trendBackground } from '../../lib/splunkstuffTrendColors';
 
 function clamp(v, lo, hi) {
     return Math.max(lo, Math.min(hi, v));
@@ -289,8 +291,7 @@ export default function LineChart({
     const last = primaryValues.length ? primaryValues[primaryValues.length - 1] : NaN;
     const prev = primaryValues.length > 1 ? primaryValues[primaryValues.length - 2] : last;
     const delta = last - prev;
-    const isGood = Number.isFinite(delta) ? delta >= 0 : true;
-    const trendBg = isGood ? goodColor : badColor;
+    const trendBg = trendBackground(delta, goodColor, badColor);
 
     const containerBg = showMajor
         ? colorPlacement === 'top'
@@ -387,6 +388,9 @@ export default function LineChart({
     }, [paths, anomalyMode, anomalySensitivity]);
 
     const [hoverIdx, setHoverIdx] = useState(null);
+    /** Viewport coords for fixed tooltip (`createPortal`) — survives Splunk overlays + viz overflow clipping. */
+    const [tooltipViewport, setTooltipViewport] = useState(null);
+    const chartAreaRef = useRef(null);
     const innerW = Math.max(1, width - effPadLeft - effPadRight);
     const n = processed.len;
     const xStep = n > 1 ? innerW / (n - 1) : innerW;
@@ -401,37 +405,78 @@ export default function LineChart({
         [chartH, effPadTop, effPadBottom, domain]
     );
 
-    const onMove = useCallback(
-        (e) => {
-            if (!showHover || n < 2) return;
-            const svg = e.currentTarget;
-            const rect = svg.getBoundingClientRect();
-            if (!rect.width) return;
+    useEffect(() => {
+        if (!showHover || n < 2) return undefined;
+
+        function onDocPointerMove(e) {
+            const el = chartAreaRef.current;
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            if (
+                !rect.width ||
+                e.clientX < rect.left ||
+                e.clientX > rect.right ||
+                e.clientY < rect.top ||
+                e.clientY > rect.bottom
+            ) {
+                setHoverIdx(null);
+                setTooltipViewport(null);
+                return;
+            }
             const scaleX = width / rect.width;
             const x = (e.clientX - rect.left) * scaleX;
             const relX = x - effPadLeft;
             const idx = clamp(Math.round(relX / xStep), 0, n - 1);
             setHoverIdx(idx);
-        },
-        [showHover, n, width, effPadLeft, xStep]
-    );
+            setTooltipViewport({ x: e.clientX, y: e.clientY });
+        }
 
-    const onLeave = useCallback(() => setHoverIdx(null), []);
+        document.addEventListener('pointermove', onDocPointerMove, true);
+        document.addEventListener('mousemove', onDocPointerMove, true);
+        return () => {
+            document.removeEventListener('pointermove', onDocPointerMove, true);
+            document.removeEventListener('mousemove', onDocPointerMove, true);
+            setHoverIdx(null);
+            setTooltipViewport(null);
+        };
+    }, [showHover, n, width, effPadLeft, xStep]);
 
-    const onClick = useCallback(() => {
-        if (!drilldown || hoverIdx == null || !processed.timeLike) return;
-        const ms = processed.ms[hoverIdx];
-        if (!Number.isFinite(ms)) return;
-        const prevMs = hoverIdx > 0 ? processed.ms[hoverIdx - 1] : ms;
-        const nextMs = hoverIdx < processed.ms.length - 1 ? processed.ms[hoverIdx + 1] : ms;
-        const earliest = Math.floor(((prevMs + ms) / 2) / 1000);
-        const latest = Math.floor(((ms + nextMs) / 2) / 1000);
-        window.location.href = buildSearchUrl({
-            earliestSec: earliest,
-            latestSec: latest,
-            query: drilldownQuery,
-        });
-    }, [drilldown, hoverIdx, processed, drilldownQuery]);
+    useEffect(() => {
+        if (!drilldown || !processed.timeLike || n < 2) return undefined;
+
+        function onDocClick(e) {
+            const el = chartAreaRef.current;
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            if (
+                !rect.width ||
+                e.clientX < rect.left ||
+                e.clientX > rect.right ||
+                e.clientY < rect.top ||
+                e.clientY > rect.bottom
+            ) {
+                return;
+            }
+            const scaleX = width / rect.width;
+            const x = (e.clientX - rect.left) * scaleX;
+            const relX = x - effPadLeft;
+            const idx = clamp(Math.round(relX / xStep), 0, n - 1);
+            const ms = processed.ms[idx];
+            if (!Number.isFinite(ms)) return;
+            const prevMs = idx > 0 ? processed.ms[idx - 1] : ms;
+            const nextMs = idx < processed.ms.length - 1 ? processed.ms[idx + 1] : ms;
+            const earliest = Math.floor(((prevMs + ms) / 2) / 1000);
+            const latest = Math.floor(((ms + nextMs) / 2) / 1000);
+            window.location.href = buildSearchUrl({
+                earliestSec: earliest,
+                latestSec: latest,
+                query: drilldownQuery,
+            });
+        }
+
+        document.addEventListener('click', onDocClick, true);
+        return () => document.removeEventListener('click', onDocClick, true);
+    }, [drilldown, drilldownQuery, processed.timeLike, processed.ms, n, width, effPadLeft, xStep]);
 
     const goodCount = processed.series.reduce((acc, s) => acc + s.values.length, 0);
     if (n < 2) {
@@ -572,13 +617,18 @@ export default function LineChart({
                     </div>
                 ) : null}
 
+                <div
+                    ref={chartAreaRef}
+                    data-testid="splunkstuff-line-chart-area"
+                    style={{ position: 'relative', width: '100%', height: chartH }}
+                >
                 <svg
                     width={width}
                     height={chartH}
-                    style={{ display: 'block', cursor: drilldown ? 'pointer' : 'default' }}
-                    onMouseMove={showHover ? onMove : undefined}
-                    onMouseLeave={showHover ? onLeave : undefined}
-                    onClick={drilldown ? onClick : undefined}
+                    style={{
+                        display: 'block',
+                        pointerEvents: 'none',
+                    }}
                 >
                     {/* threshold shade (out-of-band) */}
                     {thLo != null ? (
@@ -707,6 +757,7 @@ export default function LineChart({
                         </g>
                     ) : null}
                 </svg>
+                </div>
             </div>
 
             {/* optional in-card annotation (disabled by default) */}
@@ -733,34 +784,40 @@ export default function LineChart({
                 </div>
             ) : null}
 
-            {/* floating tooltip */}
-            {showHover && hoverIdx != null ? (
-                <div
-                    style={{
-                        position: 'absolute',
-                        left: clamp(hx, 8, width - 8),
-                        top: headerH + Math.max(8, hy - 8),
-                        transform: 'translate(-50%, -100%)',
-                        pointerEvents: 'none',
-                        background: 'rgba(15, 25, 45, 0.96)',
-                        color: '#fff',
-                        fontSize: 11,
-                        lineHeight: 1.35,
-                        padding: '6px 8px',
-                        borderRadius: 4,
-                        boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
-                        whiteSpace: 'nowrap',
-                        zIndex: 2,
-                    }}
-                >
-                    <div style={{ fontWeight: 600 }}>
-                        {hoverValue}
-                        {unitText || ''}
-                        {anomalyFlags[hoverIdx] ? <span style={{ marginLeft: 6, opacity: 0.9 }}>(anomaly)</span> : null}
-                    </div>
-                    {hoverTime ? <div style={{ opacity: 0.88, marginTop: 2 }}>{hoverTime}</div> : null}
-                </div>
-            ) : null}
+            {/* floating tooltip (portal avoids Splunk panel clipping + stacking under overlays) */}
+            {showHover && hoverIdx != null && tooltipViewport && typeof document !== 'undefined'
+                ? createPortal(
+                      <div
+                          data-testid="splunkstuff-line-hover-tooltip"
+                          style={{
+                              position: 'fixed',
+                              left: tooltipViewport.x,
+                              top: tooltipViewport.y,
+                              transform: 'translate(-50%, calc(-100% - 8px))',
+                              pointerEvents: 'none',
+                              background: 'rgba(15, 25, 45, 0.96)',
+                              color: '#fff',
+                              fontSize: 11,
+                              lineHeight: 1.35,
+                              padding: '6px 8px',
+                              borderRadius: 4,
+                              boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
+                              whiteSpace: 'nowrap',
+                              zIndex: 2147483646,
+                          }}
+                      >
+                          <div style={{ fontWeight: 600 }}>
+                              {hoverValue}
+                              {unitText || ''}
+                              {anomalyFlags[hoverIdx] ? (
+                                  <span style={{ marginLeft: 6, opacity: 0.9 }}>(anomaly)</span>
+                              ) : null}
+                          </div>
+                          {hoverTime ? <div style={{ opacity: 0.88, marginTop: 2 }}>{hoverTime}</div> : null}
+                      </div>,
+                      document.body
+                  )
+                : null}
         </div>
     );
 }

@@ -26,6 +26,7 @@ export default function FixedLoadedLineApp({
     drilldown = false,
     drilldownQuery,
     showXAxis = false,
+    showHover = true,
 }) {
     const hostRef = useRef(null);
     const [size, setSize] = useState({ width: 400, height: 105 });
@@ -54,7 +55,13 @@ export default function FixedLoadedLineApp({
         <div
             ref={hostRef}
             className="splunk-one-fixed-loaded-line-viz"
-            style={{ width: '100%', height: '100%', minHeight: 80, boxSizing: 'border-box' }}
+            style={{
+                width: '100%',
+                height: '100%',
+                minHeight: 80,
+                boxSizing: 'border-box',
+                pointerEvents: 'auto',
+            }}
         >
             <LineChart
                 values={values}
@@ -86,6 +93,7 @@ export default function FixedLoadedLineApp({
                 drilldown={drilldown}
                 drilldownQuery={drilldownQuery}
                 showXAxis={showXAxis}
+                showHover={showHover}
             />
         </div>
     );

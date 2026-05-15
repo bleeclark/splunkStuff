@@ -14,6 +14,7 @@ const {
     splunkAppStaticOutputDir: fixedLoadedLineStaticDir,
     deliverOutputDir: fixedLoadedLineDeliverDir,
 } = require('./webpack.fixed-loaded-line.config');
+const CopyReadableVanillaVizPlugin = require('./webpack.copy-readable-vanilla-viz.plugin');
 
 const entries = fs
     .readdirSync(path.join(__dirname, 'src/main/webapp/pages'))
@@ -30,6 +31,7 @@ const pagesConfig = webpackMerge(baseConfig, {
         filename: '[name].js',
     },
     plugins: [
+        new CopyReadableVanillaVizPlugin(),
         new CopyWebpackPlugin({
             patterns: [
                 {
@@ -43,6 +45,13 @@ const pagesConfig = webpackMerge(baseConfig, {
                         'src/main/resources/splunk/appserver/static/visualizations/line_single_value'
                     ),
                     to: path.join(__dirname, 'deliver/line_single_value'),
+                },
+                {
+                    from: path.join(
+                        __dirname,
+                        'src/main/resources/splunk/appserver/static/visualizations/fixed_loaded_line_vanilla'
+                    ),
+                    to: path.join(__dirname, 'deliver/fixed_loaded_line_vanilla'),
                 },
                 {
                     from: path.join(

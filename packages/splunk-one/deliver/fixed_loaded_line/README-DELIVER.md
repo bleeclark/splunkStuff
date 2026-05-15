@@ -9,7 +9,7 @@ Splunk dashboard **custom visualization** bundled with **Webpack** as AMD:
 
 Splunk folder / viz id: **`fixed_loaded_line`**. Formatter prefix:
 
-`display.visualizations.custom.splunk-one.fixed_loaded_line.*`
+`display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line.*`
 
 ## Build
 

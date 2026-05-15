@@ -15,7 +15,10 @@
  *
  * Debugging: set DEBUG to true and watch the browser console while the viz runs.
  */
-define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
+define([
+    'api/SplunkVisualizationBase',
+    '../_shared/splunkstuffTrendColors',
+], function (SplunkVisualizationBase, trendColors) {
     /** When true, logs to console (dev only; set false before heavy dashboard use). */
     var DEBUG = false;
 
@@ -25,7 +28,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
      * Formatter property namespace — must match visualizations.conf stanza + app id.
      * See formatter.html for each prop name.
      */
-    var NS = 'display.visualizations.custom.splunk-one.line_single_value.';
+    var NS = 'display.visualizations.custom.so_BUI_pickulationts.line_single_value.';
 
     function fieldName(fields, idx) {
         if (!fields || idx < 0 || idx >= fields.length) {
@@ -280,11 +283,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             log('updateView: scale', scale, 'subheader len', subheader.length, 'points', values.length);
 
+            var delta = trendColors.trendDelta(values);
+            var bg = trendColors.trendBackground(delta, goodColor, badColor);
+            trendColors.applyTrendHostStyle(this.el, bg, textColor);
+
             var last = values[values.length - 1];
-            var prev = values.length > 1 ? values[values.length - 2] : last;
-            var delta = last - prev;
-            var isGood = delta >= 0;
-            var bg = isGood ? goodColor : badColor;
 
             var root = document.createElement('div');
             root.className = 'splunk-one-line-single-value-viz';

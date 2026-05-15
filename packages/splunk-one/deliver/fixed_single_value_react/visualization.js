@@ -546,6 +546,78 @@ var SplunkVisualizationBase_default = /*#__PURE__*/__webpack_require__.n(SplunkV
 var client = __webpack_require__(873);
 // EXTERNAL MODULE: ../../node_modules/react/index.js
 var react = __webpack_require__(41);
+;// ./src/main/webapp/lib/splunkstuffTrendColors.js
+/**
+ * Keith/ITSI trend background contract for SplunkStuff visualizations.
+ * delta >= 0 → up color (blue); delta < 0 → down color (gold).
+ */
+
+var DEFAULT_UP_COLOR = '#01417F';
+var DEFAULT_DOWN_COLOR = '#DFA611';
+function trendDelta(values) {
+  if (!values || !values.length) {
+    return NaN;
+  }
+  var len = values.length;
+  var last = Number(values[len - 1]);
+  var prev = len > 1 ? Number(values[len - 2]) : last;
+  if (!Number.isFinite(last) || !Number.isFinite(prev)) {
+    return NaN;
+  }
+  return last - prev;
+}
+
+/** @param {number} delta @param {string} upColor @param {string} downColor */
+function trendBackground(delta, upColor, downColor) {
+  var isUp = Number.isFinite(delta) ? delta >= 0 : true;
+  return isUp ? upColor : downColor;
+}
+
+/** Paint a surface with trend background; overrides Splunk formatter `background`. */
+function applyTrendSurfaceStyle(el, bg) {
+  if (!el) {
+    return;
+  }
+  el.style.backgroundColor = bg;
+  el.style.setProperty('background-color', bg, 'important');
+}
+
+/** Override Splunk formatter background on the viz host element. */
+function applyTrendHostStyle(el, bg, textColor) {
+  if (!el) {
+    return;
+  }
+  el.style.position = 'relative';
+  applyTrendSurfaceStyle(el, bg);
+  el.style.setProperty('background', bg, 'important');
+  el.style.color = textColor;
+  el.style.overflow = 'hidden';
+  el.style.width = '100%';
+  el.style.height = '100%';
+  el.style.minHeight = '100%';
+  el.style.boxSizing = 'border-box';
+}
+
+/** Re-apply trend bg after Splunk formatter may have painted host/parent navy. */
+function repaintTrendTile(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
+  applyTrendHostStyle(hostEl, bg, textColor);
+  if (rootEl) {
+    applyTrendSurfaceStyle(rootEl, bg);
+  }
+  if (majorEl) {
+    applyTrendSurfaceStyle(majorEl, bg);
+  }
+  if (chartEl) {
+    applyTrendSurfaceStyle(chartEl, bg);
+  }
+  var p = hostEl ? hostEl.parentElement : null;
+  var depth = 0;
+  while (p && depth < 4) {
+    applyTrendSurfaceStyle(p, bg);
+    p = p.parentElement;
+    depth += 1;
+  }
+}
 ;// ./src/main/webapp/visualizations/fixed_single_value_react/sparkPath.js
 function sparkBounds(minIn, maxIn) {
   var lo = parseFloat(String(minIn), 10);
@@ -587,6 +659,7 @@ function sparkPath(values, w, h, padL, padR, padT, padB, vmin, vmax) {
 ;// ./src/main/webapp/visualizations/fixed_single_value_react/VizApp.jsx
 
 
+
 function sanitizeHexColor(raw, fallback) {
   if (typeof raw !== 'string') {
     return fallback;
@@ -605,9 +678,9 @@ function VizApp(_ref) {
     _ref$sparkMax = _ref.sparkMax,
     sparkMax = _ref$sparkMax === void 0 ? 100 : _ref$sparkMax,
     _ref$goodColor = _ref.goodColor,
-    goodColor = _ref$goodColor === void 0 ? '#01417F' : _ref$goodColor,
+    goodColor = _ref$goodColor === void 0 ? DEFAULT_UP_COLOR : _ref$goodColor,
     _ref$badColor = _ref.badColor,
-    badColor = _ref$badColor === void 0 ? '#DFA611' : _ref$badColor,
+    badColor = _ref$badColor === void 0 ? DEFAULT_DOWN_COLOR : _ref$badColor,
     _ref$textColor = _ref.textColor,
     textColor = _ref$textColor === void 0 ? '#FFFFFF' : _ref$textColor,
     _ref$sparkStroke = _ref.sparkStroke,
@@ -623,19 +696,14 @@ function VizApp(_ref) {
     return sparkBounds(sparkMin, sparkMax);
   }, [sparkMin, sparkMax]);
   var _useMemo = (0,react.useMemo)(function () {
-      var len = nums.length;
-      var l = len ? Number(nums[len - 1]) : NaN;
-      var p = len > 1 ? Number(nums[len - 2]) : l;
-      var safeLast = Number.isFinite(l) ? l : NaN;
-      var safePrev = Number.isFinite(p) ? p : safeLast;
-      var d = Number.isFinite(safeLast) && Number.isFinite(safePrev) ? safeLast - safePrev : NaN;
-      var good = Number.isFinite(d) ? d >= 0 : true;
-      var safeGood = sanitizeHexColor(goodColor, '#01417F');
-      var safeBad = sanitizeHexColor(badColor, '#DFA611');
+      var safeGood = sanitizeHexColor(goodColor, DEFAULT_UP_COLOR);
+      var safeBad = sanitizeHexColor(badColor, DEFAULT_DOWN_COLOR);
+      var d = trendDelta(nums);
+      var safeLast = nums.length ? Number(nums[nums.length - 1]) : NaN;
       return {
         last: safeLast,
         delta: d,
-        bg: good ? safeGood : safeBad,
+        bg: trendBackground(d, safeGood, safeBad),
         safeText: sanitizeHexColor(textColor, '#FFFFFF'),
         safeStroke: sanitizeHexColor(sparkStroke, '#FFFFFF')
       };
@@ -739,7 +807,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
  */
 
 
-var NS = 'display.visualizations.custom.splunk-one.fixed_single_value_react.';
+var NS = 'display.visualizations.custom.so_BUI_pickulationts.fixed_single_value_react.';
 function fieldName(fields, idx) {
   if (!fields || idx < 0 || idx >= fields.length) return '';
   var f = fields[idx];

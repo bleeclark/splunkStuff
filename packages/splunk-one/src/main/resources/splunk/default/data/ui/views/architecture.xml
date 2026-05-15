@@ -1,4 +1,4 @@
 <?xml version="1.0"?>
-<view template="splunk-one:/templates/architecture.html" type="html">
+<view template="so_BUI_pickulationts:/templates/architecture.html" type="html">
     <label>Architecture</label>
 </view>

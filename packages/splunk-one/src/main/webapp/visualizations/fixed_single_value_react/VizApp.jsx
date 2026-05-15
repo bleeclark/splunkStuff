@@ -1,4 +1,10 @@
 import React, { useMemo } from 'react';
+import {
+    DEFAULT_DOWN_COLOR,
+    DEFAULT_UP_COLOR,
+    trendBackground,
+    trendDelta,
+} from '../../lib/splunkstuffTrendColors';
 import { sparkBounds, sparkPath } from './sparkPath';
 
 function sanitizeHexColor(raw, fallback) {
@@ -16,8 +22,8 @@ export default function VizApp({
     values = [],
     sparkMin = 0,
     sparkMax = 100,
-    goodColor = '#01417F',
-    badColor = '#DFA611',
+    goodColor = DEFAULT_UP_COLOR,
+    badColor = DEFAULT_DOWN_COLOR,
     textColor = '#FFFFFF',
     sparkStroke = '#FFFFFF',
     unit = '%',
@@ -37,24 +43,15 @@ export default function VizApp({
     );
 
     const { last, delta, bg, safeText, safeStroke } = useMemo(() => {
-        const len = nums.length;
-        const l = len ? Number(nums[len - 1]) : NaN;
-        const p = len > 1 ? Number(nums[len - 2]) : l;
-        const safeLast = Number.isFinite(l) ? l : NaN;
-        const safePrev = Number.isFinite(p) ? p : safeLast;
-        const d =
-            Number.isFinite(safeLast) && Number.isFinite(safePrev)
-                ? safeLast - safePrev
-                : NaN;
-        const good = Number.isFinite(d) ? d >= 0 : true;
-
-        const safeGood = sanitizeHexColor(goodColor, '#01417F');
-        const safeBad = sanitizeHexColor(badColor, '#DFA611');
+        const safeGood = sanitizeHexColor(goodColor, DEFAULT_UP_COLOR);
+        const safeBad = sanitizeHexColor(badColor, DEFAULT_DOWN_COLOR);
+        const d = trendDelta(nums);
+        const safeLast = nums.length ? Number(nums[nums.length - 1]) : NaN;
 
         return {
             last: safeLast,
             delta: d,
-            bg: good ? safeGood : safeBad,
+            bg: trendBackground(d, safeGood, safeBad),
             safeText: sanitizeHexColor(textColor, '#FFFFFF'),
             safeStroke: sanitizeHexColor(sparkStroke, '#FFFFFF'),
         };

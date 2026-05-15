@@ -60,16 +60,16 @@ getUserTheme()
                         </Paragraph>
                         <List>
                             <List.Item>
-                                Application id: <Code>splunk-one</Code>
+                                Application id: <Code>so_BUI_pickulationts</Code>
                             </List.Item>
                             <List.Item>
                                 Splunk Web URL prefix:{' '}
-                                <Code>/static/app/splunk-one/</Code>
+                                <Code>/static/app/so_BUI_pickulationts/</Code>
                             </List.Item>
                             <List.Item>
                                 Page bundles:{' '}
                                 <Code>
-                                    /static/app/splunk-one/pages/&lt;page&gt;.js
+                                    /static/app/so_BUI_pickulationts/pages/&lt;page&gt;.js
                                 </Code>{' '}
                                 (e.g. <Code>start.js</Code>,{' '}
                                 <Code>documentation.js</Code>)
@@ -81,7 +81,7 @@ getUserTheme()
                         <Heading level={3}>JavaScript module scope</Heading>
                         <Paragraph style={{ marginBottom: 16 }}>
                             Source lives under{' '}
-                            <Code>packages/splunk-one/src/main/webapp/</Code>. Page
+                            <Code>packages/so_BUI_pickulationts/src/main/webapp/</Code>. Page
                             entry folders map 1:1 to Webpack entry names (directory
                             names under <Code>pages/</Code>).
                         </Paragraph>
@@ -127,8 +127,8 @@ getUserTheme()
                             <List.Item>
                                 <strong>Local install</strong> —{' '}
                                 <Code>yarn link:app</Code> symlinks{' '}
-                                <Code>$SPLUNK_HOME/etc/apps/splunk-one</Code> to{' '}
-                                <Code>packages/splunk-one/stage</Code>.
+                                <Code>$SPLUNK_HOME/etc/apps/so_BUI_pickulationts</Code> to{' '}
+                                <Code>packages/so_BUI_pickulationts/stage</Code>.
                             </List.Item>
                         </List>
 
