@@ -63,9 +63,9 @@ const pagesConfig = webpackMerge(baseConfig, {
                 {
                     from: path.join(
                         __dirname,
-                        'src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line_verbose'
+                        'src/main/resources/splunk/appserver/static/visualizations/refactor_viz_manual'
                     ),
-                    to: path.join(__dirname, 'deliver/splunkstuff_kpi_line_verbose'),
+                    to: path.join(__dirname, 'deliver/refactor_viz_manual'),
                 },
                 {
                     from: path.join(

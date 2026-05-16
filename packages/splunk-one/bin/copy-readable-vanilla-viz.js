@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const shell = require('shelljs');
 
-const VANILLA_VIZ_IDS = ['line_single_value', 'fixed_loaded_line_vanilla', 'splunkstuff_kpi_line', 'splunkstuff_kpi_line_verbose'];
+const VANILLA_VIZ_IDS = ['line_single_value', 'fixed_loaded_line_vanilla', 'splunkstuff_kpi_line', 'splunkstuff_kpi_line_verbose', 'refactor_viz_manual'];
 
 /**
  * Vizes that ship extra AMD files next to visualization.js (empty by default; KPI verbose inlines helpers).

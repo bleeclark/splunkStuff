@@ -225,5 +225,38 @@
                 <option name="sortDir">asc</option>
             </table>
         </panel>
+        <panel>
+            <title>Refactor viz manual — clone of KPI verbose (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_refactor_viz_manual">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.refactor_viz_manual">
+                <search base="splunkstuff_gallery_refactor_viz_manual" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.refactor_viz_manual.showHover">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.refactor_viz_manual.showHoverAnnotation">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.refactor_viz_manual.colorPlacement">top</option>
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_refactor_viz_manual">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
     </row>
 </dashboard>
