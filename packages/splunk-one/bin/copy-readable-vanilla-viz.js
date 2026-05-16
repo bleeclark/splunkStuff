@@ -4,13 +4,19 @@ const fs = require('fs');
 const path = require('path');
 const shell = require('shelljs');
 
-const VANILLA_VIZ_IDS = ['line_single_value', 'fixed_loaded_line_vanilla', 'splunkstuff_kpi_line', 'splunkstuff_kpi_line_verbose', 'refactor_viz_manual'];
+const VANILLA_VIZ_IDS = ['simple_small_viz', 'line_single_value', 'fixed_loaded_line_vanilla', 'splunkstuff_kpi_line', 'splunkstuff_kpi_line_verbose', 'refactor_viz_manual'];
 
 /**
- * Vizes that ship extra AMD files next to visualization.js (empty by default; KPI verbose inlines helpers).
- * Source of truth for any listed files remains visualizations/_shared — synced before each deliver/stage copy.
+ * Per-viz copies of _shared AMD modules (same folder as visualization.js — no ../_shared in define()).
+ * Source of truth: visualizations/_shared/*.js — synced before each deliver/stage copy.
  */
-const VIZ_SELF_CONTAINED_SHARED = {};
+const VIZ_SELF_CONTAINED_SHARED = {
+    line_single_value: ['splunkstuffTrendColors.js'],
+    fixed_single_value: ['splunkstuffTrendColors.js'],
+    fixed_loaded_line_vanilla: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],
+    splunkstuff_kpi_line: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],
+    refactor_viz_manual: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],
+};
 
 /** Webpack writes these to src/.../static; pages copy can leave stage/ stale — sync after build. */
 const REACT_VIZ_IDS = ['fixed_loaded_line', 'fixed_single_value_react'];
@@ -60,7 +66,7 @@ function syncReactVizBundlesToStage(pkgRoot) {
 }
 
 /**
- * Copy hand-maintained vanilla AMD viz sources + optional embedded _shared copies to deliver/ and stage/.
+ * Copy hand-maintained vanilla AMD viz sources + per-viz splunkstuff*.js copies to deliver/ and stage/.
  */
 function copyReadableVanillaViz(pkgRoot) {
     const root = pkgRoot || path.join(__dirname, '..');
@@ -74,8 +80,9 @@ function copyReadableVanillaViz(pkgRoot) {
     ];
 
     const vanillaAssets = ['visualization.js', 'visualization.css'];
+    const vizIdsForAssetCopy = Array.from(new Set([].concat(VANILLA_VIZ_IDS, Object.keys(VIZ_SELF_CONTAINED_SHARED))));
 
-    VANILLA_VIZ_IDS.forEach((vizId) => {
+    vizIdsForAssetCopy.forEach((vizId) => {
         copyTargets.forEach((targetRoot) => {
             const destDir = path.join(targetRoot, vizId);
             shell.mkdir('-p', destDir);
@@ -132,7 +139,8 @@ function watchReadableVanillaViz(pkgRoot, onChange) {
         }, 100);
     };
 
-    VANILLA_VIZ_IDS.forEach((vizId) => {
+    const vizIdsToWatch = Array.from(new Set([].concat(VANILLA_VIZ_IDS, Object.keys(VIZ_SELF_CONTAINED_SHARED))));
+    vizIdsToWatch.forEach((vizId) => {
         const src = path.join(staticVizRoot, vizId, 'visualization.js');
         if (!fs.existsSync(src)) {
             return;

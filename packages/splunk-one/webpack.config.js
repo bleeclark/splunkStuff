@@ -42,6 +42,13 @@ const pagesConfig = webpackMerge(baseConfig, {
                 {
                     from: path.join(
                         __dirname,
+                        'src/main/resources/splunk/appserver/static/visualizations/simple_small_viz'
+                    ),
+                    to: path.join(__dirname, 'deliver/simple_small_viz'),
+                },
+                {
+                    from: path.join(
+                        __dirname,
                         'src/main/resources/splunk/appserver/static/visualizations/line_single_value'
                     ),
                     to: path.join(__dirname, 'deliver/line_single_value'),

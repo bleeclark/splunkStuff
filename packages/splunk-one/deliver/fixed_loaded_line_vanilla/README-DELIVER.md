@@ -23,7 +23,7 @@ yarn build
 
 Webpack does **not** overwrite this folder. `yarn build` copies it to `deliver/fixed_loaded_line_vanilla/` and into `stage/` via the static Splunk tree copy.
 
-**Shared AMD helpers** (same copy pass): `_shared/splunkstuffTrendColors.js`, `_shared/splunkstuffVizHoverMath.js` — install **both** next to this viz under `appserver/static/visualizations/_shared/` (or ship the whole `fixed_loaded_line_vanilla` + `_shared` tree from this repo).
+**Per-viz AMD helpers** (same folder as `visualization.js`): `splunkstuffTrendColors.js`, `splunkstuffVizHoverMath.js` — `yarn build` syncs them from the repo `visualizations/_shared/` tree; copy **`deliver/fixed_loaded_line_vanilla/`** as a whole for handoff.
 
 **Hover / tooltip:** Uses document-level capture listeners (`pointermove`, `pointerdown`, `mousemove`) and SVG **xMidYMid meet** math from `splunkstuffVizHoverMath.js` so index and crosshair match the cursor when the SVG is scaled. After editing, run `yarn verify:viz-hover` and redeploy; hard-refresh Splunk.
 

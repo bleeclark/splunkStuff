@@ -3,14 +3,14 @@
  * SplunkStuff — refactor viz manual (vanilla AMD)
  *
  * Same implementation as splunkstuff_kpi_line with formatter keys for refactor_viz_manual.
- * Loads trend + hover math from ../_shared (smaller than single-file inlined clone).
+ * Loads trend + hover from ./splunkstuffTrendColors and ./splunkstuffVizHoverMath (copies synced from repo visualizations/_shared at build).
  *
  * Debug: window.REFACTOR_VIZ_MANUAL_DEBUG = true; then hard-refresh. Logs prefixed with [refactor_viz_manual].
  */
 define([
     'api/SplunkVisualizationBase',
-    '../_shared/splunkstuffTrendColors',
-    '../_shared/splunkstuffVizHoverMath',
+    './splunkstuffTrendColors',
+    './splunkstuffVizHoverMath',
 ], function (SplunkVisualizationBase, trendColors, hoverMath) {
     var VIZ_ID = 'refactor_viz_manual';
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.refactor_viz_manual.';
@@ -81,8 +81,8 @@ define([
     }
 
     /**
-     * Older hand-copied _shared/splunkstuffTrendColors.js may lack repaintTrendTile; mirror the
-     * current shared implementation so panels still render until _shared is redeployed.
+     * Older splunkstuffTrendColors module may lack repaintTrendTile; mirror the
+     * current implementation so panels still render until per-viz helper is refreshed.
      */
     function repaintTrendTileCompat(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
         trendColors.applyTrendHostStyle(hostEl, bg, textColor);

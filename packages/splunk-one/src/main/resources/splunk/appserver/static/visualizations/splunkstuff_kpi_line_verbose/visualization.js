@@ -24,11 +24,11 @@
  * --- Hover / hit-testing ---
  * Pointer listeners run on document CAPTURE because Splunk dashboard chrome sits
  * above the viz and swallows bubble-phase hits. Index mapping uses SVG xMidYMid
- * meet letterboxing math inlined below (same behavior as _shared/splunkstuffVizHoverMath.js).
+ * meet letterboxing math inlined below (same behavior as the splunkstuffVizHoverMath AMD module).
  *
  * --- Inlined helpers (single-file deliver) ---
- * Trend surfaces + repaint: logic from _shared/splunkstuffTrendColors.js.
- * Hover mapping: logic from _shared/splunkstuffVizHoverMath.js.
+ * Trend surfaces + repaint: same contract as splunkstuffTrendColors AMD module.
+ * Hover mapping: same contract as splunkstuffVizHoverMath AMD module.
  * With SPLUNKSTUFF_KPI_LINE_VERBOSE_DEBUG, argument-shape warnings and API verification log once at load.
  *
  * --- Formatter options (prop key → purpose, default) ---
@@ -152,9 +152,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return Math.max(lo, Math.min(hi, v));
     }
 
-    /* =========================================================================
-     * Inlined: _shared/splunkstuffTrendColors.js (Keith/ITSI-style trend surfaces)
-     * ========================================================================= */
+    /* Inlined: splunkstuffTrendColors (Keith/ITSI-style trend surfaces) */
     var DEFAULT_UP_COLOR = '#01417F';
     var DEFAULT_DOWN_COLOR = '#DFA611';
 
@@ -243,9 +241,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         repaintTrendTile: repaintTrendTile,
     };
 
-    /* =========================================================================
-     * Inlined: _shared/splunkstuffVizHoverMath.js (pointer → series index)
-     * ========================================================================= */
+    /* Inlined: splunkstuffVizHoverMath (pointer → series index) */
     function viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH) {
         if (debugEnabled()) {
             if (typeof clientX !== 'number' || typeof clientY !== 'number' || !isFinite(clientX) || !isFinite(clientY)) {

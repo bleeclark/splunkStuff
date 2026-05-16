@@ -15,6 +15,13 @@ Splunk does not use a single “viz file.” A dashboard custom visualization is
 
 Per-viz “zip this folder” copies (without the app shell) still live under `deliver/<viz_id>/` with their own `README-DELIVER.md`.
 
+## Publish the viz instructions
+
+1. From the repo root, run `yarn build` so `packages/splunk-one/deliver/` contains the latest formatter HTML, visualization JS/CSS, thumbnails, snippets, and README files.
+2. Package `packages/splunk-one/deliver/splunkstuff_viz_kit/` plus any viz folders you are submitting from `packages/splunk-one/deliver/<viz_id>/`.
+3. Include this `README-SUBMIT.md` as the top-level instruction file. Each per-viz folder also includes a `README-DELIVER.md` with the exact Splunk folder name, formatter prefix, config snippet, and install notes for that visualization.
+4. Tell the publisher or Splunk admin to merge each `visualizations.conf.snippet` into `$SPLUNK_HOME/etc/apps/<your_app_id>/default/visualizations.conf`, copy each full `<viz_id>/` folder into `$SPLUNK_HOME/etc/apps/<your_app_id>/appserver/static/visualizations/`, then restart Splunk or reload per local ops practice.
+
 ## Install on Splunk
 
 1. Copy the whole app (or merge `default/` + `appserver/static/visualizations/` + `metadata/`) into `$SPLUNK_HOME/etc/apps/<your_app_id>/`.

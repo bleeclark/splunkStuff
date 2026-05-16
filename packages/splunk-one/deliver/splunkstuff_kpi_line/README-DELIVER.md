@@ -23,7 +23,7 @@ yarn build
 
 Webpack does **not** overwrite this folder. `yarn build` copies `visualization.js` + `visualization.css` to `deliver/splunkstuff_kpi_line/` and into `stage/` via the readable-vanilla sync.
 
-**Shared AMD helpers** (same copy pass): `_shared/splunkstuffTrendColors.js`, `_shared/splunkstuffVizHoverMath.js` — install **both** next to this viz under `appserver/static/visualizations/_shared/`.
+**Per-viz AMD helpers** (same folder as `visualization.js`): `splunkstuffTrendColors.js`, `splunkstuffVizHoverMath.js` — `yarn build` syncs them from the repo `visualizations/_shared/` tree into this viz directory; copy **`deliver/splunkstuff_kpi_line/`** as a whole for handoff.
 
 **Hover / tooltip:** Uses document-level capture listeners and SVG **xMidYMid meet** math from `splunkstuffVizHoverMath.js`. After editing, run `yarn verify:viz-hover` and redeploy; hard-refresh Splunk.
 

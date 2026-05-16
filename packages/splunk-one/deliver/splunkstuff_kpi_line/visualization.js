@@ -11,8 +11,8 @@
  */
 define([
     'api/SplunkVisualizationBase',
-    '../_shared/splunkstuffTrendColors',
-    '../_shared/splunkstuffVizHoverMath',
+    './splunkstuffTrendColors',
+    './splunkstuffVizHoverMath',
 ], function (SplunkVisualizationBase, trendColors, hoverMath) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
@@ -83,8 +83,8 @@ define([
     }
 
     /**
-     * Older hand-copied _shared/splunkstuffTrendColors.js may lack repaintTrendTile; mirror the
-     * current shared implementation so panels still render until _shared is redeployed.
+     * Older splunkstuffTrendColors module may lack repaintTrendTile; mirror the
+     * current implementation so panels still render until per-viz helper is refreshed.
      */
     function repaintTrendTileCompat(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
         trendColors.applyTrendHostStyle(hostEl, bg, textColor);

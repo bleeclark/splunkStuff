@@ -7,8 +7,8 @@
  */
 define([
     'api/SplunkVisualizationBase',
-    '../_shared/splunkstuffTrendColors',
-    '../_shared/splunkstuffVizHoverMath',
+    './splunkstuffTrendColors',
+    './splunkstuffVizHoverMath',
 ], function (SplunkVisualizationBase, trendColors, hoverMath) {
     var DEBUG = false;
     var VIZ_ID = 'fixed_loaded_line_vanilla';
@@ -60,7 +60,7 @@ define([
     }
 
     /**
-     * Older _shared/splunkstuffTrendColors.js may lack repaintTrendTile; inline equivalent.
+     * Older ./splunkstuffTrendColors.js may lack repaintTrendTile; inline equivalent.
      */
     function repaintTrendTileCompat(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
         trendColors.applyTrendHostStyle(hostEl, bg, textColor);

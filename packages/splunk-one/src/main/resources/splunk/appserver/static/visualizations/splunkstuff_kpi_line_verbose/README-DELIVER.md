@@ -27,7 +27,7 @@ Hard-refresh. Each `updateView` logs an **`effectiveConfig`** object and **`cons
 
 ## Portable handoff (one folder)
 
-Trend colors and hover math live **inside** `visualization.js` (inlined from `../_shared` in the repo). You can copy **the whole** `deliver/splunkstuff_kpi_line_verbose/` directory to another machine’s `appserver/static/visualizations/` without extra sibling `.js` helpers.
+Trend colors and hover math live **inside** `visualization.js` (inlined from the same logic as the `splunkstuffTrendColors` / `splunkstuffVizHoverMath` AMD modules in the repo). You can copy **the whole** `deliver/splunkstuff_kpi_line_verbose/` directory to another machine’s `appserver/static/visualizations/` without extra sibling `.js` helpers.
 
 Typical files:
 

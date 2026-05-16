@@ -4,6 +4,30 @@
     <description>Simple XML demo for splunk-one custom dashboard visualizations. Each panel uses one base search: the custom viz sorts by _time so the line matches chronology; the table shows the latest 20 points in time order (bottom row = headline / right end of the sparkline). Search dashboards for SplunkStuff. In Search and Reporting, open Visualization and filter by SplunkStuff.</description>
     <row>
         <panel>
+            <title>Simple small viz (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_simple_small_viz">
+                <query>
+| makeresults count=5
+| streamstats count as value
+| eval _time = relative_time(now(), "-" . (5 - value) . "m@m")
+| fields _time value
+                </query>
+                <earliest>-15m</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.simple_small_viz">
+                <search base="splunkstuff_gallery_simple_small_viz" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.label">Latest count</option>
+            </viz>
+            <table>
+                <title>Data for this viz</title>
+                <search base="splunkstuff_gallery_simple_small_viz" />
+                <option name="count">5</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+        <panel>
             <title>Line single value (SplunkStuff)</title>
             <search id="splunkstuff_gallery_line_single_value">
                 <query>
