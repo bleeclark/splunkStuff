@@ -5,6 +5,8 @@
   "scripts": {
     "build": "node bin/build.js build",
     "build:hover-harness": "node bin/build-hover-harness.js",
+    "package:viz": "yarn build && node bin/package-viz-app.js",
+    "package:manual-viz": "node bin/package-manual-viz.js",
     "verify:trend-colors": "node bin/verify-trend-colors.js",
     "verify:viz-hover": "node bin/verify-viz-hover.js",
     "eslint": "eslint src --ext \".ts,.tsx,.js,.jsx\"",

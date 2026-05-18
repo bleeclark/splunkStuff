@@ -12,7 +12,6 @@ const VANILLA_VIZ_IDS = ['simple_small_viz', 'line_single_value', 'fixed_loaded_
  */
 const VIZ_SELF_CONTAINED_SHARED = {
     line_single_value: ['splunkstuffTrendColors.js'],
-    fixed_single_value: ['splunkstuffTrendColors.js'],
     fixed_loaded_line_vanilla: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],
     splunkstuff_kpi_line: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],
     refactor_viz_manual: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],

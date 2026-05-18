@@ -1,6 +1,7 @@
 node_modules/
 **/node_modules/
 packages/splunk-one/stage/
+packages/splunk-one/dist/
 packages/splunk-one/test/playwright/public/bundle.js
 test-results/
 playwright-report/

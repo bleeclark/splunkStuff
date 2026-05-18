@@ -59,6 +59,55 @@ Then open Splunk Web (often `https://localhost:8000` or `8001`), find the app **
 
 Handoff zip source: `packages/splunk-one/deliver/splunkstuff_viz_kit/` plus per-viz folders under `deliver/`.
 
+## Simplest manual viz test package
+
+Use this when you manually edited a custom viz folder and only need to test those files on another Splunk instance before handoff. This does **not** run Webpack and does **not** require the whole app build. It packages the selected viz folder as a tiny Splunk app with a one-panel test dashboard.
+
+On the computer with this repo:
+
+```bash
+yarn install
+yarn package:manual-viz simple_small_viz
+```
+
+Replace `simple_small_viz` with the folder name under:
+
+`packages/splunk-one/src/main/resources/splunk/appserver/static/visualizations/<viz_id>/`
+
+The folder must contain:
+
+- `visualization.js`
+- `visualization.css`
+- `formatter.html`
+
+The command writes:
+
+`packages/splunk-one/dist/so_BUI_pickulationts-<viz_id>-manual-test.tgz`
+
+Copy that `.tgz` to the other computer, then install it into Splunk:
+
+```bash
+tar -xzf so_BUI_pickulationts-<viz_id>-manual-test.tgz -C "$SPLUNK_HOME/etc/apps"
+splunk restart
+```
+
+Then open Splunk Web, switch to app id `so_BUI_pickulationts`, and open the **Manual viz test - `<viz_id>`** dashboard.
+
+Important: this test package uses app id `so_BUI_pickulationts` because the formatter namespace in the hand-written viz files is scoped to that app id, for example `display.visualizations.custom.so_BUI_pickulationts.<viz_id>.*`.
+
+## Full app custom viz test package
+
+Use this only when you want to test the whole local app shell, all dashboards, and all custom visualizations together:
+
+```bash
+yarn install
+yarn package:viz
+```
+
+That builds the full Splunk app and writes:
+
+`packages/splunk-one/dist/so_BUI_pickulationts-custom-viz-test.tgz`
+
 ## App id and URLs
 
 `[package] id` in `src/main/resources/splunk/default/app.conf` is **`so_BUI_pickulationts`**. The HTML bootstrap in `appserver/templates/start.html` loads:

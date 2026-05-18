@@ -6,6 +6,26 @@
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.';
 
+    function fieldsList(rawData) {
+        if (rawData && rawData.fields && rawData.fields.length) {
+            return rawData.fields;
+        }
+        if (rawData && rawData.meta && rawData.meta.fields && rawData.meta.fields.length) {
+            return rawData.meta.fields;
+        }
+        return [];
+    }
+
+    function cellValue(cell) {
+        if (cell == null) {
+            return cell;
+        }
+        if (typeof cell === 'object' && cell.value != null) {
+            return cell.value;
+        }
+        return cell;
+    }
+
     function fieldName(fields, idx) {
         var f = fields && fields[idx];
         if (typeof f === 'string') {
@@ -34,16 +54,17 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     }
 
     function pickFirstNumericColumn(rawData) {
-        if (!rawData || !rawData.columns || !rawData.fields) {
+        var fields = fieldsList(rawData);
+        if (!rawData || !rawData.columns || !fields.length) {
             return -1;
         }
         for (var c = 0; c < rawData.columns.length; c += 1) {
-            if (fieldName(rawData.fields, c) === '_time') {
+            if (fieldName(fields, c) === '_time') {
                 continue;
             }
             var col = rawData.columns[c] || [];
             for (var r = col.length - 1; r >= 0; r -= 1) {
-                if (isFinite(parseFloat(col[r], 10))) {
+                if (isFinite(parseFloat(cellValue(col[r]), 10))) {
                     return c;
                 }
             }
@@ -53,7 +74,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
     function latestNumericValue(col) {
         for (var i = col.length - 1; i >= 0; i -= 1) {
-            var n = parseFloat(col[i], 10);
+            var n = parseFloat(cellValue(col[i]), 10);
             if (isFinite(n)) {
                 return n;
             }
@@ -76,7 +97,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
             var col = rawData.columns[valueIdx] || [];
             return {
-                field: fieldName(rawData.fields, valueIdx),
+                field: fieldName(fieldsList(rawData), valueIdx),
                 value: latestNumericValue(col),
                 rows: col.length,
             };
