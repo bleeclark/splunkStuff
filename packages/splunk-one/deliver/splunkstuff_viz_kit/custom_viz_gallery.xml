@@ -27,6 +27,8 @@
                 <option name="drilldown">none</option>
             </table>
         </panel>
+
+
         <panel>
             <title>Fixed single value (SplunkStuff)</title>
             <search id="splunkstuff_gallery_fixed_single_value">
@@ -57,6 +59,7 @@
                 <option name="sortDir">asc</option>
             </table>
         </panel>
+
         <panel>
             <title>Fixed loaded line (SplunkStuff)</title>
             <search id="splunkstuff_gallery_fixed_loaded_line">
