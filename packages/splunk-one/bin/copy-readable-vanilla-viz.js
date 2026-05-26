@@ -4,7 +4,20 @@ const fs = require('fs');
 const path = require('path');
 const shell = require('shelljs');
 
-const VANILLA_VIZ_IDS = ['simple_small_viz', 'line_single_value', 'fixed_loaded_line_vanilla', 'splunkstuff_kpi_line', 'splunkstuff_kpi_line_verbose', 'refactor_viz_manual'];
+const VANILLA_VIZ_IDS = [
+    'simple_small_viz',
+    'line_single_value',
+    'fixed_loaded_line_vanilla',
+    'splunkstuff_kpi_line',
+    'splunkstuff_kpi_line_verbose',
+    'refactor_viz_manual',
+    'splunkstuff_pie_chart',
+    'splunkstuff_sparkline_value',
+    'splunkstuff_sparkline_showcase',
+    'splunkstuff_pie_showcase',
+    'radial_meter',
+    'radial_meter_showcase',
+];
 
 /**
  * Per-viz copies of _shared AMD modules (same folder as visualization.js — no ../_shared in define()).
@@ -15,6 +28,8 @@ const VIZ_SELF_CONTAINED_SHARED = {
     fixed_loaded_line_vanilla: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],
     splunkstuff_kpi_line: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],
     refactor_viz_manual: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],
+    radial_meter: ['radialMeterArc.js'],
+    radial_meter_showcase: ['radialMeterArc.js'],
 };
 
 /** Webpack writes these to src/.../static; pages copy can leave stage/ stale — sync after build. */
@@ -78,7 +93,7 @@ function copyReadableVanillaViz(pkgRoot) {
         path.join(root, 'stage/appserver/static/visualizations'),
     ];
 
-    const vanillaAssets = ['visualization.js', 'visualization.css'];
+    const vanillaAssets = ['visualization.js', 'visualization.css', 'formatter.html'];
     const vizIdsForAssetCopy = Array.from(new Set([].concat(VANILLA_VIZ_IDS, Object.keys(VIZ_SELF_CONTAINED_SHARED))));
 
     vizIdsForAssetCopy.forEach((vizId) => {

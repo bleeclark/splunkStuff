@@ -12,6 +12,8 @@ import { StyledContainer } from '../start/StartStyles';
 import NewSingleValue from '../../components/visualizations/NewSingleValue';
 import NewSingleValueTwo from '../../components/visualizations/NewSingleValueTwo';
 import LineChart from '../../components/visualizations/LineChart';
+import PieChart from '../../components/visualizations/PieChart';
+import RadialMeter from '../../components/visualizations/RadialMeter';
 import {
     totalRequestsFeed,
     latencyRequests,
@@ -87,6 +89,20 @@ const palette = {
     goodColor: '#01417F',
     badColor: '#DFA611',
     textColor: '#FFFFFF',
+};
+
+/** Same categorical demo as custom_viz_gallery pie panel (A–N, values 10…140). */
+const DEFAULT_PIE_SLICES = Array.from({ length: 14 }, (_, i) => ({
+    label: 'ABCDEFGHIJKLMN'[i],
+    value: (i + 1) * 10,
+}));
+
+const piePanel = {
+    background: '#1B2A41',
+    width: 400,
+    height: 220,
+    marginBottom: 24,
+    boxSizing: 'border-box',
 };
 
 /** Default props for NewSingleValue; playground overrides some via `playProps`. */
@@ -326,6 +342,22 @@ getUserTheme()
                 };
             }, [latencyStr]);
 
+            const [radialOpts, setRadialOpts] = useState({
+                value: 73,
+                maxValue: 100,
+                mainColor: '#f7bc38',
+                backgroundColor: '#ffffff',
+            });
+
+            const [pieOpts, setPieOpts] = useState({
+                topN: 5,
+                otherLabel: 'Other',
+                showPercent: true,
+                title: 'Top 5 + Other (demo)',
+                background: '#1B2A41',
+                textColor: '#FFFFFF',
+            });
+
             const [lineOpts, setLineOpts] = useState({
                 multi: false,
                 comparison: false,
@@ -386,6 +418,325 @@ getUserTheme()
                         Demo
                     </Heading>
                     <ParagraphHint />
+
+                    <div style={{ marginBottom: 32 }}>
+                        <Heading level={1} style={heading}>
+                            Radial meter — Splunk tutorial
+                        </Heading>
+                        <p style={{ color: '#333', maxWidth: 800, marginBottom: 12 }}>
+                            Port of the{' '}
+                            <a
+                                href="https://help.splunk.com/en/splunk-enterprise/developing-views-and-apps-for-splunk-web/9.4/custom-visualizations/build-a-custom-visualization"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Splunk 9.4 radial meter tutorial
+                            </a>
+                            . Same formatter props as <strong>radial_meter</strong> in the
+                            gallery (<code>mainColor</code>, <code>maxValue</code>).
+                        </p>
+                        <div
+                            style={{
+                                display: 'flex',
+                                gap: 20,
+                                flexWrap: 'wrap',
+                                alignItems: 'flex-start',
+                            }}
+                        >
+                            <div
+                                style={{
+                                    ...piePanel,
+                                    height: 240,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: radialOpts.backgroundColor,
+                                }}
+                            >
+                                <RadialMeter
+                                    value={radialOpts.value}
+                                    maxValue={radialOpts.maxValue}
+                                    mainColor={radialOpts.mainColor}
+                                    backgroundColor={radialOpts.backgroundColor}
+                                />
+                            </div>
+                            <div style={playForm}>
+                                <div style={playField}>
+                                    <span style={playLabel}>Value (count)</span>
+                                    <input
+                                        type="number"
+                                        value={radialOpts.value}
+                                        onChange={(e) =>
+                                            setRadialOpts((p) => ({
+                                                ...p,
+                                                value: Number(e.target.value) || 0,
+                                            }))
+                                        }
+                                        style={playInput}
+                                    />
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Maximum dial value</span>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={radialOpts.maxValue}
+                                        onChange={(e) =>
+                                            setRadialOpts((p) => ({
+                                                ...p,
+                                                maxValue: Number(e.target.value) || 100,
+                                            }))
+                                        }
+                                        style={playInput}
+                                    />
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Dial color</span>
+                                    <div style={playRow}>
+                                        <input
+                                            type="color"
+                                            value={radialOpts.mainColor}
+                                            onChange={(e) =>
+                                                setRadialOpts((p) => ({
+                                                    ...p,
+                                                    mainColor: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                width: 44,
+                                                height: 32,
+                                                padding: 0,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                            }}
+                                        />
+                                        <input
+                                            type="text"
+                                            value={radialOpts.mainColor}
+                                            onChange={(e) =>
+                                                setRadialOpts((p) => ({
+                                                    ...p,
+                                                    mainColor: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                ...playInput,
+                                                flex: 1,
+                                                fontFamily: 'monospace',
+                                                fontSize: 12,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Background</span>
+                                    <div style={playRow}>
+                                        <input
+                                            type="color"
+                                            value={radialOpts.backgroundColor}
+                                            onChange={(e) =>
+                                                setRadialOpts((p) => ({
+                                                    ...p,
+                                                    backgroundColor: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                width: 44,
+                                                height: 32,
+                                                padding: 0,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: 32 }}>
+                        <Heading level={1} style={heading}>
+                            Data pie — Top N + Other
+                        </Heading>
+                        <p style={{ color: '#333', maxWidth: 800, marginBottom: 12 }}>
+                            Same behavior as the Splunk{' '}
+                            <strong>splunkstuff_pie_chart</strong> custom viz (Top N, Other
+                            bucket, legend percents, title, colors). Gallery panel uses the
+                            matching search.
+                        </p>
+                        <div
+                            style={{
+                                display: 'flex',
+                                gap: 20,
+                                flexWrap: 'wrap',
+                                alignItems: 'flex-start',
+                            }}
+                        >
+                            <div style={piePanel}>
+                                <PieChart
+                                    slices={DEFAULT_PIE_SLICES}
+                                    topN={pieOpts.topN}
+                                    otherLabel={pieOpts.otherLabel}
+                                    showPercent={pieOpts.showPercent}
+                                    title={pieOpts.title}
+                                    background={pieOpts.background}
+                                    textColor={pieOpts.textColor}
+                                    width={400}
+                                    height={220}
+                                />
+                            </div>
+                            <div style={playForm}>
+                                <div style={{ ...playField, marginBottom: 16 }}>
+                                    <span style={playLabel}>Pie chart options</span>
+                                    <div style={{ fontSize: 12, color: '#444' }}>
+                                        Mirrors formatter: topN, otherLabel, showPercent, title,
+                                        background, textColor.
+                                    </div>
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Top N slices (0 = all)</span>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={20}
+                                        value={pieOpts.topN}
+                                        onChange={(e) =>
+                                            setPieOpts((p) => ({
+                                                ...p,
+                                                topN: Number(e.target.value) || 0,
+                                            }))
+                                        }
+                                        style={playInput}
+                                    />
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Other bucket label</span>
+                                    <input
+                                        type="text"
+                                        value={pieOpts.otherLabel}
+                                        onChange={(e) =>
+                                            setPieOpts((p) => ({
+                                                ...p,
+                                                otherLabel: e.target.value,
+                                            }))
+                                        }
+                                        style={playInput}
+                                    />
+                                </div>
+                                <div style={{ ...playField, marginBottom: 8 }}>
+                                    <label
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 8,
+                                            cursor: 'pointer',
+                                            fontWeight: 600,
+                                            fontSize: 12,
+                                        }}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={pieOpts.showPercent}
+                                            onChange={(e) =>
+                                                setPieOpts((p) => ({
+                                                    ...p,
+                                                    showPercent: e.target.checked,
+                                                }))
+                                            }
+                                        />
+                                        show percent in legend
+                                    </label>
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Title</span>
+                                    <input
+                                        type="text"
+                                        value={pieOpts.title}
+                                        onChange={(e) =>
+                                            setPieOpts((p) => ({ ...p, title: e.target.value }))
+                                        }
+                                        style={playInput}
+                                    />
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Background</span>
+                                    <div style={playRow}>
+                                        <input
+                                            type="color"
+                                            value={pieOpts.background}
+                                            onChange={(e) =>
+                                                setPieOpts((p) => ({
+                                                    ...p,
+                                                    background: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                width: 44,
+                                                height: 32,
+                                                padding: 0,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                            }}
+                                        />
+                                        <input
+                                            type="text"
+                                            value={pieOpts.background}
+                                            onChange={(e) =>
+                                                setPieOpts((p) => ({
+                                                    ...p,
+                                                    background: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                ...playInput,
+                                                flex: 1,
+                                                fontFamily: 'monospace',
+                                                fontSize: 12,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Text color</span>
+                                    <div style={playRow}>
+                                        <input
+                                            type="color"
+                                            value={pieOpts.textColor}
+                                            onChange={(e) =>
+                                                setPieOpts((p) => ({
+                                                    ...p,
+                                                    textColor: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                width: 44,
+                                                height: 32,
+                                                padding: 0,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                            }}
+                                        />
+                                        <input
+                                            type="text"
+                                            value={pieOpts.textColor}
+                                            onChange={(e) =>
+                                                setPieOpts((p) => ({
+                                                    ...p,
+                                                    textColor: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                ...playInput,
+                                                flex: 1,
+                                                fontFamily: 'monospace',
+                                                fontSize: 12,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* Line chart: same Total requests series as the sidebar "Total requests" textarea */}
                     <div style={{ marginBottom: 32 }}>

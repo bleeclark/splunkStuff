@@ -1,0 +1,36 @@
+/* Splunk radial meter tutorial styles */
+.meter-center-text {
+    font-size: 40px;
+    font-weight: 200;
+    font-family: 'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.splunk-radial-meter {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+}
+
+.splunk-radial-meter__frame {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 240px;
+    margin: 0 auto;
+    border-radius: 4px;
+    border: 1px solid #e8e8e8;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.splunk-radial-meter svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 200px;
+    margin: 0 auto;
+}

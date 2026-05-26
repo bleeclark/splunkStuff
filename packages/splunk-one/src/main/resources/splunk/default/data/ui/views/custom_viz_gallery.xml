@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <dashboard version="1.1">
     <label>SplunkStuff custom viz gallery</label>
-    <description>Simple XML demo for simple_small_viz, fixed_single_value, and fixed_loaded_line. Each panel uses one base search; tables show the same data the viz uses. In Search and Reporting, open Visualization and filter by SplunkStuff.</description>
+    <description>Demo dashboard for all SplunkStuff custom visualizations in visualizations.conf. Includes Splunk 9.4 radial meter tutorial viz. Each panel uses one base search; line/KPI panels sort by _time (table: latest 20, oldest to newest). Pie uses category + value. Filter Visualization picker by SplunkStuff.</description>
     <row>
         <panel>
             <title>Simple small viz (SplunkStuff)</title>
@@ -27,8 +27,36 @@
                 <option name="drilldown">none</option>
             </table>
         </panel>
-
-
+        <panel>
+            <title>Line single value (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_line_single_value">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 22 + ((n * 11) % 58)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.line_single_value">
+                <search base="splunkstuff_gallery_line_single_value" />
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_line_single_value">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
         <panel>
             <title>Fixed single value (SplunkStuff)</title>
             <search id="splunkstuff_gallery_fixed_single_value">
@@ -59,9 +87,40 @@
                 <option name="sortDir">asc</option>
             </table>
         </panel>
-
+    </row>
+    <row>
         <panel>
-            <title>Fixed loaded line (SplunkStuff)</title>
+            <title>Fixed single value React (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_fixed_single_value_react">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 30 + ((n * 5) % 55)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.fixed_single_value_react">
+                <search base="splunkstuff_gallery_fixed_single_value_react" />
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_fixed_single_value_react">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Fixed loaded line React (SplunkStuff)</title>
             <search id="splunkstuff_gallery_fixed_loaded_line">
                 <query>
 | makeresults count=72
@@ -89,6 +148,294 @@
                 <option name="drilldown">none</option>
                 <option name="sortCol">_time</option>
                 <option name="sortDir">asc</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Fixed loaded line vanilla AMD (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_fixed_loaded_line_vanilla">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 17) % 48)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.fixed_loaded_line_vanilla">
+                <search base="splunkstuff_gallery_fixed_loaded_line_vanilla" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line_vanilla.showHover">true</option>
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_fixed_loaded_line_vanilla">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>KPI loaded line — full options (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_splunkstuff_kpi_line">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_kpi_line">
+                <search base="splunkstuff_gallery_splunkstuff_kpi_line" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.showHover">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.showHoverAnnotation">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.colorPlacement">top</option>
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_splunkstuff_kpi_line">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+        <panel>
+            <title>KPI loaded line verbose — documented AMD (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_splunkstuff_kpi_line_verbose">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_kpi_line_verbose">
+                <search base="splunkstuff_gallery_splunkstuff_kpi_line_verbose" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line_verbose.showHover">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line_verbose.showHoverAnnotation">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line_verbose.colorPlacement">top</option>
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_splunkstuff_kpi_line_verbose">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Refactor viz manual — clone of KPI verbose (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_refactor_viz_manual">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 19) % 50)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.refactor_viz_manual">
+                <search base="splunkstuff_gallery_refactor_viz_manual" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.refactor_viz_manual.showHover">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.refactor_viz_manual.showHoverAnnotation">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.refactor_viz_manual.colorPlacement">top</option>
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_refactor_viz_manual">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>Data pie — Top N + Other (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_pie_chart">
+                <query>
+| makeresults count=14
+| streamstats count as row
+| eval category=substr("ABCDEFGHIJKLMN", row, 1)
+| eval value=row * 10
+| stats sum(value) as value by category
+| sort category
+                </query>
+                <earliest>-1s</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_pie_chart">
+                <search base="splunkstuff_gallery_pie_chart" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.topN">5</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.otherLabel">Other</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showPercent">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.title">Top 5 + Other (demo)</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.background">#1B2A41</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.textColor">#FFFFFF</option>
+            </viz>
+            <table>
+                <title>Data for this viz (all categories)</title>
+                <search base="splunkstuff_gallery_pie_chart">
+                    <query>| table category value | sort category</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Value + sparkline extended — labels + hover (SplunkStuff)</title>
+            <option name="height">280</option>
+            <search id="splunkstuff_gallery_sparkline_value">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_sparkline_value">
+                <search base="splunkstuff_gallery_sparkline_value" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.goodColor">#01417F</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.badColor">#DFA611</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.textColor">#FFFFFF</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.background">#0B1F3B</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.showSparkline">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.showDelta">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.showHover">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.showHoverAnnotation">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.majorLabel">Current:</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.deltaLabel">Change:</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.badgeText">Demo KPI</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.tooltipPrefix">Value</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.sparkPointLabels">0:Oldest,9:Mid,19:Latest</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.showPointLabels">true</option>
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
+                <search base="splunkstuff_gallery_sparkline_value">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Radial meter — Splunk 9.4 tutorial (SplunkStuff)</title>
+            <search id="splunkstuff_gallery_radial_meter">
+                <query>
+| makeresults count=1
+| eval count=73
+| fields count
+                </query>
+                <earliest>-1s</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.radial_meter">
+                <search base="splunkstuff_gallery_radial_meter" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter.mainColor">#f7bc38</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter.maxValue">100</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter.backgroundColor">#ffffff</option>
+            </viz>
+            <table>
+                <title>Data for this viz</title>
+                <search base="splunkstuff_gallery_radial_meter" />
+                <option name="count">5</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>Showcase — Data pie (intended demo)</title>
+            <search base="splunkstuff_gallery_pie_chart" />
+            <viz type="so_BUI_pickulationts.splunkstuff_pie_showcase">
+                <search base="splunkstuff_gallery_pie_chart" />
+            </viz>
+            <table>
+                <title>Data for this viz (all categories)</title>
+                <search base="splunkstuff_gallery_pie_chart">
+                    <query>| table category value | sort category</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Showcase — Value + sparkline (intended demo)</title>
+            <option name="height">280</option>
+            <search base="splunkstuff_gallery_sparkline_value" />
+            <viz type="so_BUI_pickulationts.splunkstuff_sparkline_showcase">
+                <search base="splunkstuff_gallery_sparkline_value" />
+            </viz>
+            <table>
+                <title>Data for this viz (latest 20 by _time)</title>
+                <search base="splunkstuff_gallery_sparkline_value">
+                    <query>| sort 0 _time | tail 20</query>
+                </search>
+                <option name="count">20</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Showcase — Radial meter (intended demo)</title>
+            <search base="splunkstuff_gallery_radial_meter" />
+            <viz type="so_BUI_pickulationts.radial_meter_showcase">
+                <search base="splunkstuff_gallery_radial_meter" />
+            </viz>
+            <table>
+                <title>Data for this viz</title>
+                <search base="splunkstuff_gallery_radial_meter" />
+                <option name="count">5</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
             </table>
         </panel>
     </row>

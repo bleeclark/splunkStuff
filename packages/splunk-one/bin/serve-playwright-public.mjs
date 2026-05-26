@@ -9,6 +9,7 @@ import { spawnSync } from 'child_process';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkgRoot = path.join(__dirname, '..');
 const publicRoot = path.join(pkgRoot, 'test/playwright/public');
+const tmpRoot = path.join(pkgRoot, 'tmp');
 const PORT = Number(process.env.PLAYWRIGHT_HARNESS_PORT || 4173);
 
 spawnSync(process.execPath, [path.join(__dirname, 'build-hover-harness.js')], {
@@ -21,6 +22,8 @@ const mime = {
     '.js': 'application/javascript; charset=utf-8',
     '.css': 'text/css; charset=utf-8',
     '.map': 'application/json',
+    '.svg': 'image/svg+xml',
+    '.json': 'application/json',
 };
 
 const server = http.createServer((req, res) => {
@@ -28,8 +31,17 @@ const server = http.createServer((req, res) => {
         const urlPath = (req.url && req.url.split('?')[0]) || '/';
         let rel = urlPath === '/' ? '/index.html' : urlPath;
         const safe = path.normalize(rel).replace(/^(\.\.[\/\\])+/, '');
-        const filePath = path.join(publicRoot, safe);
-        if (!filePath.startsWith(publicRoot)) {
+        let filePath;
+        let allowedRoot;
+        if (safe.startsWith('/tmp/') || safe.startsWith('tmp/')) {
+            const tmpRel = safe.replace(/^\/?tmp\//, '');
+            filePath = path.join(tmpRoot, tmpRel);
+            allowedRoot = tmpRoot;
+        } else {
+            filePath = path.join(publicRoot, safe);
+            allowedRoot = publicRoot;
+        }
+        if (!filePath.startsWith(allowedRoot)) {
             res.writeHead(403);
             res.end();
             return;
