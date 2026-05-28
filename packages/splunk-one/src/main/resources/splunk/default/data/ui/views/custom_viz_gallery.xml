@@ -318,7 +318,7 @@
             </table>
         </panel>
         <panel>
-            <title>Value + sparkline extended — labels + hover (SplunkStuff)</title>
+            <title>KPI + sparkline — labels + hover (SplunkStuff)</title>
             <option name="height">280</option>
             <search id="splunkstuff_gallery_sparkline_value">
                 <query>
@@ -333,22 +333,8 @@
                 <earliest>-4h@h</earliest>
                 <latest>now</latest>
             </search>
-            <viz type="so_BUI_pickulationts.splunkstuff_sparkline_value">
+            <viz type="so_BUI_pickulationts.splunkstuff_kpi_sparkline">
                 <search base="splunkstuff_gallery_sparkline_value" />
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.goodColor">#01417F</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.badColor">#DFA611</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.textColor">#FFFFFF</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.background">#0B1F3B</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.showSparkline">true</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.showDelta">true</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.showHover">true</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.showHoverAnnotation">true</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.majorLabel">Current:</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.deltaLabel">Change:</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.badgeText">Demo KPI</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.tooltipPrefix">Value</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.sparkPointLabels">0:Oldest,9:Mid,19:Latest</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.showPointLabels">true</option>
             </viz>
             <table>
                 <title>Data for this viz (latest 20 by _time; oldest→newest, bottom = viz headline)</title>
@@ -409,7 +395,7 @@
             <title>Showcase — Value + sparkline (intended demo)</title>
             <option name="height">280</option>
             <search base="splunkstuff_gallery_sparkline_value" />
-            <viz type="so_BUI_pickulationts.splunkstuff_sparkline_showcase">
+            <viz type="so_BUI_pickulationts.splunkstuff_kpi_sparkline">
                 <search base="splunkstuff_gallery_sparkline_value" />
             </viz>
             <table>

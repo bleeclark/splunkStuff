@@ -1,10 +1,50 @@
 /* eslint-disable */
 /**
- * Splunk custom visualization: single value + delta + sparkline (extended formatter).
- * Vanilla AMD — SplunkVisualizationBase only.
+ * Splunk custom visualization: KPI + labels + delta + sparkline (gallery-intended layout).
+ * New viz id so Splunk loads fresh AMD module; labels use inline styles (CSS optional).
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
-    var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.';
+    var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
+    var VIZ_BUILD = '20260527-kpi-sparkline-v2';
+    var DEMO_LABELS = {
+        majorLabel: 'Current:',
+        deltaLabel: 'Change:',
+        badgeText: 'Demo KPI',
+        sparkPointLabels: '0:Oldest,9:Mid,19:Latest',
+    };
+
+    function inlineCaptionStyle(el, textColor) {
+        el.style.display = 'block';
+        el.style.fontSize = '13px';
+        el.style.fontWeight = '700';
+        el.style.lineHeight = '1.2';
+        el.style.color = textColor;
+        el.style.textShadow = '0 1px 2px rgba(0,0,0,0.35)';
+        el.style.padding = '2px 8px';
+        el.style.borderRadius = '3px';
+        el.style.background = 'rgba(0,0,0,0.28)';
+        el.style.marginBottom = '2px';
+        el.style.textAlign = 'center';
+    }
+
+    function inlineBadgeStyle(el) {
+        el.style.position = 'absolute';
+        el.style.top = '8px';
+        el.style.right = '10px';
+        el.style.zIndex = '6';
+        el.style.maxWidth = '45%';
+        el.style.padding = '5px 12px';
+        el.style.fontSize = '12px';
+        el.style.fontWeight = '700';
+        el.style.lineHeight = '1.25';
+        el.style.textAlign = 'right';
+        el.style.color = '#fff';
+        el.style.background = 'rgba(0,0,0,0.55)';
+        el.style.border = '1px solid rgba(255,255,255,0.25)';
+        el.style.borderRadius = '4px';
+        el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.25)';
+        el.style.pointerEvents = 'none';
+    }
 
     function fieldsList(rawData) {
         if (rawData && rawData.fields && rawData.fields.length) {
@@ -596,7 +636,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 }
                 return raw;
             }
-            /** Label/badge: missing key → default; explicit blank → hide. */
+            /** Label/badge: missing key → demo default; explicit blank → hide (empty string). */
             function optLabel(prop, builtInDefault) {
                 var raw = readConfig(config, prop, null, viz);
                 if (raw === null || raw === undefined) {
@@ -657,11 +697,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var showHover = truthy(opt('showHover', 'true'));
             var showHoverAnnotation = truthy(optOr('showHoverAnnotation', 'true'));
             var tooltipPrefix = String(optOr('tooltipPrefix', 'Value') || '');
-            var majorLabel = optLabel('majorLabel', 'Current:');
-            var deltaLabel = optLabel('deltaLabel', 'Change:');
-            var badgeText = optLabel('badgeText', 'Demo KPI');
+            var majorLabel = optLabel('majorLabel', DEMO_LABELS.majorLabel);
+            var deltaLabel = optLabel('deltaLabel', DEMO_LABELS.deltaLabel);
+            var badgeText = optLabel('badgeText', DEMO_LABELS.badgeText);
             var sparkPointLabels = parseSparkPointLabels(
-                optLabel('sparkPointLabels', '0:Oldest,9:Mid,19:Latest')
+                optLabel('sparkPointLabels', DEMO_LABELS.sparkPointLabels)
             );
             var showPointLabels = truthy(optOr('showPointLabels', 'true'));
 
@@ -675,15 +715,23 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             var root = document.createElement('div');
             root.className = 'splunkstuff-sparkline-value-viz';
+            root.setAttribute('data-ss-viz-build', VIZ_BUILD);
             root.style.position = 'relative';
             root.style.backgroundColor = bg;
             root.style.color = textColor;
+            root.style.width = '100%';
+            root.style.height = '100%';
+            root.style.minHeight = '200px';
+            root.style.boxSizing = 'border-box';
+            root.style.display = 'flex';
+            root.style.flexDirection = 'column';
 
             if (badgeText) {
                 var badge = document.createElement('div');
                 badge.className = 'splunkstuff-sparkline-value-viz__badge';
                 badge.textContent = badgeText;
                 badge.setAttribute('title', badgeText);
+                inlineBadgeStyle(badge);
                 root.appendChild(badge);
             }
 
@@ -696,33 +744,57 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             var body = document.createElement('div');
             body.className = 'splunkstuff-sparkline-value-viz__body';
+            body.style.flex = '1 1 auto';
+            body.style.position = 'relative';
+            body.style.display = 'flex';
+            body.style.flexDirection = 'column';
+            body.style.alignItems = 'center';
+            body.style.justifyContent = 'center';
+            body.style.padding = '12px 12px 56px';
+            body.style.boxSizing = 'border-box';
 
             var major = document.createElement('div');
             major.className = 'splunkstuff-sparkline-value-viz__major';
+            major.style.display = 'flex';
+            major.style.flexDirection = 'column';
+            major.style.alignItems = 'center';
             if (majorLabel) {
                 var majorLbl = document.createElement('div');
                 majorLbl.className = 'splunkstuff-sparkline-value-viz__indicatorLabel';
                 majorLbl.textContent = majorLabel;
+                inlineCaptionStyle(majorLbl, textColor);
                 major.appendChild(majorLbl);
             }
             var majorVal = document.createElement('div');
             majorVal.className = 'splunkstuff-sparkline-value-viz__majorValue';
             majorVal.textContent = formatMajor(last, precision, unit);
+            majorVal.style.fontSize = '32px';
+            majorVal.style.fontWeight = '600';
+            majorVal.style.lineHeight = '1.05';
+            majorVal.style.color = textColor;
             major.appendChild(majorVal);
             body.appendChild(major);
 
             if (showDelta) {
                 var trend = document.createElement('div');
                 trend.className = 'splunkstuff-sparkline-value-viz__trend';
+                trend.style.display = 'flex';
+                trend.style.flexDirection = 'column';
+                trend.style.alignItems = 'center';
+                trend.style.marginTop = '8px';
                 if (deltaLabel) {
                     var deltaLbl = document.createElement('div');
                     deltaLbl.className = 'splunkstuff-sparkline-value-viz__indicatorLabel';
                     deltaLbl.textContent = deltaLabel;
+                    inlineCaptionStyle(deltaLbl, textColor);
                     trend.appendChild(deltaLbl);
                 }
                 var deltaVal = document.createElement('div');
                 deltaVal.className = 'splunkstuff-sparkline-value-viz__trendValue';
                 deltaVal.textContent = formatDelta(delta, last, deltaMode, precision);
+                deltaVal.style.fontSize = '16px';
+                deltaVal.style.fontWeight = '600';
+                deltaVal.style.color = textColor;
                 trend.appendChild(deltaVal);
                 body.appendChild(trend);
             }
@@ -746,6 +818,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (showSparkline) {
                 var sparkWrap = document.createElement('div');
                 sparkWrap.className = 'splunkstuff-sparkline-value-viz__spark';
+                sparkWrap.style.position = 'absolute';
+                sparkWrap.style.left = '10px';
+                sparkWrap.style.right = '10px';
+                sparkWrap.style.bottom = '8px';
+                sparkWrap.style.height = '40px';
                 var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 svg.setAttribute('preserveAspectRatio', 'none');
                 svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);

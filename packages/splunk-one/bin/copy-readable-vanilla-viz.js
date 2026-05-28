@@ -13,6 +13,7 @@ const VANILLA_VIZ_IDS = [
     'refactor_viz_manual',
     'splunkstuff_pie_chart',
     'splunkstuff_sparkline_value',
+    'splunkstuff_kpi_sparkline',
     'splunkstuff_sparkline_showcase',
     'splunkstuff_pie_showcase',
     'radial_meter',
@@ -171,10 +172,21 @@ function watchReadableVanillaViz(pkgRoot, onChange) {
     });
 }
 
+function syncSplunkGalleryView(pkgRoot) {
+    // eslint-disable-next-line global-require
+    require('./sync-splunk-gallery');
+}
+
 function postBuildVizSync(pkgRoot) {
     syncReactVizBundlesToStage(pkgRoot);
     syncSelfContainedSharedModules(pkgRoot);
     copyReadableVanillaViz(pkgRoot);
+    try {
+        syncSplunkGalleryView(pkgRoot);
+    } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('postBuildVizSync: sync-splunk-gallery skipped', err.message || err);
+    }
 }
 
 module.exports = {

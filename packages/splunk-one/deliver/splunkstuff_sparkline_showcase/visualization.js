@@ -112,7 +112,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
         config = Object.assign({}, SHOWCASE_DEFAULTS, config);
         var ns = propertyNamespace(viz);
-        var candidates = [ns + prop, NS + prop, prop];
+        var candidates = [
+            ns + prop,
+            NS + prop,
+            'so_BUI_pickulationts.' + prop,
+            'display.visualizations.custom.so_BUI_pickulationts.' + prop,
+            prop,
+        ];
         var ci;
         for (ci = 0; ci < candidates.length; ci += 1) {
             var v = config[candidates[ci]];
@@ -606,6 +612,17 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 }
                 return raw;
             }
+            /** Label/badge: missing key → default; explicit blank → hide. */
+            function optLabel(prop, builtInDefault) {
+                var raw = readConfig(config, prop, null, viz);
+                if (raw === null || raw === undefined) {
+                    return builtInDefault;
+                }
+                if (typeof raw === 'string') {
+                    return raw.trim();
+                }
+                return String(raw).trim();
+            }
 
             if (typeof this._docHoverCleanup === 'function') {
                 this._docHoverCleanup();
@@ -656,11 +673,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var showHover = truthy(opt('showHover', 'true'));
             var showHoverAnnotation = truthy(optOr('showHoverAnnotation', 'true'));
             var tooltipPrefix = String(optOr('tooltipPrefix', 'Value') || '');
-            var majorLabel = String(optOr('majorLabel', 'Current:') || '').trim();
-            var deltaLabel = String(optOr('deltaLabel', 'Change:') || '').trim();
-            var badgeText = String(optOr('badgeText', 'Demo KPI') || '').trim();
+            var majorLabel = optLabel('majorLabel', 'Current:');
+            var deltaLabel = optLabel('deltaLabel', 'Change:');
+            var badgeText = optLabel('badgeText', 'Demo KPI');
             var sparkPointLabels = parseSparkPointLabels(
-                optOr('sparkPointLabels', '0:Oldest,9:Mid,19:Latest')
+                optLabel('sparkPointLabels', '0:Oldest,9:Mid,19:Latest')
             );
             var showPointLabels = truthy(optOr('showPointLabels', 'true'));
 

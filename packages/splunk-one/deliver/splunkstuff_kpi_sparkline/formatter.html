@@ -1,7 +1,7 @@
 <!--
   SplunkStuff — Value + sparkline (extended formatter)
 
-  {{VIZ_NAMESPACE}} → display.visualizations.custom.<app_id>.splunkstuff_sparkline_showcase
+  {{VIZ_NAMESPACE}} → display.visualizations.custom.<app_id>.splunkstuff_kpi_sparkline
 
   Option map (full key = NS + shortName):
   ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@
     | sort 0 _time
     | tail 20
 
-  Panel type: <app_id>.splunkstuff_sparkline_showcase
+  Panel type: <app_id>.splunkstuff_kpi_sparkline
 
   Avoid parentheses in section-label — Splunk builds DOM ids from labels.
 -->
@@ -123,13 +123,13 @@
         <splunk-text-input name="{{VIZ_NAMESPACE}}.majorLabel" value="Current:"></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Text shown before the headline number, e.g. <strong>Current:</strong>
+        Text above the headline number, e.g. <strong>Current:</strong>. Leave blank to hide.
     </div>
     <splunk-control-group label="Delta label">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.deltaLabel" value="Change:"></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Text before the trend arrow, e.g. <strong>Change:</strong>
+        Text above the trend value, e.g. <strong>Change:</strong>. Leave blank to hide.
     </div>
     <splunk-control-group label="Badge / status text">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.badgeText" value="Demo KPI"></splunk-text-input>

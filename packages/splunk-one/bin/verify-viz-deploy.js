@@ -12,6 +12,7 @@ const VIZ_IDS = [
     'splunkstuff_pie_chart',
     'splunkstuff_pie_showcase',
     'splunkstuff_sparkline_value',
+    'splunkstuff_kpi_sparkline',
     'splunkstuff_sparkline_showcase',
     'radial_meter',
     'radial_meter_showcase',

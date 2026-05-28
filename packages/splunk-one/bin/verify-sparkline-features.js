@@ -38,26 +38,29 @@ function parseSparkPointLabels(raw) {
     return map;
 }
 
-function loadShowcaseDefaults() {
+function loadKpiSparklineViz() {
     const filePath = path.join(
         pkgRoot,
-        'src/main/resources/splunk/appserver/static/visualizations/splunkstuff_sparkline_showcase/visualization.js'
+        'src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_sparkline/visualization.js'
     );
     const src = fs.readFileSync(filePath, 'utf8');
-    assert(src.indexOf('SHOWCASE_DEFAULTS') !== -1, 'sparkline showcase must define SHOWCASE_DEFAULTS');
+    assert(src.indexOf('DEMO_LABELS') !== -1, 'kpi sparkline must define DEMO_LABELS');
+    assert(src.indexOf('data-ss-viz-build') !== -1, 'kpi sparkline must set data-ss-viz-build');
+    assert(src.indexOf('inlineCaptionStyle') !== -1, 'kpi sparkline must use inlineCaptionStyle');
     assert(
-        src.indexOf("'./radialMeterArc'") === -1,
-        'sparkline showcase should not reference radialMeterArc'
-    );
-    assert(
-        src.indexOf('splunkstuff_sparkline_showcase') !== -1,
-        'sparkline showcase namespace missing'
+        src.indexOf('splunkstuff_kpi_sparkline') !== -1,
+        'kpi sparkline namespace missing'
     );
     assert(
         src.indexOf('splunkstuff-sparkline-value-viz__indicatorLabel') !== -1,
         'sparkline must render indicatorLabel class'
     );
     assert(src.indexOf('splunkstuff-sparkline-value-viz__badge') !== -1, 'sparkline must render badge class');
+    assert(src.indexOf('function optLabel') !== -1, 'kpi sparkline must define optLabel');
+    assert(
+        src.indexOf("if (badgeText)") !== -1,
+        'kpi sparkline must only render badge when badgeText is set'
+    );
     return filePath;
 }
 
@@ -100,7 +103,7 @@ border:1px solid rgba(255,255,255,.25);border-radius:4px;font-size:12px;font-wei
 }
 
 function main() {
-    loadShowcaseDefaults();
+    loadKpiSparklineViz();
 
     const baseCss = fs.readFileSync(
         path.join(

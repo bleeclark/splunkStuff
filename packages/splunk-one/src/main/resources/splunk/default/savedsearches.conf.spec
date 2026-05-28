@@ -114,6 +114,39 @@ display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.s
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.showPointLabels = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_value.emptyText = <string>
 
+# Declares format-menu properties for viz splunkstuff_kpi_sparkline (gallery labels demo).
+
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.sparkMin = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.sparkMax = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.sparkAuto = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.goodColor = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.badColor = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.invertTrend = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.textColor = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.background = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.subheader = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.unit = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.precision = <integer>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showDelta = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.deltaMode = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showSparkline = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.sparkStroke = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.sparkStrokeWidth = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showTarget = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.target = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showThresholdBand = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.thresholdMin = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.thresholdMax = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showHover = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showHoverAnnotation = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.tooltipPrefix = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.majorLabel = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.deltaLabel = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.badgeText = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.sparkPointLabels = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showPointLabels = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.emptyText = <string>
+
 # Declares format-menu properties for viz radial_meter (Splunk 9.4 tutorial).
 
 display.visualizations.custom.so_BUI_pickulationts.radial_meter.mainColor = <string>
