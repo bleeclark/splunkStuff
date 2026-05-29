@@ -1,0 +1,38 @@
+.splunkstuff-simple-small-viz {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 112px;
+    height: 100%;
+    padding: 14px 16px;
+    font-family: "Splunk Platform Sans", "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden;
+}
+
+.splunkstuff-simple-small-viz__label {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    opacity: 0.82;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.splunkstuff-simple-small-viz__value {
+    margin-top: 6px;
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.splunkstuff-simple-small-viz__meta {
+    margin-top: 8px;
+    font-size: 11px;
+    line-height: 1.2;
+    opacity: 0.72;
+}

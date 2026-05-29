@@ -132,8 +132,16 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     }
 
     function readConfig(config, prop, defaultVal, viz) {
-        if (config == null || typeof config !== 'object') {
+        var found = findConfigValue(config, prop, viz);
+        if (!found.found || found.value === '') {
             return defaultVal;
+        }
+        return found.value;
+    }
+
+    function findConfigValue(config, prop, viz) {
+        if (config == null || typeof config !== 'object') {
+            return { found: false, value: undefined };
         }
         var ns = propertyNamespace(viz);
         var candidates = [
@@ -146,8 +154,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         var ci;
         for (ci = 0; ci < candidates.length; ci += 1) {
             var v = config[candidates[ci]];
-            if (v !== undefined && v !== null && v !== '') {
-                return v;
+            if (v !== undefined && v !== null) {
+                return { found: true, value: v };
             }
         }
         var suffix = '.' + prop;
@@ -157,12 +165,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var key = keys[ki];
             if (key.length >= suffix.length && key.slice(-suffix.length) === suffix) {
                 var v2 = config[key];
-                if (v2 !== undefined && v2 !== null && v2 !== '') {
-                    return v2;
+                if (v2 !== undefined && v2 !== null) {
+                    return { found: true, value: v2 };
                 }
             }
         }
-        return defaultVal;
+        return { found: false, value: undefined };
     }
 
     function truthy(raw) {
@@ -627,10 +635,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
             /** When Splunk has no key yet (cached panel), use formatter demo defaults. */
             function optOr(prop, builtInDefault) {
-                var raw = readConfig(config, prop, null, viz);
-                if (raw === null || raw === undefined) {
+                var found = findConfigValue(config, prop, viz);
+                if (!found.found) {
                     return builtInDefault;
                 }
+                var raw = found.value;
                 if (typeof raw === 'string' && raw.trim() === '') {
                     return builtInDefault;
                 }
@@ -638,10 +647,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
             /** Label/badge: missing key → demo default; explicit blank → hide (empty string). */
             function optLabel(prop, builtInDefault) {
-                var raw = readConfig(config, prop, null, viz);
-                if (raw === null || raw === undefined) {
+                var found = findConfigValue(config, prop, viz);
+                if (!found.found) {
                     return builtInDefault;
                 }
+                var raw = found.value;
                 if (typeof raw === 'string') {
                     return raw.trim();
                 }
@@ -750,7 +760,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             body.style.flexDirection = 'column';
             body.style.alignItems = 'center';
             body.style.justifyContent = 'center';
-            body.style.padding = '12px 12px 56px';
+            body.style.padding = '12px 12px 76px';
             body.style.boxSizing = 'border-box';
 
             var major = document.createElement('div');
@@ -807,12 +817,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 body.appendChild(hoverAnnEl);
             }
 
-            var padL = 4;
-            var padR = 4;
-            var padT = 2;
-            var padB = 2;
+            var padL = 34;
+            var padR = 34;
+            var padT = 14;
+            var padB = 6;
             var w = 360;
-            var h = 32;
+            var h = 46;
             var n = values.length;
 
             if (showSparkline) {
@@ -822,10 +832,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 sparkWrap.style.left = '10px';
                 sparkWrap.style.right = '10px';
                 sparkWrap.style.bottom = '8px';
-                sparkWrap.style.height = '40px';
+                sparkWrap.style.height = '58px';
+                sparkWrap.style.overflow = 'visible';
                 var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 svg.setAttribute('preserveAspectRatio', 'none');
                 svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+                svg.style.overflow = 'visible';
 
                 if (showThresholdBand && isFinite(thresholdMin) && isFinite(thresholdMax)) {
                     var y1 = yFromValue(thresholdMax, h, padT, padB, scale.min, scale.max);
@@ -878,10 +890,19 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                         svg.appendChild(mark);
                         var lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                         lbl.setAttribute('x', xy.x.toFixed(1));
-                        lbl.setAttribute('y', String(Math.max(8, xy.y - 6)));
+                        lbl.setAttribute('y', String(Math.max(10, xy.y - 7)));
                         lbl.setAttribute('fill', 'rgba(255,255,255,0.9)');
-                        lbl.setAttribute('font-size', '10');
-                        lbl.setAttribute('text-anchor', 'middle');
+                        lbl.setAttribute('font-size', '9');
+                        lbl.setAttribute('font-weight', '700');
+                        if (xy.x <= padL + 2) {
+                            lbl.setAttribute('text-anchor', 'start');
+                            lbl.setAttribute('dx', '-2');
+                        } else if (xy.x >= w - padR - 2) {
+                            lbl.setAttribute('text-anchor', 'end');
+                            lbl.setAttribute('dx', '2');
+                        } else {
+                            lbl.setAttribute('text-anchor', 'middle');
+                        }
                         lbl.textContent = sparkPointLabels[pi];
                         svg.appendChild(lbl);
                     }

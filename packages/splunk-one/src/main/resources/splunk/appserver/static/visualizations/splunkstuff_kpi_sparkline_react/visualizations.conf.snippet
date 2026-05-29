@@ -1,0 +1,8 @@
+[splunkstuff_kpi_sparkline_react]
+label = SplunkStuff - KPI + sparkline (React)
+description = React implementation of the KPI single value with footer sparkline.
+default_height = 280
+search_fragment = | timechart span=1h avg(my_metric) as value
+supports_drilldown = 0
+supports_trellis = 0
+

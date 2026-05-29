@@ -3,7 +3,7 @@
 
 /**
  * Splunk loads local/data/ui/views before default/data/ui/views.
- * A stale local/custom_viz_gallery.xml overrides shipped gallery changes (old viz types, no row 5).
+ * A stale local/custom_viz_gallery.xml overrides shipped gallery changes.
  * Run after build, or set SYNC_SPLUNK_GALLERY_KEEP_LOCAL=1 to skip removal.
  */
 
@@ -40,11 +40,28 @@ function main() {
     }
 
     const src = fs.readFileSync(stageDefault, 'utf8');
-    if (src.indexOf('splunkstuff_kpi_sparkline') === -1) {
-        throw new Error('gallery missing splunkstuff_kpi_sparkline viz');
+    const requiredVizIds = [
+        'simple_small_viz',
+        'simple_small_viz_react',
+        'fixed_single_value',
+        'fixed_single_value_react',
+        'fixed_loaded_line_vanilla',
+        'fixed_loaded_line',
+        'splunkstuff_pie_chart',
+        'splunkstuff_pie_chart_react',
+        'splunkstuff_kpi_sparkline',
+        'splunkstuff_kpi_sparkline_react',
+        'radial_meter',
+        'radial_meter_react',
+        'radial_meter_react_advanced',
+    ];
+
+    const missing = requiredVizIds.filter((vizId) => src.indexOf(`.${vizId}`) === -1);
+    if (missing.length) {
+        throw new Error('gallery missing canonical viz ids: ' + missing.join(', '));
     }
-    if (src.indexOf('Showcase —') === -1) {
-        throw new Error('gallery missing showcase row');
+    if (src.indexOf('Showcase') !== -1 || src.indexOf('refactor_viz_manual') !== -1) {
+        throw new Error('gallery still contains repetitive showcase/manual entries');
     }
 
     console.log('sync-splunk-gallery: ok');
