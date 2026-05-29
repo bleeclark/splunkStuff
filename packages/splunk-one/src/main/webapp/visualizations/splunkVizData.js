@@ -60,6 +60,26 @@ export function readConfig(config, namespace, prop, fallback) {
     return fallback;
 }
 
+/** Missing key → fallback; explicit blank string → empty (hide label/badge). */
+export function readConfigLabel(config, namespace, prop, fallback) {
+    if (config == null || typeof config !== 'object') {
+        return fallback;
+    }
+    const candidates = [namespace + prop, prop];
+    for (let i = 0; i < candidates.length; i += 1) {
+        const key = candidates[i];
+        if (!Object.prototype.hasOwnProperty.call(config, key)) {
+            continue;
+        }
+        const v = config[key];
+        if (v === undefined || v === null) {
+            continue;
+        }
+        return String(v).trim();
+    }
+    return fallback;
+}
+
 export function readBool(config, namespace, prop, fallback) {
     const raw = readConfig(config, namespace, prop, fallback);
     if (raw === true || raw === false) {

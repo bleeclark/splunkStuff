@@ -539,15 +539,9 @@ __webpack_require__.d(__webpack_exports__, {
   "default": () => (/* binding */ visualization_amd)
 });
 
-// EXTERNAL MODULE: ../../node_modules/react/index.js
-var react = __webpack_require__(41);
-// EXTERNAL MODULE: ../../node_modules/react-dom/client.js
-var client = __webpack_require__(873);
 // EXTERNAL MODULE: external "api/SplunkVisualizationBase"
 var SplunkVisualizationBase_ = __webpack_require__(879);
 var SplunkVisualizationBase_default = /*#__PURE__*/__webpack_require__.n(SplunkVisualizationBase_);
-// EXTERNAL MODULE: ../../node_modules/react-dom/index.js
-var react_dom = __webpack_require__(144);
 ;// ./src/main/webapp/lib/splunkstuffTrendColors.js
 /**
  * Keith/ITSI trend background contract for SplunkStuff visualizations.
@@ -620,6 +614,187 @@ function repaintTrendTile(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
     depth += 1;
   }
 }
+;// ./src/main/webapp/visualizations/splunkVizData.js
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+/* eslint-disable */
+
+function cellValue(cell) {
+  if (cell == null) {
+    return cell;
+  }
+  if (_typeof(cell) === 'object' && cell.value != null) {
+    return cell.value;
+  }
+  return cell;
+}
+function fieldName(fields, idx) {
+  if (!fields || idx < 0 || idx >= fields.length) {
+    return '';
+  }
+  var f = fields[idx];
+  if (typeof f === 'string') {
+    return f;
+  }
+  if (f != null && f.name != null) {
+    return String(f.name);
+  }
+  return '';
+}
+function fieldsList(rawData) {
+  if (rawData && rawData.fields && rawData.fields.length) {
+    return rawData.fields;
+  }
+  if (rawData && rawData.meta && rawData.meta.fields && rawData.meta.fields.length) {
+    return rawData.meta.fields;
+  }
+  return [];
+}
+function parseNum(cell) {
+  var raw = cellValue(cell);
+  if (raw == null || raw === '') {
+    return NaN;
+  }
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return raw;
+  }
+  var n = parseFloat(String(raw).replace(/,/g, '').trim(), 10);
+  return Number.isFinite(n) ? n : NaN;
+}
+function readConfig(config, namespace, prop, fallback) {
+  if (config == null || _typeof(config) !== 'object') {
+    return fallback;
+  }
+  var candidates = [namespace + prop, prop];
+  for (var i = 0; i < candidates.length; i += 1) {
+    var v = config[candidates[i]];
+    if (v !== undefined && v !== null && v !== '') {
+      return v;
+    }
+  }
+  return fallback;
+}
+
+/** Missing key → fallback; explicit blank string → empty (hide label/badge). */
+function readConfigLabel(config, namespace, prop, fallback) {
+  if (config == null || _typeof(config) !== 'object') {
+    return fallback;
+  }
+  var candidates = [namespace + prop, prop];
+  for (var i = 0; i < candidates.length; i += 1) {
+    var key = candidates[i];
+    if (!Object.prototype.hasOwnProperty.call(config, key)) {
+      continue;
+    }
+    var v = config[key];
+    if (v === undefined || v === null) {
+      continue;
+    }
+    return String(v).trim();
+  }
+  return fallback;
+}
+function readBool(config, namespace, prop, fallback) {
+  var raw = readConfig(config, namespace, prop, fallback);
+  if (raw === true || raw === false) {
+    return raw;
+  }
+  var s = String(raw == null ? '' : raw).trim().toLowerCase();
+  if (s === 'true' || s === '1' || s === 'yes' || s === 'on') {
+    return true;
+  }
+  if (s === 'false' || s === '0' || s === 'no' || s === 'off') {
+    return false;
+  }
+  return fallback;
+}
+function readFloat(config, namespace, prop, fallback) {
+  var n = parseFloat(readConfig(config, namespace, prop, fallback), 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+function safeColor(raw, fallback) {
+  var s = String(raw == null ? '' : raw).trim();
+  return /^#[0-9A-Fa-f]{6}$/.test(s) ? s : fallback;
+}
+function timeSortKey(rawData, timeIdx, rowIdx) {
+  var cell = cellValue(rawData.columns[timeIdx][rowIdx]);
+  if (cell == null || cell === '') {
+    return 0;
+  }
+  if (typeof cell === 'number' && Number.isFinite(cell)) {
+    return cell;
+  }
+  var s = String(cell).trim();
+  if (/^-?\d+(\.\d+)?$/.test(s)) {
+    var n = parseFloat(s, 10);
+    return Number.isFinite(n) ? n : 0;
+  }
+  var ms = Date.parse(s);
+  return Number.isFinite(ms) ? ms / 1000 : 0;
+}
+function pickNumericColumnIndex(rawData) {
+  if (!rawData || !rawData.columns) {
+    return -1;
+  }
+  var fields = fieldsList(rawData);
+  var best = -1;
+  for (var c = 0; c < rawData.columns.length; c += 1) {
+    if (fieldName(fields, c) === '_time') {
+      continue;
+    }
+    var col = rawData.columns[c] || [];
+    if (col.length && col.every(function (cell) {
+      return Number.isFinite(parseNum(cell));
+    })) {
+      best = c;
+    }
+  }
+  return best;
+}
+function numericSeries(rawData) {
+  var valueIdx = pickNumericColumnIndex(rawData);
+  if (valueIdx < 0) {
+    return {
+      values: [],
+      times: []
+    };
+  }
+  var fields = fieldsList(rawData);
+  var timeIdx = fields.findIndex(function (_, idx) {
+    return fieldName(fields, idx) === '_time';
+  });
+  var valuesCol = rawData.columns[valueIdx] || [];
+  if (timeIdx < 0 || !rawData.columns[timeIdx]) {
+    return {
+      values: valuesCol.map(parseNum),
+      times: []
+    };
+  }
+  var order = _toConsumableArray(Array(valuesCol.length).keys()).sort(function (a, b) {
+    var ka = timeSortKey(rawData, timeIdx, a);
+    var kb = timeSortKey(rawData, timeIdx, b);
+    return ka === kb ? a - b : ka - kb;
+  });
+  return {
+    values: order.map(function (row) {
+      return parseNum(valuesCol[row]);
+    }),
+    times: order.map(function (row) {
+      return cellValue(rawData.columns[timeIdx][row]);
+    })
+  };
+}
+// EXTERNAL MODULE: ../../node_modules/react-dom/client.js
+var client = __webpack_require__(873);
+// EXTERNAL MODULE: ../../node_modules/react/index.js
+var react = __webpack_require__(41);
+// EXTERNAL MODULE: ../../node_modules/react-dom/index.js
+var react_dom = __webpack_require__(144);
 ;// ./src/main/webapp/lib/splunkstuffVizHoverMath.mjs
 /**
  * Pure hover hit-test + series index math for SplunkStuff line visualizations.
@@ -725,22 +900,22 @@ function seriesIndexFromPointerMeet(
 }
 
 ;// ./src/main/webapp/components/visualizations/LineChart.jsx
-function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function LineChart_typeof(o) { "@babel/helpers - typeof"; return LineChart_typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, LineChart_typeof(o); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || LineChart_unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
 function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
-function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
-function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
-function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
-function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
-function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == LineChart_typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != LineChart_typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != LineChart_typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function LineChart_toConsumableArray(r) { return LineChart_arrayWithoutHoles(r) || LineChart_iterableToArray(r) || LineChart_unsupportedIterableToArray(r) || LineChart_nonIterableSpread(); }
+function LineChart_nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function LineChart_unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return LineChart_arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? LineChart_arrayLikeToArray(r, a) : void 0; } }
+function LineChart_iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function LineChart_arrayWithoutHoles(r) { if (Array.isArray(r)) return LineChart_arrayLikeToArray(r); }
+function LineChart_arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 
 
 
@@ -830,15 +1005,15 @@ function formatDelta(d) {
 function deriveDomainFromSeries(seriesList) {
   var nums = [];
   seriesList.forEach(function (s) {
-    nums.push.apply(nums, _toConsumableArray(s.values));
+    nums.push.apply(nums, LineChart_toConsumableArray(s.values));
   });
   var finite = nums.filter(Number.isFinite);
   if (finite.length === 0) return {
     min: 0,
     max: 1
   };
-  var min = Math.min.apply(Math, _toConsumableArray(finite));
-  var max = Math.max.apply(Math, _toConsumableArray(finite));
+  var min = Math.min.apply(Math, LineChart_toConsumableArray(finite));
+  var max = Math.max.apply(Math, LineChart_toConsumableArray(finite));
   if (!Number.isFinite(min) || !Number.isFinite(max)) return {
     min: 0,
     max: 1
@@ -987,6 +1162,14 @@ function LineChart(_ref3) {
     showMajor = _ref3$showMajor === void 0 ? false : _ref3$showMajor,
     _ref3$centerMajor = _ref3.centerMajor,
     centerMajor = _ref3$centerMajor === void 0 ? false : _ref3$centerMajor,
+    _ref3$stackedMajor = _ref3.stackedMajor,
+    stackedMajor = _ref3$stackedMajor === void 0 ? false : _ref3$stackedMajor,
+    _ref3$showDelta = _ref3.showDelta,
+    showDelta = _ref3$showDelta === void 0 ? true : _ref3$showDelta,
+    _ref3$majorLabel = _ref3.majorLabel,
+    majorLabel = _ref3$majorLabel === void 0 ? '' : _ref3$majorLabel,
+    _ref3$deltaLabel = _ref3.deltaLabel,
+    deltaLabel = _ref3$deltaLabel === void 0 ? '' : _ref3$deltaLabel,
     _ref3$colorPlacement = _ref3.colorPlacement,
     colorPlacement = _ref3$colorPlacement === void 0 ? 'full' : _ref3$colorPlacement,
     _ref3$unitScale = _ref3.unitScale,
@@ -1067,7 +1250,8 @@ function LineChart(_ref3) {
   }, [series, values, times, stroke, comparisonSeries]);
   var showSubheader = Boolean(subheader);
   var subheaderH = showSubheader ? 28 : 0;
-  var majorH = showMajor ? 44 : 0;
+  var labelExtra = showMajor && stackedMajor ? (majorLabel ? 18 : 0) + (deltaLabel ? 18 : 0) : 0;
+  var majorH = showMajor ? 44 + labelExtra + (stackedMajor && showDelta ? 8 : 0) : 0;
   var headerH = subheaderH + majorH;
   var chartH = Math.max(1, height - headerH);
   var primaryValues = normalized.series[0] ? normalized.series[0].values : [];
@@ -1123,7 +1307,7 @@ function LineChart(_ref3) {
     };
   }, [normalized, smoothing, smaWindow, maxPoints]);
   var domain = (0,react.useMemo)(function () {
-    var derived = deriveDomainFromSeries([].concat(_toConsumableArray(processed.series), _toConsumableArray(processed.comparison || [])));
+    var derived = deriveDomainFromSeries([].concat(LineChart_toConsumableArray(processed.series), LineChart_toConsumableArray(processed.comparison || [])));
     var lo = Number.isFinite(Number(min)) ? Number(min) : derived.min;
     var hi = Number.isFinite(Number(max)) ? Number(max) : derived.max;
     if (lo > hi) {
@@ -1367,16 +1551,27 @@ function LineChart(_ref3) {
   }, String(subheader)) : null, showMajor ? /*#__PURE__*/react.createElement("div", {
     style: {
       height: majorH,
-      padding: '6px 12px 6px',
+      padding: stackedMajor ? '8px 12px 6px' : '6px 12px 6px',
       boxSizing: 'border-box',
       display: 'flex',
-      alignItems: 'flex-end',
+      flexDirection: stackedMajor ? 'column' : 'row',
+      alignItems: stackedMajor ? 'center' : 'flex-end',
       justifyContent: centerMajor ? 'center' : 'space-between',
-      gap: 6,
+      gap: stackedMajor ? 4 : 6,
       textAlign: centerMajor ? 'center' : undefined,
       background: majorBg
     }
-  }, /*#__PURE__*/react.createElement("div", {
+  }, stackedMajor && majorLabel ? /*#__PURE__*/react.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      lineHeight: 1.2,
+      padding: '2px 8px',
+      borderRadius: 3,
+      background: 'rgba(0,0,0,0.28)',
+      textShadow: '0 1px 2px rgba(0,0,0,0.35)'
+    }
+  }, majorLabel) : null, /*#__PURE__*/react.createElement("div", {
     style: {
       fontSize: 28,
       fontWeight: 600,
@@ -1391,15 +1586,25 @@ function LineChart(_ref3) {
       marginLeft: 2,
       opacity: 0.95
     }
-  }, unitText) : null), /*#__PURE__*/react.createElement("div", {
+  }, unitText) : null), showDelta ? /*#__PURE__*/react.createElement(react.Fragment, null, stackedMajor && deltaLabel ? /*#__PURE__*/react.createElement("div", {
     style: {
-      fontSize: 11,
+      fontSize: 13,
+      fontWeight: 700,
       lineHeight: 1.2,
-      fontWeight: 500,
-      opacity: 0.95,
-      marginLeft: centerMajor ? 6 : undefined
+      padding: '2px 8px',
+      borderRadius: 3,
+      background: 'rgba(0,0,0,0.28)',
+      textShadow: '0 1px 2px rgba(0,0,0,0.35)'
     }
-  }, formatDelta(delta))) : null, /*#__PURE__*/react.createElement("div", {
+  }, deltaLabel) : null, /*#__PURE__*/react.createElement("div", {
+    style: {
+      fontSize: stackedMajor ? 16 : 11,
+      lineHeight: 1.2,
+      fontWeight: 600,
+      opacity: 0.95,
+      marginLeft: centerMajor && !stackedMajor ? 6 : undefined
+    }
+  }, formatDelta(delta))) : null) : null, /*#__PURE__*/react.createElement("div", {
     ref: setChartAreaEl,
     "data-testid": "splunkstuff-line-chart-area",
     style: {
@@ -1564,211 +1769,205 @@ function LineChart(_ref3) {
     }
   }, hoverTime) : null), vizDocument.body) : null);
 }
-;// ./src/main/webapp/visualizations/splunkVizData.js
-function splunkVizData_toConsumableArray(r) { return splunkVizData_arrayWithoutHoles(r) || splunkVizData_iterableToArray(r) || splunkVizData_unsupportedIterableToArray(r) || splunkVizData_nonIterableSpread(); }
-function splunkVizData_nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function splunkVizData_unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return splunkVizData_arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? splunkVizData_arrayLikeToArray(r, a) : void 0; } }
-function splunkVizData_iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function splunkVizData_arrayWithoutHoles(r) { if (Array.isArray(r)) return splunkVizData_arrayLikeToArray(r); }
-function splunkVizData_arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
-function splunkVizData_typeof(o) { "@babel/helpers - typeof"; return splunkVizData_typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, splunkVizData_typeof(o); }
-/* eslint-disable */
-
-function cellValue(cell) {
-  if (cell == null) {
-    return cell;
-  }
-  if (splunkVizData_typeof(cell) === 'object' && cell.value != null) {
-    return cell.value;
-  }
-  return cell;
-}
-function fieldName(fields, idx) {
-  if (!fields || idx < 0 || idx >= fields.length) {
-    return '';
-  }
-  var f = fields[idx];
-  if (typeof f === 'string') {
-    return f;
-  }
-  if (f != null && f.name != null) {
-    return String(f.name);
-  }
-  return '';
-}
-function fieldsList(rawData) {
-  if (rawData && rawData.fields && rawData.fields.length) {
-    return rawData.fields;
-  }
-  if (rawData && rawData.meta && rawData.meta.fields && rawData.meta.fields.length) {
-    return rawData.meta.fields;
-  }
-  return [];
-}
-function parseNum(cell) {
-  var raw = cellValue(cell);
-  if (raw == null || raw === '') {
-    return NaN;
-  }
-  if (typeof raw === 'number' && Number.isFinite(raw)) {
-    return raw;
-  }
-  var n = parseFloat(String(raw).replace(/,/g, '').trim(), 10);
-  return Number.isFinite(n) ? n : NaN;
-}
-function readConfig(config, namespace, prop, fallback) {
-  if (config == null || splunkVizData_typeof(config) !== 'object') {
-    return fallback;
-  }
-  var candidates = [namespace + prop, prop];
-  for (var i = 0; i < candidates.length; i += 1) {
-    var v = config[candidates[i]];
-    if (v !== undefined && v !== null && v !== '') {
-      return v;
-    }
-  }
-  return fallback;
-}
-function readBool(config, namespace, prop, fallback) {
-  var raw = readConfig(config, namespace, prop, fallback);
-  if (raw === true || raw === false) {
-    return raw;
-  }
-  var s = String(raw == null ? '' : raw).trim().toLowerCase();
-  if (s === 'true' || s === '1' || s === 'yes' || s === 'on') {
-    return true;
-  }
-  if (s === 'false' || s === '0' || s === 'no' || s === 'off') {
-    return false;
-  }
-  return fallback;
-}
-function readFloat(config, namespace, prop, fallback) {
-  var n = parseFloat(readConfig(config, namespace, prop, fallback), 10);
-  return Number.isFinite(n) ? n : fallback;
-}
-function safeColor(raw, fallback) {
-  var s = String(raw == null ? '' : raw).trim();
-  return /^#[0-9A-Fa-f]{6}$/.test(s) ? s : fallback;
-}
-function timeSortKey(rawData, timeIdx, rowIdx) {
-  var cell = cellValue(rawData.columns[timeIdx][rowIdx]);
-  if (cell == null || cell === '') {
-    return 0;
-  }
-  if (typeof cell === 'number' && Number.isFinite(cell)) {
-    return cell;
-  }
-  var s = String(cell).trim();
-  if (/^-?\d+(\.\d+)?$/.test(s)) {
-    var n = parseFloat(s, 10);
-    return Number.isFinite(n) ? n : 0;
-  }
-  var ms = Date.parse(s);
-  return Number.isFinite(ms) ? ms / 1000 : 0;
-}
-function pickNumericColumnIndex(rawData) {
-  if (!rawData || !rawData.columns) {
-    return -1;
-  }
-  var fields = fieldsList(rawData);
-  var best = -1;
-  for (var c = 0; c < rawData.columns.length; c += 1) {
-    if (fieldName(fields, c) === '_time') {
-      continue;
-    }
-    var col = rawData.columns[c] || [];
-    if (col.length && col.every(function (cell) {
-      return Number.isFinite(parseNum(cell));
-    })) {
-      best = c;
-    }
-  }
-  return best;
-}
-function numericSeries(rawData) {
-  var valueIdx = pickNumericColumnIndex(rawData);
-  if (valueIdx < 0) {
-    return {
-      values: [],
-      times: []
-    };
-  }
-  var fields = fieldsList(rawData);
-  var timeIdx = fields.findIndex(function (_, idx) {
-    return fieldName(fields, idx) === '_time';
-  });
-  var valuesCol = rawData.columns[valueIdx] || [];
-  if (timeIdx < 0 || !rawData.columns[timeIdx]) {
-    return {
-      values: valuesCol.map(parseNum),
-      times: []
-    };
-  }
-  var order = splunkVizData_toConsumableArray(Array(valuesCol.length).keys()).sort(function (a, b) {
-    var ka = timeSortKey(rawData, timeIdx, a);
-    var kb = timeSortKey(rawData, timeIdx, b);
-    return ka === kb ? a - b : ka - kb;
-  });
-  return {
-    values: order.map(function (row) {
-      return parseNum(valuesCol[row]);
-    }),
-    times: order.map(function (row) {
-      return cellValue(rawData.columns[timeIdx][row]);
-    })
-  };
-}
-;// ./src/main/webapp/visualizations/splunkstuff_kpi_sparkline_react/visualization.amd.jsx
-/* eslint-disable */
-
-
+;// ./src/main/webapp/visualizations/splunkstuff_kpi_sparkline_react/KpiSparklineReactApp.jsx
+function KpiSparklineReactApp_slicedToArray(r, e) { return KpiSparklineReactApp_arrayWithHoles(r) || KpiSparklineReactApp_iterableToArrayLimit(r, e) || KpiSparklineReactApp_unsupportedIterableToArray(r, e) || KpiSparklineReactApp_nonIterableRest(); }
+function KpiSparklineReactApp_nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function KpiSparklineReactApp_iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function KpiSparklineReactApp_arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function KpiSparklineReactApp_toConsumableArray(r) { return KpiSparklineReactApp_arrayWithoutHoles(r) || KpiSparklineReactApp_iterableToArray(r) || KpiSparklineReactApp_unsupportedIterableToArray(r) || KpiSparklineReactApp_nonIterableSpread(); }
+function KpiSparklineReactApp_nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function KpiSparklineReactApp_unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return KpiSparklineReactApp_arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? KpiSparklineReactApp_arrayLikeToArray(r, a) : void 0; } }
+function KpiSparklineReactApp_iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function KpiSparklineReactApp_arrayWithoutHoles(r) { if (Array.isArray(r)) return KpiSparklineReactApp_arrayLikeToArray(r); }
+function KpiSparklineReactApp_arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 
 
 
 var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react.';
-var roots = new WeakMap();
-function KpiSparklineReact(_ref) {
-  var values = _ref.values,
-    times = _ref.times,
-    config = _ref.config;
-  var background = safeColor(readConfig(config, NS, 'background', '#0B1F3B'), '#0B1F3B');
+function deriveSparkBounds(values, sparkMin, sparkMax, sparkAuto) {
+  var finite = (Array.isArray(values) ? values : []).filter(Number.isFinite);
+  if (!finite.length) {
+    return {
+      min: 0,
+      max: 1
+    };
+  }
+  var min = Number.isFinite(sparkMin) ? sparkMin : NaN;
+  var max = Number.isFinite(sparkMax) ? sparkMax : NaN;
+  if (!Number.isFinite(min) || !Number.isFinite(max) || sparkAuto) {
+    min = Math.min.apply(Math, KpiSparklineReactApp_toConsumableArray(finite));
+    max = Math.max.apply(Math, KpiSparklineReactApp_toConsumableArray(finite));
+    if (max <= min) {
+      max = min + 1;
+    }
+  }
+  if (min > max) {
+    var t = min;
+    min = max;
+    max = t;
+  }
+  return {
+    min: min,
+    max: max
+  };
+}
+function KpiSparklineReactApp(_ref) {
+  var _ref$values = _ref.values,
+    values = _ref$values === void 0 ? [] : _ref$values,
+    _ref$times = _ref.times,
+    times = _ref$times === void 0 ? [] : _ref$times,
+    _ref$config = _ref.config,
+    config = _ref$config === void 0 ? {} : _ref$config;
+  var hostRef = (0,react.useRef)(null);
+  var _useState = (0,react.useState)({
+      width: 360,
+      height: 260
+    }),
+    _useState2 = KpiSparklineReactApp_slicedToArray(_useState, 2),
+    size = _useState2[0],
+    setSize = _useState2[1];
+  var goodColor = safeColor(readConfig(config, NS, 'goodColor', '#01417F'), '#01417F');
+  var badColor = safeColor(readConfig(config, NS, 'badColor', '#DFA611'), '#DFA611');
   var textColor = safeColor(readConfig(config, NS, 'textColor', '#FFFFFF'), '#FFFFFF');
+  var background = safeColor(readConfig(config, NS, 'background', '#0B1F3B'), '#0B1F3B');
+  var stroke = safeColor(readConfig(config, NS, 'sparkStroke', '#FFFFFF'), '#FFFFFF');
+  var unit = readConfig(config, NS, 'unit', '');
+  var subheader = readConfigLabel(config, NS, 'subheader', '');
+  var majorLabel = readConfigLabel(config, NS, 'majorLabel', 'Current:');
+  var deltaLabel = readConfigLabel(config, NS, 'deltaLabel', 'Change:');
+  var badgeText = readConfigLabel(config, NS, 'badgeText', 'Demo KPI');
+  var showDelta = readBool(config, NS, 'showDelta', true);
+  var showHover = readBool(config, NS, 'showHover', true);
+  var showHoverAnnotation = readBool(config, NS, 'showHoverAnnotation', true);
+  var sparkAuto = readBool(config, NS, 'sparkAuto', false);
+  var sparkMin = readFloat(config, NS, 'sparkMin', NaN);
+  var sparkMax = readFloat(config, NS, 'sparkMax', NaN);
+  var bounds = (0,react.useMemo)(function () {
+    return deriveSparkBounds(values, sparkMin, sparkMax, sparkAuto);
+  }, [values, sparkMin, sparkMax, sparkAuto]);
+  var measure = (0,react.useCallback)(function () {
+    var el = hostRef.current;
+    if (!el) {
+      return;
+    }
+    var rect = el.getBoundingClientRect();
+    setSize({
+      width: Math.max(120, Math.floor(rect.width)),
+      height: Math.max(160, Math.floor(rect.height))
+    });
+  }, []);
+  (0,react.useEffect)(function () {
+    measure();
+    var el = hostRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') {
+      return undefined;
+    }
+    var ro = new ResizeObserver(function () {
+      return measure();
+    });
+    ro.observe(el);
+    return function () {
+      return ro.disconnect();
+    };
+  }, [measure]);
   return /*#__PURE__*/react.createElement("div", {
+    ref: hostRef,
+    className: "splunkstuff-sparkline-value-viz",
     style: {
+      position: 'relative',
       width: '100%',
       height: '100%',
-      minHeight: 220,
-      background: background,
-      color: textColor
+      minHeight: 200,
+      boxSizing: 'border-box',
+      pointerEvents: 'auto',
+      overflow: 'hidden'
     }
-  }, /*#__PURE__*/react.createElement(LineChart, {
+  }, badgeText ? /*#__PURE__*/react.createElement("div", {
+    className: "splunkstuff-sparkline-value-viz__badge",
+    title: badgeText,
+    style: {
+      position: 'absolute',
+      top: 8,
+      right: 10,
+      zIndex: 6,
+      maxWidth: '45%',
+      padding: '5px 12px',
+      fontSize: 12,
+      fontWeight: 700,
+      lineHeight: 1.25,
+      textAlign: 'right',
+      color: '#fff',
+      background: 'rgba(0,0,0,0.55)',
+      border: '1px solid rgba(255,255,255,0.25)',
+      borderRadius: 4,
+      boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
+      pointerEvents: 'none'
+    }
+  }, badgeText) : null, /*#__PURE__*/react.createElement(LineChart, {
     values: values,
     times: times,
-    width: 420,
-    height: 260,
-    min: readFloat(config, NS, 'min', 0),
-    max: readFloat(config, NS, 'max', 100),
-    stroke: safeColor(readConfig(config, NS, 'stroke', '#FFFFFF'), '#FFFFFF'),
+    width: size.width,
+    height: size.height,
+    min: bounds.min,
+    max: bounds.max,
+    stroke: stroke,
     background: background,
-    goodColor: safeColor(readConfig(config, NS, 'goodColor', '#01417F'), '#01417F'),
-    badColor: safeColor(readConfig(config, NS, 'badColor', '#DFA611'), '#DFA611'),
+    goodColor: goodColor,
+    badColor: badColor,
     textColor: textColor,
-    unit: readConfig(config, NS, 'unit', '%'),
-    subheader: readConfig(config, NS, 'subheader', 'Demo KPI'),
+    unit: unit,
+    subheader: subheader,
     showMajor: true,
     centerMajor: true,
+    stackedMajor: true,
+    showDelta: showDelta,
+    majorLabel: majorLabel,
+    deltaLabel: deltaLabel,
     colorPlacement: "full",
-    showHover: readBool(config, NS, 'showHover', true)
+    showHover: showHover,
+    showHoverAnnotation: showHoverAnnotation
   }));
 }
-function mount(el, props) {
+;// ./src/main/webapp/visualizations/splunkstuff_kpi_sparkline_react/vizMount.jsx
+
+
+
+var roots = new WeakMap();
+function mountViz(el, props) {
   var root = roots.get(el);
   if (!root) {
     root = (0,client/* createRoot */.H)(el);
     roots.set(el, root);
   }
-  root.render(/*#__PURE__*/react.createElement(KpiSparklineReact, props));
+  root.render(/*#__PURE__*/react.createElement(KpiSparklineReactApp, props));
+}
+function unmountViz(el) {
+  var root = roots.get(el);
+  if (!root) {
+    return;
+  }
+  root.unmount();
+  roots["delete"](el);
+}
+;// ./src/main/webapp/visualizations/splunkstuff_kpi_sparkline_react/visualization.amd.jsx
+/* eslint-disable */
+/**
+ * Splunk custom visualization entry — React KPI + sparkline bundle.
+ */
+
+
+
+
+var visualization_amd_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react.';
+function enableAncestorPointerEvents(el) {
+  var maxDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 24;
+  var node = el;
+  var depth = 0;
+  while (node && depth < maxDepth) {
+    node.style.pointerEvents = 'auto';
+    node = node.parentElement;
+    depth += 1;
+  }
 }
 /* harmony default export */ const visualization_amd = (SplunkVisualizationBase_default().extend({
   getInitialDataParams: function getInitialDataParams() {
@@ -1781,18 +1980,28 @@ function mount(el, props) {
     return numericSeries(rawData);
   },
   updateView: function updateView(data, config) {
-    mount(this.el, {
-      values: data.values || [],
-      times: data.times || [],
+    var values = data && data.values || [];
+    var times = data && data.times || [];
+    var goodColor = safeColor(readConfig(config, visualization_amd_NS, 'goodColor', '#01417F'), '#01417F');
+    var badColor = safeColor(readConfig(config, visualization_amd_NS, 'badColor', '#DFA611'), '#DFA611');
+    var textColor = safeColor(readConfig(config, visualization_amd_NS, 'textColor', '#FFFFFF'), '#FFFFFF');
+    var background = safeColor(readConfig(config, visualization_amd_NS, 'background', '#0B1F3B'), '#0B1F3B');
+    if (values.length >= 2) {
+      applyTrendHostStyle(this.el, trendBackground(trendDelta(values), goodColor, badColor), textColor);
+    } else {
+      applyTrendHostStyle(this.el, background, textColor);
+    }
+    this.el.style.pointerEvents = 'auto';
+    enableAncestorPointerEvents(this.el);
+    mountViz(this.el, {
+      values: values,
+      times: times,
       config: config
     });
   },
+  reflow: function reflow() {},
   remove: function remove() {
-    var root = roots.get(this.el);
-    if (root) {
-      root.unmount();
-      roots["delete"](this.el);
-    }
+    unmountViz(this.el);
     this.el.innerHTML = '';
   }
 }));

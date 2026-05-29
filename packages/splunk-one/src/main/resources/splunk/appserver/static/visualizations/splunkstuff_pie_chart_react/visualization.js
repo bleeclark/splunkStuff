@@ -957,6 +957,26 @@ function readConfig(config, namespace, prop, fallback) {
   }
   return fallback;
 }
+
+/** Missing key → fallback; explicit blank string → empty (hide label/badge). */
+function readConfigLabel(config, namespace, prop, fallback) {
+  if (config == null || _typeof(config) !== 'object') {
+    return fallback;
+  }
+  var candidates = [namespace + prop, prop];
+  for (var i = 0; i < candidates.length; i += 1) {
+    var key = candidates[i];
+    if (!Object.prototype.hasOwnProperty.call(config, key)) {
+      continue;
+    }
+    var v = config[key];
+    if (v === undefined || v === null) {
+      continue;
+    }
+    return String(v).trim();
+  }
+  return fallback;
+}
 function readBool(config, namespace, prop, fallback) {
   var raw = readConfig(config, namespace, prop, fallback);
   if (raw === true || raw === false) {

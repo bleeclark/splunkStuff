@@ -212,6 +212,10 @@ export default function LineChart({
     subheader,
     showMajor = false,
     centerMajor = false,
+    stackedMajor = false,
+    showDelta = true,
+    majorLabel = '',
+    deltaLabel = '',
     colorPlacement = 'full', // 'full' | 'top'
     unitScale = 0.6,
     showHover = true,
@@ -280,7 +284,9 @@ export default function LineChart({
 
     const showSubheader = Boolean(subheader);
     const subheaderH = showSubheader ? 28 : 0;
-    const majorH = showMajor ? 44 : 0;
+    const labelExtra =
+        showMajor && stackedMajor ? (majorLabel ? 18 : 0) + (deltaLabel ? 18 : 0) : 0;
+    const majorH = showMajor ? 44 + labelExtra + (stackedMajor && showDelta ? 8 : 0) : 0;
     const headerH = subheaderH + majorH;
     const chartH = Math.max(1, height - headerH);
 
@@ -605,16 +611,32 @@ export default function LineChart({
                     <div
                         style={{
                             height: majorH,
-                            padding: '6px 12px 6px',
+                            padding: stackedMajor ? '8px 12px 6px' : '6px 12px 6px',
                             boxSizing: 'border-box',
                             display: 'flex',
-                            alignItems: 'flex-end',
+                            flexDirection: stackedMajor ? 'column' : 'row',
+                            alignItems: stackedMajor ? 'center' : 'flex-end',
                             justifyContent: centerMajor ? 'center' : 'space-between',
-                            gap: 6,
+                            gap: stackedMajor ? 4 : 6,
                             textAlign: centerMajor ? 'center' : undefined,
                             background: majorBg,
                         }}
                     >
+                        {stackedMajor && majorLabel ? (
+                            <div
+                                style={{
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    lineHeight: 1.2,
+                                    padding: '2px 8px',
+                                    borderRadius: 3,
+                                    background: 'rgba(0,0,0,0.28)',
+                                    textShadow: '0 1px 2px rgba(0,0,0,0.35)',
+                                }}
+                            >
+                                {majorLabel}
+                            </div>
+                        ) : null}
                         <div
                             style={{
                                 fontSize: 28,
@@ -638,17 +660,36 @@ export default function LineChart({
                                 </span>
                             ) : null}
                         </div>
-                        <div
-                            style={{
-                                fontSize: 11,
-                                lineHeight: 1.2,
-                                fontWeight: 500,
-                                opacity: 0.95,
-                                marginLeft: centerMajor ? 6 : undefined,
-                            }}
-                        >
-                            {formatDelta(delta)}
-                        </div>
+                        {showDelta ? (
+                            <>
+                                {stackedMajor && deltaLabel ? (
+                                    <div
+                                        style={{
+                                            fontSize: 13,
+                                            fontWeight: 700,
+                                            lineHeight: 1.2,
+                                            padding: '2px 8px',
+                                            borderRadius: 3,
+                                            background: 'rgba(0,0,0,0.28)',
+                                            textShadow: '0 1px 2px rgba(0,0,0,0.35)',
+                                        }}
+                                    >
+                                        {deltaLabel}
+                                    </div>
+                                ) : null}
+                                <div
+                                    style={{
+                                        fontSize: stackedMajor ? 16 : 11,
+                                        lineHeight: 1.2,
+                                        fontWeight: 600,
+                                        opacity: 0.95,
+                                        marginLeft: centerMajor && !stackedMajor ? 6 : undefined,
+                                    }}
+                                >
+                                    {formatDelta(delta)}
+                                </div>
+                            </>
+                        ) : null}
                     </div>
                 ) : null}
 

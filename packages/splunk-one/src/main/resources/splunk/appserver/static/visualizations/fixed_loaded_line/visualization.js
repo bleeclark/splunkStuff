@@ -987,6 +987,14 @@ function LineChart(_ref3) {
     showMajor = _ref3$showMajor === void 0 ? false : _ref3$showMajor,
     _ref3$centerMajor = _ref3.centerMajor,
     centerMajor = _ref3$centerMajor === void 0 ? false : _ref3$centerMajor,
+    _ref3$stackedMajor = _ref3.stackedMajor,
+    stackedMajor = _ref3$stackedMajor === void 0 ? false : _ref3$stackedMajor,
+    _ref3$showDelta = _ref3.showDelta,
+    showDelta = _ref3$showDelta === void 0 ? true : _ref3$showDelta,
+    _ref3$majorLabel = _ref3.majorLabel,
+    majorLabel = _ref3$majorLabel === void 0 ? '' : _ref3$majorLabel,
+    _ref3$deltaLabel = _ref3.deltaLabel,
+    deltaLabel = _ref3$deltaLabel === void 0 ? '' : _ref3$deltaLabel,
     _ref3$colorPlacement = _ref3.colorPlacement,
     colorPlacement = _ref3$colorPlacement === void 0 ? 'full' : _ref3$colorPlacement,
     _ref3$unitScale = _ref3.unitScale,
@@ -1067,7 +1075,8 @@ function LineChart(_ref3) {
   }, [series, values, times, stroke, comparisonSeries]);
   var showSubheader = Boolean(subheader);
   var subheaderH = showSubheader ? 28 : 0;
-  var majorH = showMajor ? 44 : 0;
+  var labelExtra = showMajor && stackedMajor ? (majorLabel ? 18 : 0) + (deltaLabel ? 18 : 0) : 0;
+  var majorH = showMajor ? 44 + labelExtra + (stackedMajor && showDelta ? 8 : 0) : 0;
   var headerH = subheaderH + majorH;
   var chartH = Math.max(1, height - headerH);
   var primaryValues = normalized.series[0] ? normalized.series[0].values : [];
@@ -1367,16 +1376,27 @@ function LineChart(_ref3) {
   }, String(subheader)) : null, showMajor ? /*#__PURE__*/react.createElement("div", {
     style: {
       height: majorH,
-      padding: '6px 12px 6px',
+      padding: stackedMajor ? '8px 12px 6px' : '6px 12px 6px',
       boxSizing: 'border-box',
       display: 'flex',
-      alignItems: 'flex-end',
+      flexDirection: stackedMajor ? 'column' : 'row',
+      alignItems: stackedMajor ? 'center' : 'flex-end',
       justifyContent: centerMajor ? 'center' : 'space-between',
-      gap: 6,
+      gap: stackedMajor ? 4 : 6,
       textAlign: centerMajor ? 'center' : undefined,
       background: majorBg
     }
-  }, /*#__PURE__*/react.createElement("div", {
+  }, stackedMajor && majorLabel ? /*#__PURE__*/react.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      lineHeight: 1.2,
+      padding: '2px 8px',
+      borderRadius: 3,
+      background: 'rgba(0,0,0,0.28)',
+      textShadow: '0 1px 2px rgba(0,0,0,0.35)'
+    }
+  }, majorLabel) : null, /*#__PURE__*/react.createElement("div", {
     style: {
       fontSize: 28,
       fontWeight: 600,
@@ -1391,15 +1411,25 @@ function LineChart(_ref3) {
       marginLeft: 2,
       opacity: 0.95
     }
-  }, unitText) : null), /*#__PURE__*/react.createElement("div", {
+  }, unitText) : null), showDelta ? /*#__PURE__*/react.createElement(react.Fragment, null, stackedMajor && deltaLabel ? /*#__PURE__*/react.createElement("div", {
     style: {
-      fontSize: 11,
+      fontSize: 13,
+      fontWeight: 700,
       lineHeight: 1.2,
-      fontWeight: 500,
-      opacity: 0.95,
-      marginLeft: centerMajor ? 6 : undefined
+      padding: '2px 8px',
+      borderRadius: 3,
+      background: 'rgba(0,0,0,0.28)',
+      textShadow: '0 1px 2px rgba(0,0,0,0.35)'
     }
-  }, formatDelta(delta))) : null, /*#__PURE__*/react.createElement("div", {
+  }, deltaLabel) : null, /*#__PURE__*/react.createElement("div", {
+    style: {
+      fontSize: stackedMajor ? 16 : 11,
+      lineHeight: 1.2,
+      fontWeight: 600,
+      opacity: 0.95,
+      marginLeft: centerMajor && !stackedMajor ? 6 : undefined
+    }
+  }, formatDelta(delta))) : null) : null, /*#__PURE__*/react.createElement("div", {
     ref: setChartAreaEl,
     "data-testid": "splunkstuff-line-chart-area",
     style: {
