@@ -3,6 +3,7 @@ import React from 'react';
 import KpiSparklineReactApp from './KpiSparklineReactApp';
 
 const roots = new WeakMap();
+const lastProps = new WeakMap();
 
 export function mountViz(el, props) {
     let root = roots.get(el);
@@ -10,7 +11,17 @@ export function mountViz(el, props) {
         root = createRoot(el);
         roots.set(el, root);
     }
+    lastProps.set(el, props);
     root.render(<KpiSparklineReactApp {...props} />);
+}
+
+export function reflowViz(el) {
+    const props = lastProps.get(el);
+    if (!props) {
+        return;
+    }
+    const reflowTick = (props.reflowTick || 0) + 1;
+    mountViz(el, { ...props, reflowTick });
 }
 
 export function unmountViz(el) {
@@ -20,4 +31,5 @@ export function unmountViz(el) {
     }
     root.unmount();
     roots.delete(el);
+    lastProps.delete(el);
 }

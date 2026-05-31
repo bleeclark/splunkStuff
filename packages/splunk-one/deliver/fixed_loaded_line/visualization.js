@@ -1003,6 +1003,8 @@ function LineChart(_ref3) {
     showHover = _ref3$showHover === void 0 ? true : _ref3$showHover,
     _ref3$showHoverAnnota = _ref3.showHoverAnnotation,
     showHoverAnnotation = _ref3$showHoverAnnota === void 0 ? false : _ref3$showHoverAnnota,
+    _ref3$fillContainer = _ref3.fillContainer,
+    fillContainer = _ref3$fillContainer === void 0 ? false : _ref3$fillContainer,
     thresholdMin = _ref3.thresholdMin,
     thresholdMax = _ref3.thresholdMax,
     _ref3$thresholdShade = _ref3.thresholdShade,
@@ -1296,8 +1298,8 @@ function LineChart(_ref3) {
     var msg = emptyText || "Need at least 2 numeric points; got ".concat(goodCount, ". Check your series values and time alignment.");
     return /*#__PURE__*/react.createElement("div", {
       style: {
-        width: width,
-        height: height,
+        width: fillContainer ? '100%' : width,
+        height: fillContainer ? '100%' : height,
         background: containerBg,
         color: showMajor ? textColor : 'rgba(255,255,255,0.85)',
         display: 'flex',
@@ -1344,11 +1346,14 @@ function LineChart(_ref3) {
   var thLo = Number.isFinite(Number(thresholdMin)) ? Number(thresholdMin) : null;
   var thHi = Number.isFinite(Number(thresholdMax)) ? Number(thresholdMax) : null;
   var yTarget = Number.isFinite(Number(target)) ? yFor(Number(target)) : null;
+  var outerWidth = fillContainer ? '100%' : width;
+  var outerHeight = fillContainer ? '100%' : height;
+  var svgWidth = fillContainer ? '100%' : width;
   return /*#__PURE__*/react.createElement("div", {
     style: {
       position: 'relative',
-      width: width,
-      height: height,
+      width: outerWidth,
+      height: outerHeight,
       overflow: 'visible'
     }
   }, /*#__PURE__*/react.createElement("div", {
@@ -1438,8 +1443,10 @@ function LineChart(_ref3) {
       height: chartH
     }
   }, /*#__PURE__*/react.createElement("svg", {
-    width: width,
+    width: svgWidth,
     height: chartH,
+    viewBox: fillContainer ? '0 0 ' + width + ' ' + chartH : undefined,
+    preserveAspectRatio: fillContainer ? 'none' : undefined,
     style: {
       display: 'block',
       pointerEvents: 'none'

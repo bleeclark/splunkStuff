@@ -5,12 +5,12 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20260527-kpi-sparkline-v2';
+    var VIZ_BUILD = '20260529-kpi-sparkline-v3';
     var DEMO_LABELS = {
-        majorLabel: 'Current:',
-        deltaLabel: 'Change:',
-        badgeText: 'Demo KPI',
-        sparkPointLabels: '0:Oldest,9:Mid,19:Latest',
+        majorLabel: '',
+        deltaLabel: '',
+        badgeText: '',
+        sparkPointLabels: '',
     };
 
     function inlineCaptionStyle(el, textColor) {
@@ -713,7 +713,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var sparkPointLabels = parseSparkPointLabels(
                 optLabel('sparkPointLabels', DEMO_LABELS.sparkPointLabels)
             );
-            var showPointLabels = truthy(optOr('showPointLabels', 'true'));
+            var showPointLabels = truthy(optOr('showPointLabels', 'false'));
 
             var delta = trendDelta(values);
             var last = values[values.length - 1];
@@ -896,10 +896,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                         lbl.setAttribute('font-weight', '700');
                         if (xy.x <= padL + 2) {
                             lbl.setAttribute('text-anchor', 'start');
-                            lbl.setAttribute('dx', '-2');
+                            lbl.setAttribute('dx', '2');
                         } else if (xy.x >= w - padR - 2) {
                             lbl.setAttribute('text-anchor', 'end');
-                            lbl.setAttribute('dx', '2');
+                            lbl.setAttribute('dx', '-2');
                         } else {
                             lbl.setAttribute('text-anchor', 'middle');
                         }

@@ -3,14 +3,9 @@
  * Splunk custom visualization entry — React KPI + sparkline bundle.
  */
 import SplunkVisualizationBase from 'api/SplunkVisualizationBase';
-import {
-    applyTrendHostStyle,
-    trendBackground,
-    trendDelta,
-} from '../../lib/splunkstuffTrendColors';
-import { numericSeries, readConfig, safeColor } from '../splunkVizData';
-import KpiSparklineReactApp from './KpiSparklineReactApp';
-import { mountViz, unmountViz } from './vizMount';
+import { applyTrendHostStyle, trendBackground, trendDelta } from '../../lib/splunkstuffTrendColors';
+import { numericSeries, readBool, readConfig, safeColor } from '../splunkVizData';
+import { mountViz, reflowViz, unmountViz } from './vizMount';
 
 const NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react.';
 
@@ -43,27 +38,28 @@ export default SplunkVisualizationBase.extend({
         const badColor = safeColor(readConfig(config, NS, 'badColor', '#DFA611'), '#DFA611');
         const textColor = safeColor(readConfig(config, NS, 'textColor', '#FFFFFF'), '#FFFFFF');
         const background = safeColor(readConfig(config, NS, 'background', '#0B1F3B'), '#0B1F3B');
+        const invertTrend = readBool(config, NS, 'invertTrend', false);
+        const delta = trendDelta(values);
+        const visualDelta = invertTrend && Number.isFinite(delta) ? -delta : delta;
+        const tileBackground =
+            values.length >= 2 ? trendBackground(visualDelta, goodColor, badColor) : background;
 
-        if (values.length >= 2) {
-            applyTrendHostStyle(
-                this.el,
-                trendBackground(trendDelta(values), goodColor, badColor),
-                textColor
-            );
-        } else {
-            applyTrendHostStyle(this.el, background, textColor);
-        }
+        applyTrendHostStyle(this.el, tileBackground, textColor);
         this.el.style.pointerEvents = 'auto';
         enableAncestorPointerEvents(this.el);
 
+        this._reflowTick = this._reflowTick || 0;
         mountViz(this.el, {
             values,
             times,
             config,
+            reflowTick: this._reflowTick,
         });
     },
 
-    reflow() {},
+    reflow() {
+        reflowViz(this.el);
+    },
 
     remove() {
         unmountViz(this.el);

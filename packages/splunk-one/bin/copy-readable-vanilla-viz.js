@@ -34,7 +34,15 @@ const VIZ_SELF_CONTAINED_SHARED = {
 };
 
 /** Webpack writes these to src/.../static; pages copy can leave stage/ stale — sync after build. */
-const REACT_VIZ_IDS = ['fixed_loaded_line', 'fixed_single_value_react'];
+const REACT_VIZ_IDS = [
+    'fixed_loaded_line',
+    'fixed_single_value_react',
+    'simple_small_viz_react',
+    'splunkstuff_pie_chart_react',
+    'splunkstuff_kpi_sparkline_react',
+    'radial_meter_react',
+    'radial_meter_react_advanced',
+];
 
 /**
  * Copy _shared AMD helpers into viz directories that use same-folder defines (portable deliver/).
@@ -59,7 +67,8 @@ function syncSelfContainedSharedModules(pkgRoot) {
 }
 
 /**
- * Restore readable React-built AMD visualization.js into stage/ when Webpack emitted minified output.
+ * Copy webpack-built visualization.js from resources/ into stage/ and deliver/
+ * (pages copy + parallel webpack targets can leave deploy roots stale).
  */
 function syncReactVizBundlesToStage(pkgRoot) {
     const root = pkgRoot || path.join(__dirname, '..');
@@ -67,16 +76,21 @@ function syncReactVizBundlesToStage(pkgRoot) {
         root,
         'src/main/resources/splunk/appserver/static/visualizations'
     );
-    const stageVizRoot = path.join(root, 'stage/appserver/static/visualizations');
+    const deployRoots = [
+        path.join(root, 'stage/appserver/static/visualizations'),
+        path.join(root, 'deliver'),
+    ];
 
     REACT_VIZ_IDS.forEach((vizId) => {
         const src = path.join(staticVizRoot, vizId, 'visualization.js');
         if (!fs.existsSync(src)) {
             return;
         }
-        const destDir = path.join(stageVizRoot, vizId);
-        shell.mkdir('-p', destDir);
-        fs.copyFileSync(src, path.join(destDir, 'visualization.js'));
+        deployRoots.forEach((deployRoot) => {
+            const destDir = path.join(deployRoot, vizId);
+            shell.mkdir('-p', destDir);
+            fs.copyFileSync(src, path.join(destDir, 'visualization.js'));
+        });
     });
 }
 

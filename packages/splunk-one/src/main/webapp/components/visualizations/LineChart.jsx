@@ -220,6 +220,7 @@ export default function LineChart({
     unitScale = 0.6,
     showHover = true,
     showHoverAnnotation = false,
+    fillContainer = false,
     // thresholds/target
     thresholdMin,
     thresholdMax,
@@ -527,8 +528,8 @@ export default function LineChart({
         return (
             <div
                 style={{
-                    width,
-                    height,
+                    width: fillContainer ? '100%' : width,
+                    height: fillContainer ? '100%' : height,
                     background: containerBg,
                     color: showMajor ? textColor : 'rgba(255,255,255,0.85)',
                     display: 'flex',
@@ -576,8 +577,12 @@ export default function LineChart({
     const thHi = Number.isFinite(Number(thresholdMax)) ? Number(thresholdMax) : null;
     const yTarget = Number.isFinite(Number(target)) ? yFor(Number(target)) : null;
 
+    const outerWidth = fillContainer ? '100%' : width;
+    const outerHeight = fillContainer ? '100%' : height;
+    const svgWidth = fillContainer ? '100%' : width;
+
     return (
-        <div style={{ position: 'relative', width, height, overflow: 'visible' }}>
+        <div style={{ position: 'relative', width: outerWidth, height: outerHeight, overflow: 'visible' }}>
             <div
                 style={{
                     width: '100%',
@@ -699,8 +704,10 @@ export default function LineChart({
                     style={{ position: 'relative', width: '100%', height: chartH }}
                 >
                 <svg
-                    width={width}
+                    width={svgWidth}
                     height={chartH}
+                    viewBox={fillContainer ? '0 0 ' + width + ' ' + chartH : undefined}
+                    preserveAspectRatio={fillContainer ? 'none' : undefined}
                     style={{
                         display: 'block',
                         pointerEvents: 'none',

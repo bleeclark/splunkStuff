@@ -25,7 +25,7 @@
     | sort 0 _time
     | tail 20
 
-  Panel type: <app_id>.splunkstuff_kpi_sparkline
+  Panel type: <app_id>.splunkstuff_kpi_sparkline_react
 
   Avoid parentheses in section-label — Splunk builds DOM ids from labels.
 -->
@@ -120,19 +120,19 @@
 </form>
 <form class="splunk-formatter-section" section-label="Indicator labels">
     <splunk-control-group label="Major value label">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.majorLabel" value="Current:"></splunk-text-input>
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.majorLabel" value=""></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
         Text above the headline number, e.g. <strong>Current:</strong>. Leave blank to hide.
     </div>
     <splunk-control-group label="Delta label">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.deltaLabel" value="Change:"></splunk-text-input>
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.deltaLabel" value=""></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
         Text above the trend value, e.g. <strong>Change:</strong>. Leave blank to hide.
     </div>
     <splunk-control-group label="Badge / status text">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.badgeText" value="Demo KPI"></splunk-text-input>
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.badgeText" value=""></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
         Top-right annotation, e.g. <strong>SLA OK</strong>. Clear this field completely to remove the badge.
@@ -140,14 +140,14 @@
 </form>
 <form class="splunk-formatter-section" section-label="Spark point labels">
     <splunk-control-group label="Point labels by index">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkPointLabels" value="0:Oldest,9:Mid,19:Latest"></splunk-text-input>
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkPointLabels" value=""></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
         Comma-separated <strong>index:word</strong> pairs (0-based, oldest→newest). Example:
         <strong>0:Start,9:Peak,19:Now</strong>. Shown in tooltip when hovering that point.
     </div>
     <splunk-control-group label="Always show point labels on spark">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.showPointLabels" value="true"></splunk-text-input>
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.showPointLabels" value="false"></splunk-text-input>
     </splunk-control-group>
 </form>
 <form class="splunk-formatter-section" section-label="Empty state">

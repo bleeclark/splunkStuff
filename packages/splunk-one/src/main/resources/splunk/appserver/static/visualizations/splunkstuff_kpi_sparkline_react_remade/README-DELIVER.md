@@ -1,11 +1,11 @@
 # SplunkStuff KPI + sparkline (React) — remade folder
 
-**Viz id:** `splunkstuff_kpi_sparkline_react`  
-**NS:** `display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react.*`
+**Viz id:** `splunkstuff_kpi_sparkline_react_remade`  
+**NS:** `display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.*`
 
 Copy this folder to:
 
-`$SPLUNK_HOME/etc/apps/<APP_ID>/appserver/static/visualizations/splunkstuff_kpi_sparkline_react/`
+`$SPLUNK_HOME/etc/apps/<APP_ID>/appserver/static/visualizations/splunkstuff_kpi_sparkline_react_remade/`
 
 Merge `visualizations.conf.snippet` into `default/visualizations.conf`, then restart Splunk.
 
@@ -23,7 +23,7 @@ Merge `visualizations.conf.snippet` into `default/visualizations.conf`, then res
 | tail 20
 ```
 
-**Panel type:** `<APP_ID>.splunkstuff_kpi_sparkline_react`  
+**Panel type:** `<APP_ID>.splunkstuff_kpi_sparkline_react_remade`  
 **Time range:** Last 4 hours (or match your `_time` span).
 
 ## Formatter highlights

@@ -19,7 +19,6 @@ const CopyReadableVanillaVizPlugin = require('./webpack.copy-readable-vanilla-vi
 const reactVizPairs = [
     'simple_small_viz_react',
     'splunkstuff_pie_chart_react',
-    'splunkstuff_kpi_sparkline_react',
     'radial_meter_react',
     'radial_meter_react_advanced',
 ];
@@ -130,6 +129,20 @@ const pagesConfig = webpackMerge(baseConfig, {
                         'src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line'
                     ),
                     to: path.join(__dirname, 'deliver/splunkstuff_kpi_line'),
+                },
+                {
+                    from: path.join(
+                        __dirname,
+                        'src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_sparkline_react'
+                    ),
+                    to: path.join(__dirname, 'deliver/splunkstuff_kpi_sparkline_react'),
+                },
+                {
+                    from: path.join(
+                        __dirname,
+                        'src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_sparkline_react_remade'
+                    ),
+                    to: path.join(__dirname, 'deliver/splunkstuff_kpi_sparkline_react_remade'),
                 },
                 {
                     from: path.join(

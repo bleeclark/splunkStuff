@@ -1,8 +1,9 @@
+# Paste into: $SPLUNK_HOME/etc/apps/<APP_ID>/default/visualizations.conf
+
 [splunkstuff_kpi_sparkline_react]
 label = SplunkStuff - KPI + sparkline (React)
-description = React implementation of the KPI single value with footer sparkline.
+description = Remade gallery-facing KPI single value with labels, badge, hover, and footer sparkline.
 default_height = 280
 search_fragment = | timechart span=1h avg(my_metric) as value
 supports_drilldown = 0
 supports_trellis = 0
-
