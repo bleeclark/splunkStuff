@@ -1,0 +1,48 @@
+<!--
+  SplunkStuff — Data pie chart (Top N + Other)
+
+  {{VIZ_NAMESPACE}} → display.visualizations.custom.<app_id>.splunkstuff_pie_chart
+
+  Implemented props:
+    topN, otherLabel, showPercent, title, background, textColor
+
+  Future / data-team ideas (not in v1):
+    donut inner radius, legend position, min slice %, drilldown per slice,
+    per-slice colors from field, empty-state message
+
+  Test SPL:
+    | makeresults count=14
+    | streamstats count as row
+    | eval category=substr("ABCDEFGHIJKLMN", row, 1)
+    | eval value=row * 10
+    | stats sum(value) as value by category
+    | sort category
+
+  Panel type: <app_id>.splunkstuff_pie_chart
+
+  Avoid parentheses in section-label — Splunk builds DOM ids from labels.
+-->
+<form class="splunk-formatter-section" section-label="Data shaping">
+    <splunk-control-group label="Top N slices (0 = all)">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.topN" value="5"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Other bucket label">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.otherLabel" value="Other"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show percent in legend">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.showPercent" value="true"></splunk-text-input>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Appearance">
+    <splunk-control-group label="Background">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#1B2A41"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Text color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Labels">
+    <splunk-control-group label="Title (optional)">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.title" value=""></splunk-text-input>
+    </splunk-control-group>
+</form>

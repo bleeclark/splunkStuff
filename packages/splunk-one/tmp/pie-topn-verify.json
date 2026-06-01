@@ -1,0 +1,30 @@
+{
+  "slices": [
+    {
+      "label": "N",
+      "value": 140
+    },
+    {
+      "label": "M",
+      "value": 130
+    },
+    {
+      "label": "L",
+      "value": 120
+    },
+    {
+      "label": "K",
+      "value": 110
+    },
+    {
+      "label": "J",
+      "value": 100
+    },
+    {
+      "label": "Other",
+      "value": 450
+    }
+  ],
+  "total": 1050,
+  "otherPercent": 42.857142857142854
+}

@@ -1,0 +1,9 @@
+# Paste into: $SPLUNK_HOME/etc/apps/<APP_ID>/default/visualizations.conf
+
+[fixed_loaded_line_vanilla]
+label = SplunkStuff — Fixed loaded line (vanilla AMD)
+description = Readable AMD single-value + line chart; same formatter options as React fixed_loaded_line.
+default_height = 200
+search_fragment = | timechart span=1h avg(my_metric) as value
+supports_drilldown = 0
+supports_trellis = 0

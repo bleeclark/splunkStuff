@@ -10,6 +10,10 @@ const staticVizAssets = path.join(
     'src/main/resources/splunk/appserver/static/visualizations/fixed_loaded_line'
 );
 
+/**
+ * Splunk custom visualization bundle (React LineChart). Same AMD library output and
+ * `minimize: false` constraint as webpack.fixed-single-value-react.config.js.
+ */
 function createFixedLoadedLineVizConfig({ outputDir }) {
     return webpackMerge(baseConfig, {
         name: `fixed_loaded_line:${path.basename(outputDir)}`,
@@ -19,7 +23,10 @@ function createFixedLoadedLineVizConfig({ outputDir }) {
         output: {
             path: outputDir,
             filename: '[name].js',
-            libraryTarget: 'amd',
+            library: {
+                type: 'amd',
+                export: 'default',
+            },
         },
         externals: {
             'api/SplunkVisualizationBase': 'api/SplunkVisualizationBase',
@@ -51,6 +58,13 @@ function createFixedLoadedLineVizConfig({ outputDir }) {
             }),
         ],
         devtool: false,
+        /**
+         * Same as fixed_single_value_react: keep minimize false so the AMD external stub
+         * is not broken by Terser.
+         */
+        optimization: {
+            minimize: false,
+        },
         module: {
             rules: [{ test: /\.css$/, use: 'css-loader' }],
         },

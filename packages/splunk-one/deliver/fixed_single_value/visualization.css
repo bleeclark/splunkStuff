@@ -1,0 +1,70 @@
+.splunk-one-fixed-single-value-viz {
+    /* Root container: Splunk panel will size this element. */
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.splunk-one-fixed-single-value-viz__header {
+    /* Optional title strip shown only when `subheader` is non-empty. */
+    flex: 0 0 auto;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    background: rgba(0, 0, 0, 0.52);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.splunk-one-fixed-single-value-viz__body {
+    /* Center the major/trend values; reserve bottom padding for the sparkline overlay. */
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px 36px;
+}
+
+.splunk-one-fixed-single-value-viz__major {
+    /* Main single value. */
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.splunk-one-fixed-single-value-viz__trend {
+    /* Delta from last to previous point (▲/▼). */
+    margin-top: 6px;
+    font-size: 11px;
+    opacity: 0.95;
+}
+
+.splunk-one-fixed-single-value-viz__spark {
+    /* Positioned over the bottom of the tile; SVG scales to container. */
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 6px;
+    height: 28px;
+}
+
+.splunk-one-fixed-single-value-viz__spark svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.splunk-one-fixed-single-value-viz__err {
+    /* Displayed when the panel search returns no numeric values. */
+    padding: 12px;
+    font-size: 12px;
+    opacity: 0.9;
+}

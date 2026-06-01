@@ -15,12 +15,15 @@
     </splunk-control-group>
 </form>
 <form class="splunk-formatter-section" section-label="Colors">
-    <splunk-control-group label="Good trend (background)">
+    <splunk-control-group label="Up / flat trend (delta &gt;= 0)">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.goodColor" value="#01417F"></splunk-color-picker>
     </splunk-control-group>
-    <splunk-control-group label="Bad trend (background)">
+    <splunk-control-group label="Down trend (delta &lt; 0)">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.badColor" value="#DFA611"></splunk-color-picker>
     </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Keith/ITSI pattern: blue when trend &gt;= 0, gold when trend &lt; 0. For patch KPIs, up is often undesirable.
+    </div>
     <splunk-control-group label="Text color">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
     </splunk-control-group>

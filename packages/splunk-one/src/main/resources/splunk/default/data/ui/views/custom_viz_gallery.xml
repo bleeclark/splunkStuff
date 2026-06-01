@@ -1,0 +1,381 @@
+<?xml version="1.0"?>
+<dashboard version="1.1">
+    <label>SplunkStuff custom viz gallery</label>
+    <description>Canonical gallery: one vanilla JavaScript implementation and one React implementation for each distinct SplunkStuff visualization family.</description>
+    <row>
+        <panel>
+            <title>Simple small viz - JavaScript</title>
+            <search id="gallery_simple_small_js">
+                <query>
+| makeresults count=5
+| streamstats count as value
+| eval _time = relative_time(now(), "-" . (5 - value) . "m@m")
+| fields _time value
+                </query>
+                <earliest>-15m</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.simple_small_viz">
+                <search base="gallery_simple_small_js" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.label">Latest count</option>
+            </viz>
+            <table>
+                <title>Data</title>
+                <search base="gallery_simple_small_js" />
+                <option name="count">5</option>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Simple small viz - React</title>
+            <search id="gallery_simple_small_react">
+                <query>
+| makeresults count=5
+| streamstats count as value
+| eval _time = relative_time(now(), "-" . (5 - value) . "m@m")
+| fields _time value
+                </query>
+                <earliest>-15m</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.simple_small_viz_react">
+                <search base="gallery_simple_small_react" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz_react.label">Latest count</option>
+            </viz>
+            <table>
+                <title>Data</title>
+                <search base="gallery_simple_small_react" />
+                <option name="count">5</option>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>Fixed single value - JavaScript</title>
+            <search id="gallery_fixed_single_value_js">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 18 + ((n * 9) % 62)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.fixed_single_value">
+                <search base="gallery_fixed_single_value_js" />
+            </viz>
+            <table>
+                <title>Data (latest 20 by _time, oldest to newest)</title>
+                <search base="gallery_fixed_single_value_js" />
+                <option name="count">20</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Fixed single value - React</title>
+            <search id="gallery_fixed_single_value_react">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 18 + ((n * 9) % 62)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.fixed_single_value_react">
+                <search base="gallery_fixed_single_value_react" />
+            </viz>
+            <table>
+                <title>Data (latest 20 by _time, oldest to newest)</title>
+                <search base="gallery_fixed_single_value_react" />
+                <option name="count">20</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>Loaded line KPI - JavaScript</title>
+            <search id="gallery_loaded_line_js">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.fixed_loaded_line_vanilla">
+                <search base="gallery_loaded_line_js" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line_vanilla.showHover">true</option>
+            </viz>
+            <table>
+                <title>Data (latest 20 by _time, oldest to newest)</title>
+                <search base="gallery_loaded_line_js" />
+                <option name="count">20</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Loaded line KPI - React</title>
+            <search id="gallery_loaded_line_react">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.fixed_loaded_line">
+                <search base="gallery_loaded_line_react" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line.showHover">true</option>
+            </viz>
+            <table>
+                <title>Data (latest 20 by _time, oldest to newest)</title>
+                <search base="gallery_loaded_line_react" />
+                <option name="count">20</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>Data pie - JavaScript</title>
+            <search id="gallery_pie_js">
+                <query>
+| makeresults count=14
+| streamstats count as row
+| eval category=substr("ABCDEFGHIJKLMN", row, 1)
+| eval value=row * 10
+| stats sum(value) as value by category
+| sort category
+                </query>
+                <earliest>-1s</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_pie_chart">
+                <search base="gallery_pie_js" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.topN">5</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.otherLabel">Other</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showPercent">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.title">Top 5 + Other</option>
+            </viz>
+            <table>
+                <title>Data</title>
+                <search base="gallery_pie_js" />
+                <option name="count">20</option>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Data pie - React</title>
+            <search id="gallery_pie_react">
+                <query>
+| makeresults count=14
+| streamstats count as row
+| eval category=substr("ABCDEFGHIJKLMN", row, 1)
+| eval value=row * 10
+| stats sum(value) as value by category
+| sort category
+                </query>
+                <earliest>-1s</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_pie_chart_react">
+                <search base="gallery_pie_react" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart_react.topN">5</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart_react.otherLabel">Other</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart_react.showPercent">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart_react.title">Top 5 + Other</option>
+            </viz>
+            <table>
+                <title>Data</title>
+                <search base="gallery_pie_react" />
+                <option name="count">20</option>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>KPI + sparkline - JavaScript</title>
+            <option name="height">280</option>
+            <search id="gallery_kpi_sparkline_js">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_kpi_sparkline">
+                <search base="gallery_kpi_sparkline_js" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.precision">0</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.majorLabel"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.deltaLabel"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.badgeText"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.tooltipPrefix"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.sparkPointLabels">0:Oldest,9:Mid,19:Latest</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showPointLabels">true</option>
+            </viz>
+            <table>
+                <title>Data (latest 20 by _time, oldest to newest)</title>
+                <search base="gallery_kpi_sparkline_js" />
+                <option name="count">20</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+        <panel>
+            <title>KPI + sparkline - React</title>
+            <option name="height">280</option>
+            <search id="gallery_kpi_sparkline_react">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| fields _time value
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade">
+                <search base="gallery_kpi_sparkline_react" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.precision">0</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.majorLabel"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.deltaLabel"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.badgeText"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.tooltipPrefix"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.sparkPointLabels">0:Oldest,9:Mid,19:Latest</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.showPointLabels">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.showHover">true</option>
+            </viz>
+            <table>
+                <title>Data (latest 20 by _time, oldest to newest)</title>
+                <search base="gallery_kpi_sparkline_react" />
+                <option name="count">20</option>
+                <option name="drilldown">none</option>
+                <option name="sortCol">_time</option>
+                <option name="sortDir">asc</option>
+            </table>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>Radial meter - JavaScript</title>
+            <search id="gallery_radial_meter_js">
+                <query>
+| makeresults count=1
+| eval count=73
+| fields count
+                </query>
+                <earliest>-1s</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.radial_meter">
+                <search base="gallery_radial_meter_js" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter.mainColor">#f7bc38</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter.maxValue">100</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter.backgroundColor">#ffffff</option>
+            </viz>
+            <table>
+                <title>Data</title>
+                <search base="gallery_radial_meter_js" />
+                <option name="count">5</option>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Radial meter - React</title>
+            <search id="gallery_radial_meter_react">
+                <query>
+| makeresults count=1
+| eval count=73
+| fields count
+                </query>
+                <earliest>-1s</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.radial_meter_react">
+                <search base="gallery_radial_meter_react" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react.mainColor">#f7bc38</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react.maxValue">100</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react.backgroundColor">#ffffff</option>
+            </viz>
+            <table>
+                <title>Data</title>
+                <search base="gallery_radial_meter_react" />
+                <option name="count">5</option>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+        <panel>
+            <title>Radial meter - React advanced</title>
+            <option name="height">300</option>
+            <search id="gallery_radial_meter_react_advanced">
+                <query>
+| makeresults count=1
+| eval count=73
+| fields count
+                </query>
+                <earliest>-1s</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.radial_meter_react_advanced">
+                <search base="gallery_radial_meter_react_advanced" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react_advanced.title">Service health</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react_advanced.subtitle">Live score</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react_advanced.maxValue">100</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react_advanced.target">85</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react_advanced.warningAt">60</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react_advanced.criticalAt">35</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react_advanced.unit">%</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react_advanced.lowColor">#D94E4E</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react_advanced.mediumColor">#DFA611</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react_advanced.highColor">#2E9E6F</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.radial_meter_react_advanced.needleColor">#243447</option>
+            </viz>
+            <table>
+                <title>Data</title>
+                <search base="gallery_radial_meter_react_advanced" />
+                <option name="count">5</option>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+    </row>
+</dashboard>

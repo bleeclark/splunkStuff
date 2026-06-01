@@ -12,6 +12,8 @@ import { StyledContainer } from '../start/StartStyles';
 import NewSingleValue from '../../components/visualizations/NewSingleValue';
 import NewSingleValueTwo from '../../components/visualizations/NewSingleValueTwo';
 import LineChart from '../../components/visualizations/LineChart';
+import PieChart from '../../components/visualizations/PieChart';
+import RadialMeter from '../../components/visualizations/RadialMeter';
 import {
     totalRequestsFeed,
     latencyRequests,
@@ -87,6 +89,20 @@ const palette = {
     goodColor: '#01417F',
     badColor: '#DFA611',
     textColor: '#FFFFFF',
+};
+
+/** Same categorical demo as custom_viz_gallery pie panel (A–N, values 10…140). */
+const DEFAULT_PIE_SLICES = Array.from({ length: 14 }, (_, i) => ({
+    label: 'ABCDEFGHIJKLMN'[i],
+    value: (i + 1) * 10,
+}));
+
+const piePanel = {
+    background: '#1B2A41',
+    width: 400,
+    height: 220,
+    marginBottom: 24,
+    boxSizing: 'border-box',
 };
 
 /** Default props for NewSingleValue; playground overrides some via `playProps`. */
@@ -209,6 +225,272 @@ const playInput = {
 
 const playRow = { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' };
 
+const planShell = {
+    background: '#ffffff',
+    border: '1px solid #d8dde6',
+    borderRadius: 8,
+    padding: 20,
+    marginBottom: 32,
+};
+
+const planGrid = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(245px, 1fr))',
+    gap: 12,
+};
+
+const phaseTile = {
+    border: '1px solid #d8dde6',
+    borderRadius: 6,
+    padding: 12,
+    background: '#f7f9fc',
+};
+
+const vizPlanGrid = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: 12,
+};
+
+const vizPlanCard = {
+    border: '1px solid #d8dde6',
+    borderRadius: 6,
+    padding: 14,
+    background: '#ffffff',
+    minHeight: 168,
+    boxSizing: 'border-box',
+};
+
+const planLabel = {
+    display: 'inline-block',
+    fontSize: 11,
+    lineHeight: '16px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    color: '#3c444d',
+    background: '#eef2f7',
+    borderRadius: 4,
+    padding: '1px 6px',
+    marginBottom: 8,
+};
+
+const planMeta = {
+    display: 'grid',
+    gridTemplateColumns: '88px 1fr',
+    gap: '5px 8px',
+    fontSize: 12,
+    color: '#3c444d',
+};
+
+const buildPhases = [
+    {
+        phase: '1',
+        title: 'Foundation visual grammar',
+        scope: 'Reusable shell, Splunk formatter options, mock datasets, drilldown contracts, and accessibility states.',
+    },
+    {
+        phase: '2',
+        title: 'Data trust pack',
+        scope: 'Freshness, completeness, schema drift, onboarding score, lookup health, ownership, and trust score.',
+    },
+    {
+        phase: '3',
+        title: 'Cost and performance pack',
+        scope: 'License attribution, noisy sources, cardinality risk, search flame chart, usage intelligence, and forecasts.',
+    },
+    {
+        phase: '4',
+        title: 'Security and ops pack',
+        scope: 'Detection coverage, alert noise, incident timeline, entity graph, dependencies, SLO burn, and anomaly storylines.',
+    },
+];
+
+const implementationTracks = [
+    'Define SPL contract and expected fields for every visualization.',
+    'Build demo fixtures first so each viz is visible before real searches are wired.',
+    'Create one reusable panel shell with title, status, owner, drilldown, and empty-state handling.',
+    'Promote shared renderers: heatmap grid, timeline, matrix, sankey, graph, scorecard, and forecast band.',
+    'Ship each viz with a saved search example, formatter options, screenshot, and dashboard sample.',
+];
+
+const visualizationPlan = [
+    {
+        name: 'Data Freshness Heatmap',
+        type: 'Heatmap grid',
+        value: 'Find stale indexes, sourcetypes, hosts, and pipelines before consumers report missing data.',
+        data: 'dataset, owner, last_event_time, expected_interval, freshness_status',
+        first: 'Color-coded grid with drilldown to late sources.',
+    },
+    {
+        name: 'Field Completeness Matrix',
+        type: 'Coverage matrix',
+        value: 'Show whether critical fields are consistently present across teams and sourcetypes.',
+        data: 'dataset, field, present_pct, null_pct, required',
+        first: 'Sortable matrix with required-field highlighting.',
+    },
+    {
+        name: 'Index Cost Attribution Dashboard',
+        type: 'Cost treemap',
+        value: 'Expose license and storage contribution by team, app, sourcetype, and environment.',
+        data: 'index, team, sourcetype, gb, cost, trend',
+        first: 'Treemap plus trend sparkline per owner.',
+    },
+    {
+        name: 'Schema Drift Timeline',
+        type: 'Change timeline',
+        value: 'Detect fields that appear, disappear, or explode in cardinality after releases.',
+        data: 'dataset, field, change_type, first_seen, last_seen, cardinality',
+        first: 'Timeline grouped by dataset and field.',
+    },
+    {
+        name: 'Pipeline Health Sankey Diagram',
+        type: 'Sankey flow',
+        value: 'Explain and diagnose data movement from source systems through Splunk consumers.',
+        data: 'source, forwarder, indexer, index, consumer, event_count, drop_count',
+        first: 'Flow diagram with volume and loss thickness.',
+    },
+    {
+        name: 'Alert Noise Map',
+        type: 'Noise heatmap',
+        value: 'Reduce fatigue by showing noisy, recurring, suppressed, and low-value alerts.',
+        data: 'alert, owner, severity, count, false_positive_pct, suppressed',
+        first: 'Owner-by-alert heatmap with recurrence trend.',
+    },
+    {
+        name: 'Entity Relationship Graph',
+        type: 'Network graph',
+        value: 'Reveal relationships between users, hosts, IPs, processes, services, and accounts.',
+        data: 'src_entity, dest_entity, relationship, weight, risk',
+        first: 'Force graph with type filters and risk coloring.',
+    },
+    {
+        name: 'Service Dependency Impact Map',
+        type: 'Dependency graph',
+        value: 'Show service dependencies and likely blast radius during incidents.',
+        data: 'service, depends_on, health, traffic, error_rate',
+        first: 'Directed graph with impacted downstream nodes.',
+    },
+    {
+        name: 'Anomaly Storyline View',
+        type: 'Incident storyline',
+        value: 'Collect scattered anomalies into one chronological narrative for responders.',
+        data: 'time, entity, signal, severity, evidence, search_link',
+        first: 'Timeline lanes for metrics, logs, alerts, and deploys.',
+    },
+    {
+        name: 'Log Pattern Evolution View',
+        type: 'Pattern clusters',
+        value: 'Surface new or changing log patterns after deployments and configuration changes.',
+        data: 'pattern_id, example, count, first_seen, trend, service',
+        first: 'Cluster list with before-and-after frequency sparkline.',
+    },
+    {
+        name: 'Cardinality Risk Monitor',
+        type: 'Risk leaderboard',
+        value: 'Catch high-cardinality fields that damage performance and storage efficiency.',
+        data: 'index, sourcetype, field, distinct_count, growth_rate, sample_values',
+        first: 'Ranked table with growth badges and field examples.',
+    },
+    {
+        name: 'Search Performance Flame Chart',
+        type: 'Flame chart',
+        value: 'Make slow SPL searches explainable by showing expensive phases and commands.',
+        data: 'search_id, command, parent, duration_ms, scanned_events',
+        first: 'Nested duration chart with optimization hints.',
+    },
+    {
+        name: 'Dashboard Usage Intelligence Map',
+        type: 'Usage matrix',
+        value: 'Identify high-value, unused, slow, or broken dashboards across the app estate.',
+        data: 'dashboard, owner, views, users, p95_load_ms, panel_errors',
+        first: 'Dashboard grid by usage and performance.',
+    },
+    {
+        name: 'Knowledge Object Dependency Graph',
+        type: 'Dependency graph',
+        value: 'Map saved searches, macros, lookups, tags, dashboards, alerts, and apps before refactors.',
+        data: 'object, object_type, depends_on, owner, app, orphaned',
+        first: 'Object graph with orphan and owner filters.',
+    },
+    {
+        name: 'CIM Coverage Visualizer',
+        type: 'Compliance matrix',
+        value: 'Show how well data sources map to expected Splunk CIM data models and fields.',
+        data: 'dataset, data_model, field, mapped_pct, acceleration_status',
+        first: 'CIM model matrix with gap drilldowns.',
+    },
+    {
+        name: 'Detection Coverage Matrix',
+        type: 'ATT&CK matrix',
+        value: 'Expose detection coverage against tactics, techniques, data sources, and outcomes.',
+        data: 'tactic, technique, detection, data_source, status, outcome',
+        first: 'MITRE-style matrix with status and evidence.',
+    },
+    {
+        name: 'Incident Timeline Composer',
+        type: 'Curated timeline',
+        value: 'Let analysts assemble alerts, events, comments, and search results into a shareable review.',
+        data: 'time, event_type, title, entity, analyst_note, source_search',
+        first: 'Pinned event timeline with export-ready summary.',
+    },
+    {
+        name: 'Data Onboarding Scorecard',
+        type: 'Scorecard',
+        value: 'Grade every new source on freshness, parsing, fields, ownership, volume, and CIM readiness.',
+        data: 'dataset, dimension, score, owner, blocker, next_action',
+        first: 'Weighted scorecard with pass/fail gates.',
+    },
+    {
+        name: 'Environment Drift Comparator',
+        type: 'Comparator',
+        value: 'Compare prod, stage, dev, and regions to explain environment-only failures.',
+        data: 'environment, service, version, config_hash, metric, difference',
+        first: 'Side-by-side drift table with severity coloring.',
+    },
+    {
+        name: 'SLO/Error Budget Burn Visualizer',
+        type: 'Burn chart',
+        value: 'Show error budget health, burn rate, projected exhaustion, and contributing services.',
+        data: 'service, slo, window, burn_rate, remaining_budget, contributor',
+        first: 'Forecast band with fast-burn and slow-burn overlays.',
+    },
+    {
+        name: 'Lookup Health Explorer',
+        type: 'Lookup monitor',
+        value: 'Track lookup freshness, row changes, failed joins, key coverage, and consumers.',
+        data: 'lookup, owner, last_updated, rows, key_coverage, failed_joins',
+        first: 'Lookup inventory with health indicators.',
+    },
+    {
+        name: 'Ownership Coverage Map',
+        type: 'Governance map',
+        value: 'Find orphaned indexes, alerts, dashboards, reports, lookups, and data sources.',
+        data: 'asset, asset_type, owner, team, last_used, criticality',
+        first: 'Owner-by-asset matrix with orphan queue.',
+    },
+    {
+        name: 'Event Volume Forecast Cone',
+        type: 'Forecast cone',
+        value: 'Predict ingest volume and call out spikes or drops before license and capacity surprises.',
+        data: 'time, actual_gb, forecast_gb, lower_bound, upper_bound, source',
+        first: 'Actual-vs-forecast chart with confidence band.',
+    },
+    {
+        name: 'Noisy Source Fingerprint View',
+        type: 'Noise fingerprint',
+        value: 'Find repetitive low-value logs and estimate savings from filtering or routing changes.',
+        data: 'source, pattern, count, bytes, duplicate_pct, estimated_savings',
+        first: 'Fingerprint list with savings and risk notes.',
+    },
+    {
+        name: 'Executive Data Trust Score',
+        type: 'Executive score',
+        value: 'Condense quality, freshness, ownership, cost, and usage into leadership-ready trust signals.',
+        data: 'dataset, trust_score, freshness, completeness, ownership, cost, usage',
+        first: 'Ranked trust score with dimension breakdown.',
+    },
+];
+
 // Splunk page shell: wait for user theme, then mount the React tree.
 getUserTheme()
     .then((theme) => {
@@ -326,6 +608,22 @@ getUserTheme()
                 };
             }, [latencyStr]);
 
+            const [radialOpts, setRadialOpts] = useState({
+                value: 73,
+                maxValue: 100,
+                mainColor: '#f7bc38',
+                backgroundColor: '#ffffff',
+            });
+
+            const [pieOpts, setPieOpts] = useState({
+                topN: 5,
+                otherLabel: 'Other',
+                showPercent: true,
+                title: 'Top 5 + Other (demo)',
+                background: '#1B2A41',
+                textColor: '#FFFFFF',
+            });
+
             const [lineOpts, setLineOpts] = useState({
                 multi: false,
                 comparison: false,
@@ -364,7 +662,9 @@ getUserTheme()
             }, [feedTotal.values, feedLatency.values, lineOpts.multi]);
 
             const lineComparison = useMemo(() => {
-                if (!lineOpts.comparison) return null;
+                if (!lineOpts.comparison) {
+                    return null;
+                }
                 const main = feedTotal.values.map((v, i) => {
                     const base = Number(v);
                     const wiggle = i % 2 === 0 ? -6 : 4;
@@ -386,6 +686,419 @@ getUserTheme()
                         Demo
                     </Heading>
                     <ParagraphHint />
+
+                    <div style={planShell}>
+                        <Heading level={1} style={{ ...heading, marginBottom: 8 }}>
+                            Custom Visualization Build Plan
+                        </Heading>
+                        <p style={{ color: '#333', maxWidth: 900, marginBottom: 18 }}>
+                            Roadmap for turning the Splunk data-team visualization ideas
+                            into demoable custom visualizations. The plan starts with shared
+                            contracts and fixture data, then ships the highest-trust,
+                            highest-cost, and highest-response-value visuals in packs.
+                        </p>
+
+                        <Heading level={2} style={{ marginTop: 0, marginBottom: 10 }}>
+                            Delivery phases
+                        </Heading>
+                        <div style={{ ...planGrid, marginBottom: 22 }}>
+                            {buildPhases.map((phase) => (
+                                <div key={phase.phase} style={phaseTile}>
+                                    <span style={planLabel}>Phase {phase.phase}</span>
+                                    <div
+                                        style={{
+                                            fontWeight: 700,
+                                            color: '#111827',
+                                            marginBottom: 6,
+                                        }}
+                                    >
+                                        {phase.title}
+                                    </div>
+                                    <div style={{ fontSize: 13, color: '#3c444d' }}>
+                                        {phase.scope}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <Heading level={2} style={{ marginTop: 0, marginBottom: 10 }}>
+                            Shared implementation tracks
+                        </Heading>
+                        <ol
+                            style={{
+                                marginTop: 0,
+                                marginBottom: 22,
+                                paddingLeft: 20,
+                                color: '#333',
+                                maxWidth: 960,
+                            }}
+                        >
+                            {implementationTracks.map((track) => (
+                                <li key={track} style={{ marginBottom: 6 }}>
+                                    {track}
+                                </li>
+                            ))}
+                        </ol>
+
+                        <Heading level={2} style={{ marginTop: 0, marginBottom: 10 }}>
+                            Visualization backlog
+                        </Heading>
+                        <div style={vizPlanGrid}>
+                            {visualizationPlan.map((viz, index) => (
+                                <div key={viz.name} style={vizPlanCard}>
+                                    <span style={planLabel}>
+                                        #{String(index + 1).padStart(2, '0')} | {viz.type}
+                                    </span>
+                                    <div
+                                        style={{
+                                            fontWeight: 700,
+                                            fontSize: 15,
+                                            color: '#111827',
+                                            marginBottom: 8,
+                                        }}
+                                    >
+                                        {viz.name}
+                                    </div>
+                                    <div style={planMeta}>
+                                        <strong>Value</strong>
+                                        <span>{viz.value}</span>
+                                        <strong>Data</strong>
+                                        <code
+                                            style={{
+                                                fontFamily:
+                                                    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                                            }}
+                                        >
+                                            {viz.data}
+                                        </code>
+                                        <strong>First demo</strong>
+                                        <span>{viz.first}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: 32 }}>
+                        <Heading level={1} style={heading}>
+                            Radial meter — Splunk tutorial
+                        </Heading>
+                        <p style={{ color: '#333', maxWidth: 800, marginBottom: 12 }}>
+                            Port of the{' '}
+                            <a
+                                href="https://help.splunk.com/en/splunk-enterprise/developing-views-and-apps-for-splunk-web/9.4/custom-visualizations/build-a-custom-visualization"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Splunk 9.4 radial meter tutorial
+                            </a>
+                            . Same formatter props as <strong>radial_meter</strong> in the
+                            gallery (<code>mainColor</code>, <code>maxValue</code>).
+                        </p>
+                        <div
+                            style={{
+                                display: 'flex',
+                                gap: 20,
+                                flexWrap: 'wrap',
+                                alignItems: 'flex-start',
+                            }}
+                        >
+                            <div
+                                style={{
+                                    ...piePanel,
+                                    height: 240,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: radialOpts.backgroundColor,
+                                }}
+                            >
+                                <RadialMeter
+                                    value={radialOpts.value}
+                                    maxValue={radialOpts.maxValue}
+                                    mainColor={radialOpts.mainColor}
+                                    backgroundColor={radialOpts.backgroundColor}
+                                />
+                            </div>
+                            <div style={playForm}>
+                                <div style={playField}>
+                                    <span style={playLabel}>Value (count)</span>
+                                    <input
+                                        type="number"
+                                        value={radialOpts.value}
+                                        onChange={(e) =>
+                                            setRadialOpts((p) => ({
+                                                ...p,
+                                                value: Number(e.target.value) || 0,
+                                            }))
+                                        }
+                                        style={playInput}
+                                    />
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Maximum dial value</span>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={radialOpts.maxValue}
+                                        onChange={(e) =>
+                                            setRadialOpts((p) => ({
+                                                ...p,
+                                                maxValue: Number(e.target.value) || 100,
+                                            }))
+                                        }
+                                        style={playInput}
+                                    />
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Dial color</span>
+                                    <div style={playRow}>
+                                        <input
+                                            type="color"
+                                            value={radialOpts.mainColor}
+                                            onChange={(e) =>
+                                                setRadialOpts((p) => ({
+                                                    ...p,
+                                                    mainColor: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                width: 44,
+                                                height: 32,
+                                                padding: 0,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                            }}
+                                        />
+                                        <input
+                                            type="text"
+                                            value={radialOpts.mainColor}
+                                            onChange={(e) =>
+                                                setRadialOpts((p) => ({
+                                                    ...p,
+                                                    mainColor: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                ...playInput,
+                                                flex: 1,
+                                                fontFamily: 'monospace',
+                                                fontSize: 12,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Background</span>
+                                    <div style={playRow}>
+                                        <input
+                                            type="color"
+                                            value={radialOpts.backgroundColor}
+                                            onChange={(e) =>
+                                                setRadialOpts((p) => ({
+                                                    ...p,
+                                                    backgroundColor: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                width: 44,
+                                                height: 32,
+                                                padding: 0,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: 32 }}>
+                        <Heading level={1} style={heading}>
+                            Data pie — Top N + Other
+                        </Heading>
+                        <p style={{ color: '#333', maxWidth: 800, marginBottom: 12 }}>
+                            Same behavior as the Splunk{' '}
+                            <strong>splunkstuff_pie_chart</strong> custom viz (Top N, Other
+                            bucket, legend percents, title, colors). Gallery panel uses the
+                            matching search.
+                        </p>
+                        <div
+                            style={{
+                                display: 'flex',
+                                gap: 20,
+                                flexWrap: 'wrap',
+                                alignItems: 'flex-start',
+                            }}
+                        >
+                            <div style={piePanel}>
+                                <PieChart
+                                    slices={DEFAULT_PIE_SLICES}
+                                    topN={pieOpts.topN}
+                                    otherLabel={pieOpts.otherLabel}
+                                    showPercent={pieOpts.showPercent}
+                                    title={pieOpts.title}
+                                    background={pieOpts.background}
+                                    textColor={pieOpts.textColor}
+                                    width={400}
+                                    height={220}
+                                />
+                            </div>
+                            <div style={playForm}>
+                                <div style={{ ...playField, marginBottom: 16 }}>
+                                    <span style={playLabel}>Pie chart options</span>
+                                    <div style={{ fontSize: 12, color: '#444' }}>
+                                        Mirrors formatter: topN, otherLabel, showPercent, title,
+                                        background, textColor.
+                                    </div>
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Top N slices (0 = all)</span>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={20}
+                                        value={pieOpts.topN}
+                                        onChange={(e) =>
+                                            setPieOpts((p) => ({
+                                                ...p,
+                                                topN: Number(e.target.value) || 0,
+                                            }))
+                                        }
+                                        style={playInput}
+                                    />
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Other bucket label</span>
+                                    <input
+                                        type="text"
+                                        value={pieOpts.otherLabel}
+                                        onChange={(e) =>
+                                            setPieOpts((p) => ({
+                                                ...p,
+                                                otherLabel: e.target.value,
+                                            }))
+                                        }
+                                        style={playInput}
+                                    />
+                                </div>
+                                <div style={{ ...playField, marginBottom: 8 }}>
+                                    <label
+                                        htmlFor="demo-pie-show-percent"
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 8,
+                                            cursor: 'pointer',
+                                            fontWeight: 600,
+                                            fontSize: 12,
+                                        }}
+                                    >
+                                        <input
+                                            id="demo-pie-show-percent"
+                                            type="checkbox"
+                                            checked={pieOpts.showPercent}
+                                            onChange={(e) =>
+                                                setPieOpts((p) => ({
+                                                    ...p,
+                                                    showPercent: e.target.checked,
+                                                }))
+                                            }
+                                        />
+                                        show percent in legend
+                                    </label>
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Title</span>
+                                    <input
+                                        type="text"
+                                        value={pieOpts.title}
+                                        onChange={(e) =>
+                                            setPieOpts((p) => ({ ...p, title: e.target.value }))
+                                        }
+                                        style={playInput}
+                                    />
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Background</span>
+                                    <div style={playRow}>
+                                        <input
+                                            type="color"
+                                            value={pieOpts.background}
+                                            onChange={(e) =>
+                                                setPieOpts((p) => ({
+                                                    ...p,
+                                                    background: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                width: 44,
+                                                height: 32,
+                                                padding: 0,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                            }}
+                                        />
+                                        <input
+                                            type="text"
+                                            value={pieOpts.background}
+                                            onChange={(e) =>
+                                                setPieOpts((p) => ({
+                                                    ...p,
+                                                    background: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                ...playInput,
+                                                flex: 1,
+                                                fontFamily: 'monospace',
+                                                fontSize: 12,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                <div style={playField}>
+                                    <span style={playLabel}>Text color</span>
+                                    <div style={playRow}>
+                                        <input
+                                            type="color"
+                                            value={pieOpts.textColor}
+                                            onChange={(e) =>
+                                                setPieOpts((p) => ({
+                                                    ...p,
+                                                    textColor: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                width: 44,
+                                                height: 32,
+                                                padding: 0,
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                            }}
+                                        />
+                                        <input
+                                            type="text"
+                                            value={pieOpts.textColor}
+                                            onChange={(e) =>
+                                                setPieOpts((p) => ({
+                                                    ...p,
+                                                    textColor: e.target.value,
+                                                }))
+                                            }
+                                            style={{
+                                                ...playInput,
+                                                flex: 1,
+                                                fontFamily: 'monospace',
+                                                fontSize: 12,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* Line chart: same Total requests series as the sidebar "Total requests" textarea */}
                     <div style={{ marginBottom: 32 }}>
@@ -474,8 +1187,12 @@ getUserTheme()
                                 </div>
 
                                 <div style={{ ...playField, marginBottom: 10 }}>
-                                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                                    <label
+                                        htmlFor="demo-line-multi"
+                                        style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}
+                                    >
                                         <input
+                                            id="demo-line-multi"
                                             type="checkbox"
                                             checked={lineOpts.multi}
                                             onChange={(e) => setLineOpts((p) => ({ ...p, multi: e.target.checked }))}
@@ -485,8 +1202,12 @@ getUserTheme()
                                 </div>
 
                                 <div style={{ ...playField, marginBottom: 10 }}>
-                                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                                    <label
+                                        htmlFor="demo-line-comparison"
+                                        style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}
+                                    >
                                         <input
+                                            id="demo-line-comparison"
                                             type="checkbox"
                                             checked={lineOpts.comparison}
                                             onChange={(e) => setLineOpts((p) => ({ ...p, comparison: e.target.checked }))}
@@ -568,8 +1289,12 @@ getUserTheme()
                                 ) : null}
 
                                 <div style={{ ...playField, marginBottom: 10 }}>
-                                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                                    <label
+                                        htmlFor="demo-line-threshold"
+                                        style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}
+                                    >
                                         <input
+                                            id="demo-line-threshold"
                                             type="checkbox"
                                             checked={lineOpts.threshold}
                                             onChange={(e) => setLineOpts((p) => ({ ...p, threshold: e.target.checked }))}
@@ -607,8 +1332,12 @@ getUserTheme()
                                 ) : null}
 
                                 <div style={{ ...playField, marginBottom: 10 }}>
-                                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                                    <label
+                                        htmlFor="demo-line-show-x-axis"
+                                        style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}
+                                    >
                                         <input
+                                            id="demo-line-show-x-axis"
                                             type="checkbox"
                                             checked={lineOpts.showXAxis}
                                             onChange={(e) =>
@@ -620,8 +1349,12 @@ getUserTheme()
                                 </div>
 
                                 <div style={{ ...playField, marginBottom: 10 }}>
-                                    <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                                    <label
+                                        htmlFor="demo-line-drilldown"
+                                        style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}
+                                    >
                                         <input
+                                            id="demo-line-drilldown"
                                             type="checkbox"
                                             checked={lineOpts.drilldown}
                                             onChange={(e) =>

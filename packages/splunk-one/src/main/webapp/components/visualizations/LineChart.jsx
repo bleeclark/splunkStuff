@@ -1,8 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
-
-function clamp(v, lo, hi) {
-    return Math.max(lo, Math.min(hi, v));
-}
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { trendBackground } from '../../lib/splunkstuffTrendColors';
+import { clamp, seriesIndexFromPointerMeet } from '../../lib/splunkstuffVizHoverMath.mjs';
 
 function toFiniteNumbers(values) {
     return (Array.isArray(values) ? values : []).map(Number).filter(Number.isFinite);
@@ -213,10 +212,15 @@ export default function LineChart({
     subheader,
     showMajor = false,
     centerMajor = false,
+    stackedMajor = false,
+    showDelta = true,
+    majorLabel = '',
+    deltaLabel = '',
     colorPlacement = 'full', // 'full' | 'top'
     unitScale = 0.6,
     showHover = true,
     showHoverAnnotation = false,
+    fillContainer = false,
     // thresholds/target
     thresholdMin,
     thresholdMax,
@@ -281,7 +285,9 @@ export default function LineChart({
 
     const showSubheader = Boolean(subheader);
     const subheaderH = showSubheader ? 28 : 0;
-    const majorH = showMajor ? 44 : 0;
+    const labelExtra =
+        showMajor && stackedMajor ? (majorLabel ? 18 : 0) + (deltaLabel ? 18 : 0) : 0;
+    const majorH = showMajor ? 44 + labelExtra + (stackedMajor && showDelta ? 8 : 0) : 0;
     const headerH = subheaderH + majorH;
     const chartH = Math.max(1, height - headerH);
 
@@ -289,8 +295,7 @@ export default function LineChart({
     const last = primaryValues.length ? primaryValues[primaryValues.length - 1] : NaN;
     const prev = primaryValues.length > 1 ? primaryValues[primaryValues.length - 2] : last;
     const delta = last - prev;
-    const isGood = Number.isFinite(delta) ? delta >= 0 : true;
-    const trendBg = isGood ? goodColor : badColor;
+    const trendBg = trendBackground(delta, goodColor, badColor);
 
     const containerBg = showMajor
         ? colorPlacement === 'top'
@@ -387,6 +392,19 @@ export default function LineChart({
     }, [paths, anomalyMode, anomalySensitivity]);
 
     const [hoverIdx, setHoverIdx] = useState(null);
+    /** Viewport coords for fixed tooltip (`createPortal`) — survives Splunk panel clipping + wrong-document body bugs. */
+    const [tooltipViewport, setTooltipViewport] = useState(null);
+    const chartAreaRef = useRef(null);
+    /** Document that actually contains the chart (critical for Splunk iframe / embedded dashboard DOM). */
+    const [vizDocument, setVizDocument] = useState(null);
+    const setChartAreaEl = useCallback((node) => {
+        chartAreaRef.current = node;
+        if (node) {
+            setVizDocument(node.ownerDocument || (typeof document !== 'undefined' ? document : null));
+        } else {
+            setVizDocument(null);
+        }
+    }, []);
     const innerW = Math.max(1, width - effPadLeft - effPadRight);
     const n = processed.len;
     const xStep = n > 1 ? innerW / (n - 1) : innerW;
@@ -401,37 +419,106 @@ export default function LineChart({
         [chartH, effPadTop, effPadBottom, domain]
     );
 
-    const onMove = useCallback(
-        (e) => {
-            if (!showHover || n < 2) return;
-            const svg = e.currentTarget;
-            const rect = svg.getBoundingClientRect();
-            if (!rect.width) return;
-            const scaleX = width / rect.width;
-            const x = (e.clientX - rect.left) * scaleX;
-            const relX = x - effPadLeft;
-            const idx = clamp(Math.round(relX / xStep), 0, n - 1);
+    useLayoutEffect(() => {
+        if (!showHover || n < 2 || !vizDocument || !vizDocument.defaultView) return undefined;
+
+        function onDocPointerMove(e) {
+            const el = chartAreaRef.current;
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            if (
+                !rect.width ||
+                e.clientX < rect.left ||
+                e.clientX > rect.right ||
+                e.clientY < rect.top ||
+                e.clientY > rect.bottom
+            ) {
+                setHoverIdx(null);
+                setTooltipViewport(null);
+                return;
+            }
+            const idx = seriesIndexFromPointerMeet(
+                e.clientX,
+                e.clientY,
+                el,
+                width,
+                chartH,
+                effPadLeft,
+                effPadRight,
+                n
+            );
+            if (idx === null) {
+                setHoverIdx(null);
+                setTooltipViewport(null);
+                return;
+            }
             setHoverIdx(idx);
-        },
-        [showHover, n, width, effPadLeft, xStep]
-    );
+            setTooltipViewport({ x: e.clientX, y: e.clientY });
+        }
 
-    const onLeave = useCallback(() => setHoverIdx(null), []);
+        const win = vizDocument.defaultView;
+        vizDocument.addEventListener('pointermove', onDocPointerMove, true);
+        vizDocument.addEventListener('pointerdown', onDocPointerMove, true);
+        vizDocument.addEventListener('mousemove', onDocPointerMove, true);
+        win.addEventListener('mousemove', onDocPointerMove, true);
+        return () => {
+            vizDocument.removeEventListener('pointermove', onDocPointerMove, true);
+            vizDocument.removeEventListener('pointerdown', onDocPointerMove, true);
+            vizDocument.removeEventListener('mousemove', onDocPointerMove, true);
+            win.removeEventListener('mousemove', onDocPointerMove, true);
+            setHoverIdx(null);
+            setTooltipViewport(null);
+        };
+    }, [vizDocument, showHover, n, width, chartH, effPadLeft, effPadRight]);
 
-    const onClick = useCallback(() => {
-        if (!drilldown || hoverIdx == null || !processed.timeLike) return;
-        const ms = processed.ms[hoverIdx];
-        if (!Number.isFinite(ms)) return;
-        const prevMs = hoverIdx > 0 ? processed.ms[hoverIdx - 1] : ms;
-        const nextMs = hoverIdx < processed.ms.length - 1 ? processed.ms[hoverIdx + 1] : ms;
-        const earliest = Math.floor(((prevMs + ms) / 2) / 1000);
-        const latest = Math.floor(((ms + nextMs) / 2) / 1000);
-        window.location.href = buildSearchUrl({
-            earliestSec: earliest,
-            latestSec: latest,
-            query: drilldownQuery,
-        });
-    }, [drilldown, hoverIdx, processed, drilldownQuery]);
+    useLayoutEffect(() => {
+        if (!drilldown || !processed.timeLike || n < 2 || !vizDocument || !vizDocument.defaultView) {
+            return undefined;
+        }
+
+        function onDocClick(e) {
+            const el = chartAreaRef.current;
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            if (
+                !rect.width ||
+                e.clientX < rect.left ||
+                e.clientX > rect.right ||
+                e.clientY < rect.top ||
+                e.clientY > rect.bottom
+            ) {
+                return;
+            }
+            const idx = seriesIndexFromPointerMeet(
+                e.clientX,
+                e.clientY,
+                el,
+                width,
+                chartH,
+                effPadLeft,
+                effPadRight,
+                n
+            );
+            if (idx === null) return;
+            const ms = processed.ms[idx];
+            if (!Number.isFinite(ms)) return;
+            const prevMs = idx > 0 ? processed.ms[idx - 1] : ms;
+            const nextMs = idx < processed.ms.length - 1 ? processed.ms[idx + 1] : ms;
+            const earliest = Math.floor(((prevMs + ms) / 2) / 1000);
+            const latest = Math.floor(((ms + nextMs) / 2) / 1000);
+            const navWin = vizDocument.defaultView;
+            if (navWin) {
+                navWin.location.href = buildSearchUrl({
+                    earliestSec: earliest,
+                    latestSec: latest,
+                    query: drilldownQuery,
+                });
+            }
+        }
+
+        vizDocument.addEventListener('click', onDocClick, true);
+        return () => vizDocument.removeEventListener('click', onDocClick, true);
+    }, [vizDocument, drilldown, drilldownQuery, processed.timeLike, processed.ms, n, width, chartH, effPadLeft, effPadRight]);
 
     const goodCount = processed.series.reduce((acc, s) => acc + s.values.length, 0);
     if (n < 2) {
@@ -441,8 +528,8 @@ export default function LineChart({
         return (
             <div
                 style={{
-                    width,
-                    height,
+                    width: fillContainer ? '100%' : width,
+                    height: fillContainer ? '100%' : height,
                     background: containerBg,
                     color: showMajor ? textColor : 'rgba(255,255,255,0.85)',
                     display: 'flex',
@@ -490,8 +577,12 @@ export default function LineChart({
     const thHi = Number.isFinite(Number(thresholdMax)) ? Number(thresholdMax) : null;
     const yTarget = Number.isFinite(Number(target)) ? yFor(Number(target)) : null;
 
+    const outerWidth = fillContainer ? '100%' : width;
+    const outerHeight = fillContainer ? '100%' : height;
+    const svgWidth = fillContainer ? '100%' : width;
+
     return (
-        <div style={{ position: 'relative', width, height, overflow: 'visible' }}>
+        <div style={{ position: 'relative', width: outerWidth, height: outerHeight, overflow: 'visible' }}>
             <div
                 style={{
                     width: '100%',
@@ -525,16 +616,32 @@ export default function LineChart({
                     <div
                         style={{
                             height: majorH,
-                            padding: '6px 12px 6px',
+                            padding: stackedMajor ? '8px 12px 6px' : '6px 12px 6px',
                             boxSizing: 'border-box',
                             display: 'flex',
-                            alignItems: 'flex-end',
+                            flexDirection: stackedMajor ? 'column' : 'row',
+                            alignItems: stackedMajor ? 'center' : 'flex-end',
                             justifyContent: centerMajor ? 'center' : 'space-between',
-                            gap: 6,
+                            gap: stackedMajor ? 4 : 6,
                             textAlign: centerMajor ? 'center' : undefined,
                             background: majorBg,
                         }}
                     >
+                        {stackedMajor && majorLabel ? (
+                            <div
+                                style={{
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    lineHeight: 1.2,
+                                    padding: '2px 8px',
+                                    borderRadius: 3,
+                                    background: 'rgba(0,0,0,0.28)',
+                                    textShadow: '0 1px 2px rgba(0,0,0,0.35)',
+                                }}
+                            >
+                                {majorLabel}
+                            </div>
+                        ) : null}
                         <div
                             style={{
                                 fontSize: 28,
@@ -558,27 +665,53 @@ export default function LineChart({
                                 </span>
                             ) : null}
                         </div>
-                        <div
-                            style={{
-                                fontSize: 11,
-                                lineHeight: 1.2,
-                                fontWeight: 500,
-                                opacity: 0.95,
-                                marginLeft: centerMajor ? 6 : undefined,
-                            }}
-                        >
-                            {formatDelta(delta)}
-                        </div>
+                        {showDelta ? (
+                            <>
+                                {stackedMajor && deltaLabel ? (
+                                    <div
+                                        style={{
+                                            fontSize: 13,
+                                            fontWeight: 700,
+                                            lineHeight: 1.2,
+                                            padding: '2px 8px',
+                                            borderRadius: 3,
+                                            background: 'rgba(0,0,0,0.28)',
+                                            textShadow: '0 1px 2px rgba(0,0,0,0.35)',
+                                        }}
+                                    >
+                                        {deltaLabel}
+                                    </div>
+                                ) : null}
+                                <div
+                                    style={{
+                                        fontSize: stackedMajor ? 16 : 11,
+                                        lineHeight: 1.2,
+                                        fontWeight: 600,
+                                        opacity: 0.95,
+                                        marginLeft: centerMajor && !stackedMajor ? 6 : undefined,
+                                    }}
+                                >
+                                    {formatDelta(delta)}
+                                </div>
+                            </>
+                        ) : null}
                     </div>
                 ) : null}
 
+                <div
+                    ref={setChartAreaEl}
+                    data-testid="splunkstuff-line-chart-area"
+                    style={{ position: 'relative', width: '100%', height: chartH }}
+                >
                 <svg
-                    width={width}
+                    width={svgWidth}
                     height={chartH}
-                    style={{ display: 'block', cursor: drilldown ? 'pointer' : 'default' }}
-                    onMouseMove={showHover ? onMove : undefined}
-                    onMouseLeave={showHover ? onLeave : undefined}
-                    onClick={drilldown ? onClick : undefined}
+                    viewBox={fillContainer ? '0 0 ' + width + ' ' + chartH : undefined}
+                    preserveAspectRatio={fillContainer ? 'none' : undefined}
+                    style={{
+                        display: 'block',
+                        pointerEvents: 'none',
+                    }}
                 >
                     {/* threshold shade (out-of-band) */}
                     {thLo != null ? (
@@ -707,6 +840,7 @@ export default function LineChart({
                         </g>
                     ) : null}
                 </svg>
+                </div>
             </div>
 
             {/* optional in-card annotation (disabled by default) */}
@@ -733,34 +867,47 @@ export default function LineChart({
                 </div>
             ) : null}
 
-            {/* floating tooltip */}
-            {showHover && hoverIdx != null ? (
-                <div
-                    style={{
-                        position: 'absolute',
-                        left: clamp(hx, 8, width - 8),
-                        top: headerH + Math.max(8, hy - 8),
-                        transform: 'translate(-50%, -100%)',
-                        pointerEvents: 'none',
-                        background: 'rgba(15, 25, 45, 0.96)',
-                        color: '#fff',
-                        fontSize: 11,
-                        lineHeight: 1.35,
-                        padding: '6px 8px',
-                        borderRadius: 4,
-                        boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
-                        whiteSpace: 'nowrap',
-                        zIndex: 2,
-                    }}
-                >
-                    <div style={{ fontWeight: 600 }}>
-                        {hoverValue}
-                        {unitText || ''}
-                        {anomalyFlags[hoverIdx] ? <span style={{ marginLeft: 6, opacity: 0.9 }}>(anomaly)</span> : null}
-                    </div>
-                    {hoverTime ? <div style={{ opacity: 0.88, marginTop: 2 }}>{hoverTime}</div> : null}
-                </div>
-            ) : null}
+            {/* floating tooltip (portal avoids Splunk panel clipping + stacking under overlays) */}
+            {showHover &&
+            hoverIdx != null &&
+            tooltipViewport &&
+            vizDocument &&
+            vizDocument.body
+                ? createPortal(
+                      <div
+                          data-testid="splunkstuff-line-hover-tooltip"
+                          role="status"
+                          aria-live="polite"
+                          aria-atomic="true"
+                          style={{
+                              position: 'fixed',
+                              left: tooltipViewport.x,
+                              top: tooltipViewport.y,
+                              transform: 'translate(-50%, calc(-100% - 8px))',
+                              pointerEvents: 'none',
+                              background: 'rgba(15, 25, 45, 0.96)',
+                              color: '#fff',
+                              fontSize: 11,
+                              lineHeight: 1.35,
+                              padding: '6px 8px',
+                              borderRadius: 4,
+                              boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
+                              whiteSpace: 'nowrap',
+                              zIndex: 2147483646,
+                          }}
+                      >
+                          <div style={{ fontWeight: 600 }}>
+                              {hoverValue}
+                              {unitText || ''}
+                              {anomalyFlags[hoverIdx] ? (
+                                  <span style={{ marginLeft: 6, opacity: 0.9 }}>(anomaly)</span>
+                              ) : null}
+                          </div>
+                          {hoverTime ? <div style={{ opacity: 0.88, marginTop: 2 }}>{hoverTime}</div> : null}
+                      </div>,
+                      vizDocument.body
+                  )
+                : null}
         </div>
     );
 }

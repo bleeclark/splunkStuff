@@ -26,7 +26,7 @@ This repo’s `webpack.config.js` emits the viz bundle to:
 
 ## Install into Splunk (typical)
 
-Assume the Splunk app folder is **`$SPLUNK_HOME/etc/apps/splunk-one/`** (matches this repo’s `app.conf` id).
+Assume the Splunk app folder is **`$SPLUNK_HOME/etc/apps/so_BUI_pickulationts/`** (matches this repo’s `app.conf` id).
 
 Copy:
 
@@ -37,11 +37,11 @@ Copy:
 
 To:
 
-- `$SPLUNK_HOME/etc/apps/splunk-one/appserver/static/visualizations/fixed_single_value_react/`
+- `$SPLUNK_HOME/etc/apps/so_BUI_pickulationts/appserver/static/visualizations/fixed_single_value_react/`
 
 Merge `visualizations.conf.snippet` into:
 
-- `$SPLUNK_HOME/etc/apps/splunk-one/default/visualizations.conf`
+- `$SPLUNK_HOME/etc/apps/so_BUI_pickulationts/default/visualizations.conf`
 
 Restart Splunk (or follow your org’s Splunk Web reload practice).
 
@@ -62,6 +62,6 @@ Example SPL:
 
 The formatter keys resolve to:
 
-`display.visualizations.custom.splunk-one.fixed_single_value_react.*`
+`display.visualizations.custom.so_BUI_pickulationts.fixed_single_value_react.*`
 
-If you install into an app whose id is not `splunk-one`, update the `NS` string in the Webpack entry (`visualization.amd.jsx`) and rebuild.
+If you install into an app whose id is not `so_BUI_pickulationts`, update the `NS` string in the Webpack entry (`visualization.amd.jsx`) and rebuild.

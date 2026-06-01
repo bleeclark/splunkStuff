@@ -1,4 +1,4 @@
 <?xml version="1.0"?>
-<view template="splunk-one:/templates/progress.html" type="html">
+<view template="so_BUI_pickulationts:/templates/progress.html" type="html">
     <label>Progress</label>
 </view>

@@ -43,21 +43,126 @@ yarn link:app
 splunk restart
 ```
 
-Then open Splunk Web (often `https://localhost:8000`), find the app **Splunk Stuff (local dev)** / id `splunk-one`, and open the **Start** view.
+Then open Splunk Web (often `https://localhost:8000` or `8001`), find the app **Splunk Stuff (local dev)** / id `so_BUI_pickulationts`, and open **SplunkStuff custom viz gallery** or **Start`.
 
-`yarn link:app` creates `$SPLUNK_HOME/etc/apps/splunk-one` → `packages/splunk-one/stage`. On Windows the script uses `mklink` (may require an elevated shell).
+`yarn link:app` creates `$SPLUNK_HOME/etc/apps/so_BUI_pickulationts` → `packages/splunk-one/stage`. On Windows the script uses `mklink` (may require an elevated shell).
 
-## Syncing with your other computer
+## Syncing with your other computer (breakSplunk1)
 
-Keep paths aligned with `breakSplunk1/packages/splunk-one/...`. Edit here, verify with `yarn build` / Splunk, then copy the same relative files to the other repo.
+1. On this Mac: `yarn build` so `packages/splunk-one/stage/` is current.
+2. Copy the **whole** `stage/` tree (or full `src/main/resources/splunk` + run `yarn build` on work) into work Splunk as **`$SPLUNK_HOME/etc/apps/so_BUI_pickulationts/`** — app folder name must match `[package] id` in `app.conf`.
+3. Remove old app folders on work if present (`splunk-one`, `itso_UI_visualizations`, `tso_ui_dab`) unless you still need them for other dashboards.
+4. Dashboard panels must use `type="so_BUI_pickulationts.<viz_id>"` (not `splunk-one.*` or `fixed_line_value`).
+5. Line viz folder name is **`line_single_value`** (work photos may show `fixed_line_value` — rename to match).
+6. For **`fixed_loaded_line`**, ship the Webpack bundle from this repo (`visualization.js` + `formatter.html` + `visualization.css`); do not mix with work’s vanilla `makeRenderer` `visualization.js` unless you intentionally switch implementations.
+7. Restart Splunk on work; hard-refresh the browser.
+
+Handoff zip source: `packages/splunk-one/deliver/splunkstuff_viz_kit/` plus per-viz folders under `deliver/`.
+
+## Simplest manual viz test package
+
+Use this when you manually edited a custom viz folder and only need to test those files on another Splunk instance before handoff. This does **not** run Webpack and does **not** require the whole app build. It packages the selected viz folder as a tiny Splunk app with a one-panel test dashboard.
+
+On the computer with this repo:
+
+```bash
+yarn install
+yarn package:manual-viz simple_small_viz
+```
+
+Replace `simple_small_viz` with the folder name under:
+
+`packages/splunk-one/src/main/resources/splunk/appserver/static/visualizations/<viz_id>/`
+
+The folder must contain:
+
+- `visualization.js`
+- `visualization.css`
+- `formatter.html`
+
+The command writes:
+
+`packages/splunk-one/dist/so_BUI_pickulationts-<viz_id>-manual-test.tgz`
+
+Copy that `.tgz` to the other computer, then install it into Splunk:
+
+```bash
+tar -xzf so_BUI_pickulationts-<viz_id>-manual-test.tgz -C "$SPLUNK_HOME/etc/apps"
+splunk restart
+```
+
+Then open Splunk Web, switch to app id `so_BUI_pickulationts`, and open the **Manual viz test - `<viz_id>`** dashboard.
+
+Important: this test package uses app id `so_BUI_pickulationts` because the formatter namespace in the hand-written viz files is scoped to that app id, for example `display.visualizations.custom.so_BUI_pickulationts.<viz_id>.*`.
+
+## Full app custom viz test package
+
+Use this only when you want to test the whole local app shell, all dashboards, and all custom visualizations together:
+
+```bash
+yarn install
+yarn package:viz
+```
+
+That builds the full Splunk app and writes:
+
+`packages/splunk-one/dist/so_BUI_pickulationts-custom-viz-test.tgz`
 
 ## App id and URLs
 
-`[package] id` in `src/main/resources/splunk/default/app.conf` is **`splunk-one`**. The HTML bootstrap in `appserver/templates/start.html` loads:
+`[package] id` in `src/main/resources/splunk/default/app.conf` is **`so_BUI_pickulationts`**. The HTML bootstrap in `appserver/templates/start.html` loads:
 
-`/static/app/splunk-one/pages/start.js`
+`/static/app/so_BUI_pickulationts/pages/start.js`
 
-If you rename the app id, update **both** `app.conf` and `start.html` so they stay in sync.
+Custom viz formatter keys use `display.visualizations.custom.so_BUI_pickulationts.<viz_id>.*`. Dashboard panels use `type="so_BUI_pickulationts.<viz_id>"`.
+
+If you rename the app id, update **app.conf**, **all `NS` strings** in viz source (then `yarn build` for React bundles), **dashboard XML `type=`**, and **templates** under `appserver/templates/`.
+
+## Keith / ITSI trend colors
+
+All five SplunkStuff custom visualizations share one contract (see `src/main/webapp/lib/splunkstuffTrendColors.js` and AMD `_shared/splunkstuffTrendColors.js`):
+
+- **Trend** = last numeric point minus previous (`delta`)
+- **delta >= 0** (up / flat) → tile background **#01417F** (blue), formatter key `goodColor`
+- **delta < 0** (down) → tile background **#DFA611** (gold), formatter key `badColor`
+- Line / loaded-line tiles paint the **full panel** with the trend color (not a split navy chart band)
+
+Verify locally:
+
+```bash
+cd packages/splunk-one
+yarn verify:trend-colors
+yarn build
+yarn link:app
+```
+
+In Splunk, open **SplunkStuff custom viz gallery**. Compare **Fixed loaded line React** and **vanilla AMD** on row 2 (same search — should match colors and trend).
+
+If a panel still shows inverted colors, open **Format** and reset to defaults (saved format from an older build may have swapped pickers).
+
+## Hover / tooltip verification (no Splunk login)
+
+Use this when changing **LineChart** or **`fixed_loaded_line_vanilla`** hover behavior. Fast checks before you call a task done:
+
+1. **Node — hit-test + series index math** (includes **`chartWrap` taller than `svg`** for vanilla AMD, **SVG `meet` letterboxing**, and **`seriesIndexFromPointerMeet`** — source: `src/main/webapp/lib/splunkstuffVizHoverMath.mjs`, AMD twin: `static/visualizations/_shared/splunkstuffVizHoverMath.js`):
+
+   ```bash
+   cd packages/splunk-one
+   yarn verify:viz-hover
+   ```
+
+2. **Playwright — React `LineChart` harness** (document-capture hover + portal tooltip):
+
+   ```bash
+   cd packages/splunk-one
+   yarn playwright install chromium   # once per machine / CI image
+   yarn build:hover-harness
+   yarn test:playwright
+   ```
+
+   [`playwright.config.js`](packages/splunk-one/playwright.config.js) starts [`bin/serve-playwright-public.mjs`](packages/splunk-one/bin/serve-playwright-public.mjs), which rebuilds the harness then serves **`test/playwright/public/`** on **http://127.0.0.1:4173** (override with `PLAYWRIGHT_HARNESS_PORT`).
+
+Splunk dashboard checks remain optional but recommended after `yarn build && yarn link:app`; the **vanilla AMD** viz is covered for hover **math** in Node only until a second browser harness exists.
 
 ## Optional: regenerate from Splunk
 

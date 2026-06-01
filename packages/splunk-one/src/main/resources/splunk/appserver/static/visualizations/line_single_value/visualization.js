@@ -15,7 +15,10 @@
  *
  * Debugging: set DEBUG to true and watch the browser console while the viz runs.
  */
-define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
+define([
+    'api/SplunkVisualizationBase',
+    './splunkstuffTrendColors',
+], function (SplunkVisualizationBase, trendColors) {
     /** When true, logs to console (dev only; set false before heavy dashboard use). */
     var DEBUG = false;
 
@@ -25,7 +28,86 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
      * Formatter property namespace — must match visualizations.conf stanza + app id.
      * See formatter.html for each prop name.
      */
-    var NS = 'display.visualizations.custom.splunk-one.line_single_value.';
+    var NS = 'display.visualizations.custom.so_BUI_pickulationts.line_single_value.';
+
+    function fieldName(fields, idx) {
+        if (!fields || idx < 0 || idx >= fields.length) {
+            return '';
+        }
+        var f = fields[idx];
+        if (typeof f === 'string') {
+            return f;
+        }
+        if (f != null && f.name != null) {
+            return String(f.name);
+        }
+        return '';
+    }
+
+    function findTimeColumnIndex(rawData) {
+        if (!rawData || !rawData.fields) {
+            return -1;
+        }
+        var i;
+        for (i = 0; i < rawData.fields.length; i += 1) {
+            if (fieldName(rawData.fields, i) === '_time') {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function timeSortKey(rawData, timeIdx, rowIdx) {
+        var cell = rawData.columns[timeIdx][rowIdx];
+        if (cell == null || cell === '') {
+            return 0;
+        }
+        if (typeof cell === 'number' && isFinite(cell)) {
+            return cell;
+        }
+        var s = String(cell).trim();
+        if (/^-?\d+(\.\d+)?$/.test(s)) {
+            var n = parseFloat(s, 10);
+            return isFinite(n) ? n : 0;
+        }
+        var ms = Date.parse(s);
+        if (isFinite(ms)) {
+            return ms / 1000;
+        }
+        var fb = parseFloat(s, 10);
+        return isFinite(fb) ? fb : 0;
+    }
+
+    /** Sort by _time ascending: line left→older, right→newer; headline = last = latest. */
+    function reorderNumericColumnByTime(rawData, valueIdx) {
+        var col = rawData.columns[valueIdx];
+        if (!col || col.length === 0) {
+            return [];
+        }
+        var n = col.length;
+        var tIdx = findTimeColumnIndex(rawData);
+        if (tIdx < 0 || !rawData.columns[tIdx] || rawData.columns[tIdx].length !== n) {
+            return col.map(function (v) {
+                return parseFloat(v, 10);
+            });
+        }
+        var order = [];
+        var r;
+        for (r = 0; r < n; r += 1) {
+            order.push(r);
+        }
+        order.sort(function (a, b) {
+            var ka = timeSortKey(rawData, tIdx, a);
+            var kb = timeSortKey(rawData, tIdx, b);
+            if (ka !== kb) {
+                return ka - kb;
+            }
+            return a - b;
+        });
+        return order.map(function (ri) {
+            return parseFloat(rawData.columns[valueIdx][ri], 10);
+        });
+    }
 
     function log() {
         if (!DEBUG) {
@@ -93,6 +175,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
         var best = -1;
         for (var c = 0; c < rawData.columns.length; c += 1) {
+            if (fieldName(rawData.fields, c) === '_time') {
+                continue;
+            }
             var col = rawData.columns[c];
             if (!col || col.length === 0) continue;
             var ok = true;
@@ -160,17 +245,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     'Line single value requires at least one all-numeric column in results.'
                 );
             }
-            var vals = rawData.columns[idx].map(function (v) {
-                return parseFloat(v, 10);
-            });
-            var fieldName =
+            var vals = reorderNumericColumnByTime(rawData, idx);
+            var chosenFieldName =
                 rawData.fields[idx] && rawData.fields[idx].name
                     ? String(rawData.fields[idx].name)
                     : '';
-            log('formatData: points=', vals.length, 'field=', fieldName);
+            log('formatData: points=', vals.length, 'field=', chosenFieldName);
             return {
                 values: vals,
-                fieldName: fieldName,
+                fieldName: chosenFieldName,
             };
         },
 
@@ -200,11 +283,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             log('updateView: scale', scale, 'subheader len', subheader.length, 'points', values.length);
 
+            var delta = trendColors.trendDelta(values);
+            var bg = trendColors.trendBackground(delta, goodColor, badColor);
+            trendColors.applyTrendHostStyle(this.el, bg, textColor);
+
             var last = values[values.length - 1];
-            var prev = values.length > 1 ? values[values.length - 2] : last;
-            var delta = last - prev;
-            var isGood = delta >= 0;
-            var bg = isGood ? goodColor : badColor;
 
             var root = document.createElement('div');
             root.className = 'splunk-one-line-single-value-viz';

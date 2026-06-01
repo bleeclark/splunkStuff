@@ -1,0 +1,24 @@
+<!--
+  Splunk radial meter — Splunk Enterprise 9.4 custom visualization tutorial
+  https://help.splunk.com/en/splunk-enterprise/developing-views-and-apps-for-splunk-web/9.4/custom-visualizations/build-a-custom-visualization
+
+  {{VIZ_NAMESPACE}} → display.visualizations.custom.<app_id>.radial_meter
+
+  Test SPL: | makeresults count=1 | eval count=73 | fields count
+  Or: index=_internal | stats count
+
+  Panel type: <app_id>.radial_meter
+-->
+<form class="splunk-formatter-section" section-label="Max value">
+    <splunk-control-group label="Maximum dial value">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.maxValue" value="100"></splunk-text-input>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Dial color">
+    <splunk-control-group label="Color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.mainColor" value="#f7bc38"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Background">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.backgroundColor" value="#ffffff"></splunk-color-picker>
+    </splunk-control-group>
+</form>

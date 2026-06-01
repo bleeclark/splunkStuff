@@ -1,0 +1,9 @@
+# Paste into: $SPLUNK_HOME/etc/apps/<APP_ID>/default/visualizations.conf
+
+[simple_small_viz]
+label = SplunkStuff — Simple small viz
+description = Minimal compact tile that shows the latest value from the first numeric field.
+default_height = 120
+search_fragment = | makeresults count=5 | streamstats count as value
+supports_drilldown = 0
+supports_trellis = 0

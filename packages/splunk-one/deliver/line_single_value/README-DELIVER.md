@@ -6,7 +6,7 @@ Splunk dashboard **custom visualization** (RequireJS AMD, no React bundle):
 - `formatter.html` — Format editor (Y min/max, colors, labels).
 - `visualization.css` — layout and typography aligned with fixed single value.
 - `preview.png` — visualization picker thumbnail.
-- `visualizations.conf.snippet` — register the viz inside `default/visualizations.conf`.
+- `splunkstuffTrendColors.js` — trend helper AMD module (same folder; synced from repo `visualizations/_shared/` on build).
 
 Splunk folder name / viz id: **`line_single_value`** (maps to stanza `[line_single_value]`).
 
@@ -20,22 +20,23 @@ Zip that folder (or merge individual files into your Splunk app) for handoff.
 
 ## Install into Splunk
 
-Assume Splunk app id **`splunk-one`** (`$SPLUNK_HOME/etc/apps/splunk-one/`).
+Assume Splunk app id **`so_BUI_pickulationts`** (`$SPLUNK_HOME/etc/apps/so_BUI_pickulationts/`).
 
 Copy into the app tree:
 
 | File                         | Destination path under the app                                                       |
 |-----------------------------|---------------------------------------------------------------------------------------|
-| `visualization.js`          | `$SPLUNK_HOME/etc/apps/splunk-one/appserver/static/visualizations/line_single_value/` |
+| `visualization.js`          | `$SPLUNK_HOME/etc/apps/so_BUI_pickulationts/appserver/static/visualizations/line_single_value/` |
 | `visualization.css`         | *(same folder)*                                                                     |
 | `formatter.html`          | *(same folder)*                                                                     |
 | `preview.png`               | *(same folder)*                                                                     |
+| `splunkstuffTrendColors.js` | *(same folder — trend helper AMD module)* |
 
 Merge `visualizations.conf.snippet` into:
 
-`$SPLUNK_HOME/etc/apps/splunk-one/default/visualizations.conf`
+`$SPLUNK_HOME/etc/apps/so_BUI_pickulationts/default/visualizations.conf`
 
-If this repo ships the splunk-one app tarball, **`default/visualizations.conf` already contains `[line_single_value]`**.
+If this repo ships the so_BUI_pickulationts app tarball, **`default/visualizations.conf` already contains `[line_single_value]`**.
 
 Optional: defaults for formatter-backed keys ship in **`default/savedsearches.conf`** and are declared in **`default/savedsearches.conf.spec`**.
 
@@ -58,6 +59,6 @@ Example SPL:
 
 Keys resolve as:
 
-`display.visualizations.custom.splunk-one.line_single_value.<prop>`
+`display.visualizations.custom.so_BUI_pickulationts.line_single_value.<prop>`
 
-If the target app id is not `splunk-one`, edit `NS` in `visualization.js` and reinstall.
+If the target app id is not `so_BUI_pickulationts`, edit `NS` in `visualization.js` and reinstall.

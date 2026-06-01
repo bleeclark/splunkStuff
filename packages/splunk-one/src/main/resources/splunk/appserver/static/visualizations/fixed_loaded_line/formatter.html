@@ -19,12 +19,18 @@
     <splunk-control-group label="Background">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#0B1F3B"></splunk-color-picker>
     </splunk-control-group>
-    <splunk-control-group label="Good trend (background tint)">
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Empty state only. When data is shown, the full tile uses Up/Down trend colors below.
+    </div>
+    <splunk-control-group label="Up / flat trend (delta &gt;= 0)">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.goodColor" value="#01417F"></splunk-color-picker>
     </splunk-control-group>
-    <splunk-control-group label="Bad trend (background tint)">
+    <splunk-control-group label="Down trend (delta &lt; 0)">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.badColor" value="#DFA611"></splunk-color-picker>
     </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Keith/ITSI pattern: blue when trend &gt;= 0, gold when trend &lt; 0. For patch KPIs, up is often undesirable.
+    </div>
     <splunk-control-group label="Text color">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
     </splunk-control-group>
@@ -94,6 +100,15 @@
     <splunk-control-group label="Sensitivity (1–10)">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.anomalySensitivity" value="3"></splunk-text-input>
     </splunk-control-group>
+</form>
+
+<form class="splunk-formatter-section" section-label="Interaction">
+    <splunk-control-group label="Show hover crosshair and tooltip">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.showHover" value="true"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        <strong>true</strong> or <strong>false</strong> — vertical line, point marker, and floating value/time tooltip on the chart
+    </div>
 </form>
 
 <form class="splunk-formatter-section" section-label="Axis and drilldown">

@@ -1,1 +1,364 @@
-define(["api/SplunkVisualizationBase"],function(e){function t(e,t,n){var i=e["display.visualizations.custom.splunk-one.line_single_value."+t];return null==i||""===i?n:i}function n(e,t){if("string"!=typeof e)return t;var n=e.trim();return/^#[0-9A-Fa-f]{6}$/.test(n)?n:t}return e.extend({getInitialDataParams:function(){return{outputMode:e.COLUMN_MAJOR_OUTPUT_MODE,count:5e3}},formatData:function(t){if(!t||!t.columns||0===t.columns.length)return{values:[]};var n=function(e){if(!e||!e.columns||!e.fields)return-1;for(var t=-1,n=0;n<e.columns.length;n+=1){var i=e.columns[n];if(i&&0!==i.length){for(var a=!0,l=0;l<i.length;l+=1)if(!isFinite(parseFloat(i[l],10))){a=!1;break}a&&(t=n)}}return t}(t);if(n<0)throw new e.VisualizationError("Line single value requires at least one all-numeric column in results.");var i=t.columns[n].map(function(e){return parseFloat(e,10)}),a=t.fields[n]&&t.fields[n].name?String(t.fields[n].name):"";return i.length,{values:i,fieldName:a}},updateView:function(e,i){this.el.innerHTML="";var a=e&&e.values||[];if(0===a.length){var l=document.createElement("div");return l.className="splunk-one-line-single-value-viz__err",l.textContent="No numeric results to display.",void this.el.appendChild(l)}var r=function(e,t){var n=parseFloat(e,10),i=parseFloat(t,10);if(isFinite(n)||(n=0),isFinite(i)||(i=100),n>i){var a=n;n=i,i=a}return i<=n&&(i=n+1),{min:n,max:i}}(t(i,"min",0),t(i,"max",100)),o=n(t(i,"goodColor","#01417F"),"#01417F"),s=n(t(i,"badColor","#DFA611"),"#DFA611"),u=n(t(i,"textColor","#FFFFFF"),"#FFFFFF"),v=n(t(i,"stroke","#FFFFFF"),"#FFFFFF"),m=String(t(i,"unit","%")||""),d=String(t(i,"subheader","")||"");d.length,a.length;var c=a[a.length-1],p=c-(a.length>1?a[a.length-2]:c),F=p>=0?o:s,g=document.createElement("div");if(g.className="splunk-one-line-single-value-viz",g.style.backgroundColor=F,g.style.color=u,d){var f=document.createElement("div");f.className="splunk-one-line-single-value-viz__header",f.textContent=d,g.appendChild(f)}var h=document.createElement("div");h.className="splunk-one-line-single-value-viz__body";var C=document.createElement("div");C.className="splunk-one-line-single-value-viz__major";var _=isFinite(c)?c.toLocaleString(void 0,{maximumFractionDigits:2}):"—";if(C.textContent=_,m){var x=document.createElement("span");x.className="splunk-one-line-single-value-viz__unit",x.textContent=m,C.appendChild(x)}var k=document.createElement("div");k.className="splunk-one-line-single-value-viz__trend";var w=isFinite(p)?(p>=0?"▲ ":"▼ ")+p.toLocaleString(void 0,{maximumFractionDigits:2}):"—";k.textContent=w,h.appendChild(C),h.appendChild(k);var N=document.createElement("div");N.className="splunk-one-line-single-value-viz__spark";var b=document.createElementNS("http://www.w3.org/2000/svg","svg");b.setAttribute("preserveAspectRatio","none"),b.setAttribute("viewBox","0 0 360 28");var A=document.createElementNS("http://www.w3.org/2000/svg","path"),E=function(e,t,n,i,a,l,r,o,s){var u=Math.max(1,352),v=Math.max(1,24),m=e.length;if(m<2)return"";for(var d=u/(m-1),c=[],p=0;p<m;p+=1){var F=(Number(e[p])-o)/(s-o),g=4+p*d,f=2+v-(F=Math.max(0,Math.min(1,F)))*v;c.push((0===p?"M":"L")+g.toFixed(1)+" "+f.toFixed(1))}return c.join(" ")}(a,0,0,0,0,0,0,r.min,r.max);E&&(A.setAttribute("d",E),A.setAttribute("fill","none"),A.setAttribute("stroke",v),A.setAttribute("stroke-width","2"),A.setAttribute("vector-effect","non-scaling-stroke"),b.appendChild(A),E.length),N.appendChild(b),h.appendChild(N),g.appendChild(h),this.el.appendChild(g)},reflow:function(){},remove:function(){this.el.innerHTML=""}})});
+/* eslint-disable */
+/**
+ * Splunk custom visualization: Line single value
+ *
+ * Renders a single-value tile (subheader, major number + optional unit, delta arrow)
+ * plus an SVG line in the footer area. Styling aligns with fixed_single_value.
+ *
+ * Data flow:
+ * - Splunk calls getInitialDataParams → COLUMN_MAJOR results (columns + fields).
+ * - formatData selects the last fully-numeric column and returns { values, fieldName }.
+ * - updateView reads formatter props under NS + reads model values and builds DOM.
+ *
+ * Formatter keys live in formatter.html as {{VIZ_NAMESPACE}}.&lt;prop&gt;;
+ * Splunk resolves that to display.visualizations.custom.&lt;app&gt;.line_single_value.&lt;prop&gt;.
+ *
+ * Debugging: set DEBUG to true and watch the browser console while the viz runs.
+ */
+define([
+    'api/SplunkVisualizationBase',
+    './splunkstuffTrendColors',
+], function (SplunkVisualizationBase, trendColors) {
+    /** When true, logs to console (dev only; set false before heavy dashboard use). */
+    var DEBUG = false;
+
+    var VIZ_ID = 'line_single_value';
+
+    /**
+     * Formatter property namespace — must match visualizations.conf stanza + app id.
+     * See formatter.html for each prop name.
+     */
+    var NS = 'display.visualizations.custom.so_BUI_pickulationts.line_single_value.';
+
+    function fieldName(fields, idx) {
+        if (!fields || idx < 0 || idx >= fields.length) {
+            return '';
+        }
+        var f = fields[idx];
+        if (typeof f === 'string') {
+            return f;
+        }
+        if (f != null && f.name != null) {
+            return String(f.name);
+        }
+        return '';
+    }
+
+    function findTimeColumnIndex(rawData) {
+        if (!rawData || !rawData.fields) {
+            return -1;
+        }
+        var i;
+        for (i = 0; i < rawData.fields.length; i += 1) {
+            if (fieldName(rawData.fields, i) === '_time') {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function timeSortKey(rawData, timeIdx, rowIdx) {
+        var cell = rawData.columns[timeIdx][rowIdx];
+        if (cell == null || cell === '') {
+            return 0;
+        }
+        if (typeof cell === 'number' && isFinite(cell)) {
+            return cell;
+        }
+        var s = String(cell).trim();
+        if (/^-?\d+(\.\d+)?$/.test(s)) {
+            var n = parseFloat(s, 10);
+            return isFinite(n) ? n : 0;
+        }
+        var ms = Date.parse(s);
+        if (isFinite(ms)) {
+            return ms / 1000;
+        }
+        var fb = parseFloat(s, 10);
+        return isFinite(fb) ? fb : 0;
+    }
+
+    /** Sort by _time ascending: line left→older, right→newer; headline = last = latest. */
+    function reorderNumericColumnByTime(rawData, valueIdx) {
+        var col = rawData.columns[valueIdx];
+        if (!col || col.length === 0) {
+            return [];
+        }
+        var n = col.length;
+        var tIdx = findTimeColumnIndex(rawData);
+        if (tIdx < 0 || !rawData.columns[tIdx] || rawData.columns[tIdx].length !== n) {
+            return col.map(function (v) {
+                return parseFloat(v, 10);
+            });
+        }
+        var order = [];
+        var r;
+        for (r = 0; r < n; r += 1) {
+            order.push(r);
+        }
+        order.sort(function (a, b) {
+            var ka = timeSortKey(rawData, tIdx, a);
+            var kb = timeSortKey(rawData, tIdx, b);
+            if (ka !== kb) {
+                return ka - kb;
+            }
+            return a - b;
+        });
+        return order.map(function (ri) {
+            return parseFloat(rawData.columns[valueIdx][ri], 10);
+        });
+    }
+
+    function log() {
+        if (!DEBUG) {
+            return;
+        }
+        var args = ['[' + VIZ_ID + ']'].concat(Array.prototype.slice.call(arguments));
+        // eslint-disable-next-line no-console
+        console.log.apply(console, args);
+    }
+
+    /**
+     * Read a single formatter option from Splunk's config object.
+     * @param {Object} config - Panel format config (full keys with NS prefix).
+     * @param {string} prop - Short property name (e.g. 'min', 'goodColor').
+     * @param {*} defaultVal - Used when missing, null, or empty string.
+     */
+    function readConfig(config, prop, defaultVal) {
+        var v = config[NS + prop];
+        if (v === undefined || v === null || v === '') {
+            return defaultVal;
+        }
+        return v;
+    }
+
+    /**
+     * Formatter returns strings; only accept #RRGGBB so colors never break the tile.
+     */
+    function sanitizeHexColor(raw, fallback) {
+        if (typeof raw !== 'string') {
+            return fallback;
+        }
+        var s = raw.trim();
+        if (/^#[0-9A-Fa-f]{6}$/.test(s)) {
+            return s;
+        }
+        return fallback;
+    }
+
+    /**
+     * Y-axis domain for the line (min/max). Ensures hi > lo for division in linePath.
+     */
+    function bounds(minIn, maxIn) {
+        var lo = parseFloat(minIn, 10);
+        var hi = parseFloat(maxIn, 10);
+        if (!isFinite(lo)) lo = 0;
+        if (!isFinite(hi)) hi = 100;
+        if (lo > hi) {
+            var t = lo;
+            lo = hi;
+            hi = t;
+        }
+        if (hi <= lo) hi = lo + 1;
+        return { min: lo, max: hi };
+    }
+
+    /**
+     * Pick the last column where every cell parses to a finite number.
+     * Requires rawData.fields (Splunk column-major shape).
+     * @returns {number} column index or -1
+     */
+    function pickNumericColumnIndex(rawData) {
+        if (!rawData || !rawData.columns || !rawData.fields) {
+            log('pickNumericColumnIndex: missing columns or fields');
+            return -1;
+        }
+        var best = -1;
+        for (var c = 0; c < rawData.columns.length; c += 1) {
+            if (fieldName(rawData.fields, c) === '_time') {
+                continue;
+            }
+            var col = rawData.columns[c];
+            if (!col || col.length === 0) continue;
+            var ok = true;
+            for (var i = 0; i < col.length; i += 1) {
+                if (!isFinite(parseFloat(col[i], 10))) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) best = c;
+        }
+        log('pickNumericColumnIndex: chosen index', best);
+        return best;
+    }
+
+    /**
+     * Build SVG path for a polyline scaled into [vmin, vmax] vertically.
+     * @returns {string} SVG d attribute or '' if fewer than 2 points.
+     */
+    function linePath(values, w, h, padL, padR, padT, padB, vmin, vmax) {
+        var iw = Math.max(1, w - padL - padR);
+        var ih = Math.max(1, h - padT - padB);
+        var n = values.length;
+        if (n < 2) return '';
+        var xStep = iw / (n - 1);
+        var parts = [];
+        for (var i = 0; i < n; i += 1) {
+            var v = Number(values[i]);
+            var ratio = (v - vmin) / (vmax - vmin);
+            ratio = Math.max(0, Math.min(1, ratio));
+            var x = padL + i * xStep;
+            var y = padT + ih - ratio * ih;
+            parts.push((i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1));
+        }
+        return parts.join(' ');
+    }
+
+    log('module loaded');
+
+    return SplunkVisualizationBase.extend({
+        /**
+         * Request search results as column arrays (preferred for numeric column pick).
+         */
+        getInitialDataParams: function () {
+            log('getInitialDataParams: COLUMN_MAJOR count=5000');
+            return {
+                outputMode: SplunkVisualizationBase.COLUMN_MAJOR_OUTPUT_MODE,
+                count: 5000,
+            };
+        },
+
+        /**
+         * Turn raw Splunk rows into our viz model { values: number[], fieldName: string }.
+         * Throws VisualizationError if no all-numeric column exists.
+         */
+        formatData: function (rawData) {
+            if (!rawData || !rawData.columns || rawData.columns.length === 0) {
+                log('formatData: no columns — returning empty values');
+                return { values: [] };
+            }
+            var idx = pickNumericColumnIndex(rawData);
+            if (idx < 0) {
+                log('formatData: throwing — no numeric column');
+                throw new SplunkVisualizationBase.VisualizationError(
+                    'Line single value requires at least one all-numeric column in results.'
+                );
+            }
+            var vals = reorderNumericColumnByTime(rawData, idx);
+            var chosenFieldName =
+                rawData.fields[idx] && rawData.fields[idx].name
+                    ? String(rawData.fields[idx].name)
+                    : '';
+            log('formatData: points=', vals.length, 'field=', chosenFieldName);
+            return {
+                values: vals,
+                fieldName: chosenFieldName,
+            };
+        },
+
+        /**
+         * Full DOM render from model + formatter config.
+         */
+        updateView: function (data, config) {
+            log('updateView: start');
+            this.el.innerHTML = '';
+            var values = (data && data.values) || [];
+            if (values.length === 0) {
+                log('updateView: empty values — showing error div');
+                var empty = document.createElement('div');
+                empty.className = 'splunk-one-line-single-value-viz__err';
+                empty.textContent = 'No numeric results to display.';
+                this.el.appendChild(empty);
+                return;
+            }
+
+            var scale = bounds(readConfig(config, 'min', 0), readConfig(config, 'max', 100));
+            var goodColor = sanitizeHexColor(readConfig(config, 'goodColor', '#01417F'), '#01417F');
+            var badColor = sanitizeHexColor(readConfig(config, 'badColor', '#DFA611'), '#DFA611');
+            var textColor = sanitizeHexColor(readConfig(config, 'textColor', '#FFFFFF'), '#FFFFFF');
+            var stroke = sanitizeHexColor(readConfig(config, 'stroke', '#FFFFFF'), '#FFFFFF');
+            var unit = String(readConfig(config, 'unit', '%') || '');
+            var subheader = String(readConfig(config, 'subheader', '') || '');
+
+            log('updateView: scale', scale, 'subheader len', subheader.length, 'points', values.length);
+
+            var delta = trendColors.trendDelta(values);
+            var bg = trendColors.trendBackground(delta, goodColor, badColor);
+            trendColors.applyTrendHostStyle(this.el, bg, textColor);
+
+            var last = values[values.length - 1];
+
+            var root = document.createElement('div');
+            root.className = 'splunk-one-line-single-value-viz';
+            root.style.backgroundColor = bg;
+            root.style.color = textColor;
+
+            if (subheader) {
+                var head = document.createElement('div');
+                head.className = 'splunk-one-line-single-value-viz__header';
+                head.textContent = subheader;
+                root.appendChild(head);
+            }
+
+            var body = document.createElement('div');
+            body.className = 'splunk-one-line-single-value-viz__body';
+
+            var major = document.createElement('div');
+            major.className = 'splunk-one-line-single-value-viz__major';
+            var majorText = isFinite(last)
+                ? last.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                : '—';
+            major.textContent = majorText;
+            if (unit) {
+                var unitSpan = document.createElement('span');
+                unitSpan.className = 'splunk-one-line-single-value-viz__unit';
+                unitSpan.textContent = unit;
+                major.appendChild(unitSpan);
+            }
+
+            var trend = document.createElement('div');
+            trend.className = 'splunk-one-line-single-value-viz__trend';
+            var trendStr = isFinite(delta)
+                ? (delta >= 0 ? '\u25b2 ' : '\u25bc ') +
+                  delta.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                : '—';
+            trend.textContent = trendStr;
+
+            body.appendChild(major);
+            body.appendChild(trend);
+
+            var sparkWrap = document.createElement('div');
+            sparkWrap.className = 'splunk-one-line-single-value-viz__spark';
+            var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('preserveAspectRatio', 'none');
+            svg.setAttribute('viewBox', '0 0 360 28');
+            var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            var d = linePath(values, 360, 28, 4, 4, 2, 2, scale.min, scale.max);
+            if (d) {
+                path.setAttribute('d', d);
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', stroke);
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('vector-effect', 'non-scaling-stroke');
+                svg.appendChild(path);
+                log('updateView: line path length', d.length);
+            } else {
+                log('updateView: no line path (need n>=2 points)');
+            }
+            sparkWrap.appendChild(svg);
+            body.appendChild(sparkWrap);
+
+            root.appendChild(body);
+            this.el.appendChild(root);
+            log('updateView: done');
+        },
+
+        reflow: function () {},
+
+        remove: function () {
+            log('remove: clearing container');
+            this.el.innerHTML = '';
+        },
+    });
+});

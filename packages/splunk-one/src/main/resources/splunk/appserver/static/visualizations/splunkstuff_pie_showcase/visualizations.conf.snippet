@@ -1,0 +1,9 @@
+# Paste into: $SPLUNK_HOME/etc/apps/<APP_ID>/default/visualizations.conf
+
+[splunkstuff_pie_showcase]
+label = SplunkStuff — Data pie (Top N)
+description = Categorical pie chart with Top N + Other bucket. Expects a label column and a numeric column (e.g. stats count by field).
+default_height = 220
+search_fragment = | stats count by category_field
+supports_drilldown = 0
+supports_trellis = 0
