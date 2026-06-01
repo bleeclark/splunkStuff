@@ -242,9 +242,10 @@
             <viz type="so_BUI_pickulationts.splunkstuff_kpi_sparkline">
                 <search base="gallery_kpi_sparkline_js" />
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.precision">0</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.majorLabel">Current:</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.deltaLabel">Change:</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.badgeText">Demo KPI</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.majorLabel"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.deltaLabel"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.badgeText"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.tooltipPrefix"></option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.sparkPointLabels">0:Oldest,9:Mid,19:Latest</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showPointLabels">true</option>
             </viz>
@@ -276,9 +277,10 @@
             <viz type="so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade">
                 <search base="gallery_kpi_sparkline_react" />
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.precision">0</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.majorLabel">Current:</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.deltaLabel">Change:</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.badgeText">Demo KPI</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.majorLabel"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.deltaLabel"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.badgeText"></option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.tooltipPrefix"></option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.sparkPointLabels">0:Oldest,9:Mid,19:Latest</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.showPointLabels">true</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react_remade.showHover">true</option>

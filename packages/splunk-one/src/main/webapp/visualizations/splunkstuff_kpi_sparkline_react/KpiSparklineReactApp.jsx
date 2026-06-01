@@ -12,7 +12,7 @@ import {
 } from '../splunkVizData';
 
 const NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react.';
-export const VIZ_BUILD = '20260531-kpi-sparkline-react-rebuilt';
+export const VIZ_BUILD = '20260601-kpi-sparkline-blank-legacy-value-prefix';
 
 function deriveSparkBounds(values, sparkMin, sparkMax, sparkAuto) {
     const finite = (Array.isArray(values) ? values : []).filter(Number.isFinite);
@@ -48,6 +48,15 @@ function fixed(n, precision) {
 
 function formatMajor(value, precision, unit) {
     return `${fixed(value, precision)}${unit || ''}`;
+}
+
+function formatHoverValue(value, precision, prefix) {
+    const core = fixed(value, precision);
+    const safePrefix =
+        String(prefix || '').trim().toLowerCase() === 'value'
+            ? ''
+            : String(prefix || '').trim();
+    return safePrefix ? `${safePrefix}: ${core}` : core;
 }
 
 function formatDelta(delta, last, mode, precision) {
@@ -142,7 +151,7 @@ export default function KpiSparklineReactApp({ values = [], times = [], config =
     const deltaLabel = readConfigLabel(config, NS, 'deltaLabel', '');
     const badgeText = readConfigLabel(config, NS, 'badgeText', '');
     const emptyText = readConfigLabel(config, NS, 'emptyText', 'No numeric results to display.');
-    const tooltipPrefix = readConfigLabel(config, NS, 'tooltipPrefix', 'Value');
+    const tooltipPrefix = readConfigLabel(config, NS, 'tooltipPrefix', '');
     const pointLabels = useMemo(
         () => parseSparkPointLabels(readConfigLabel(config, NS, 'sparkPointLabels', '')),
         [config]
@@ -349,7 +358,7 @@ export default function KpiSparklineReactApp({ values = [], times = [], config =
 
                 {showHover && showHoverAnnotation && hoverIdx != null ? (
                     <div className="splunkstuff-sparkline-value-viz__hoverAnn">
-                        {[hoverLabel, `${tooltipPrefix}: ${formatMajor(hoverValue, precision, unit)}`, hoverTime]
+                        {[hoverLabel, formatHoverValue(hoverValue, precision, tooltipPrefix), hoverTime]
                             .filter(Boolean)
                             .join(' | ')}
                     </div>
@@ -458,8 +467,7 @@ export default function KpiSparklineReactApp({ values = [], times = [], config =
                               </div>
                           ) : null}
                           <div className="splunkstuff-sparkline-value-viz__tooltipValue">
-                              {tooltipPrefix ? `${tooltipPrefix}: ` : ''}
-                              {formatMajor(hoverValue, precision, unit)}
+                              {formatHoverValue(hoverValue, precision, tooltipPrefix)}
                           </div>
                           {hoverTime ? (
                               <div className="splunkstuff-sparkline-value-viz__tooltipTime">

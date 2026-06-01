@@ -6,7 +6,7 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react.';
-    var VIZ_BUILD = '20260531-kpi-sparkline-react-folder-remade';
+    var VIZ_BUILD = '20260601-kpi-sparkline-react-blank-legacy-value-prefix';
     var DEMO_LABELS = {
         majorLabel: '',
         deltaLabel: '',
@@ -498,7 +498,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return arrow + delta.toLocaleString(undefined, { maximumFractionDigits: p });
     }
 
-    function formatHoverValue(v, precision, unit, prefix) {
+    function formatHoverValue(v, precision, prefix) {
         if (!isFinite(v)) {
             return '—';
         }
@@ -506,10 +506,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         if (!isFinite(p) || p < 0) {
             p = 2;
         }
-        var core =
-            v.toLocaleString(undefined, { maximumFractionDigits: p, minimumFractionDigits: 0 }) +
-            String(unit || '');
+        var core = v.toLocaleString(undefined, { maximumFractionDigits: p, minimumFractionDigits: 0 });
         var pre = String(prefix || '').trim();
+        if (pre.toLowerCase() === 'value') {
+            pre = '';
+        }
         return pre ? pre + ' ' + core : core;
     }
 
@@ -554,7 +555,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         g.appendChild(dot);
         svg.appendChild(g);
 
-        var valueLabel = formatHoverValue(opts.v, opts.precision, opts.unit, opts.tooltipPrefix);
+        var valueLabel = formatHoverValue(opts.v, opts.precision, opts.tooltipPrefix);
         var timeLabel = opts.timeLabel || '';
         var pointLabel = opts.pointLabel || '';
         var lines = [];
@@ -707,7 +708,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var thresholdMax = parseFloat(opt('thresholdMax', '80'), 10);
             var showHover = truthy(opt('showHover', 'true'));
             var showHoverAnnotation = truthy(optOr('showHoverAnnotation', 'true'));
-            var tooltipPrefix = String(optOr('tooltipPrefix', 'Value') || '');
+            var tooltipPrefix = String(optOr('tooltipPrefix', '') || '');
             var majorLabel = optLabel('majorLabel', DEMO_LABELS.majorLabel);
             var deltaLabel = optLabel('deltaLabel', DEMO_LABELS.deltaLabel);
             var badgeText = optLabel('badgeText', DEMO_LABELS.badgeText);
