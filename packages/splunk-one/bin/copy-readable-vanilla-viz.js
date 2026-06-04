@@ -6,6 +6,7 @@ const shell = require('shelljs');
 
 const VANILLA_VIZ_IDS = [
     'simple_small_viz',
+    'fixed_single_value',
     'line_single_value',
     'fixed_loaded_line_vanilla',
     'splunkstuff_kpi_line',
@@ -14,6 +15,7 @@ const VANILLA_VIZ_IDS = [
     'splunkstuff_pie_chart',
     'splunkstuff_sparkline_value',
     'splunkstuff_kpi_sparkline',
+    'splunkstuff_kpi_sparkline_react_remade',
     'splunkstuff_sparkline_showcase',
     'splunkstuff_pie_showcase',
     'radial_meter',
@@ -191,10 +193,22 @@ function syncSplunkGalleryView(pkgRoot) {
     require('./sync-splunk-gallery');
 }
 
+function syncSplunkVisualizationsConf(pkgRoot) {
+    void pkgRoot;
+    // eslint-disable-next-line global-require
+    require('./sync-splunk-visualizations-conf');
+}
+
 function postBuildVizSync(pkgRoot) {
     syncReactVizBundlesToStage(pkgRoot);
     syncSelfContainedSharedModules(pkgRoot);
     copyReadableVanillaViz(pkgRoot);
+    try {
+        syncSplunkVisualizationsConf(pkgRoot);
+    } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('postBuildVizSync: sync-splunk-visualizations-conf skipped', err.message || err);
+    }
     try {
         syncSplunkGalleryView(pkgRoot);
     } catch (err) {

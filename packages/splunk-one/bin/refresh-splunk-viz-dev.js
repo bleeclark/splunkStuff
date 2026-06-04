@@ -106,6 +106,9 @@ function main() {
     console.log('\nrefresh-splunk-viz-dev: syncing gallery view…');
     run('node bin/sync-splunk-gallery.js');
 
+    console.log('\nrefresh-splunk-viz-dev: syncing visualizations.conf…');
+    run('node bin/sync-splunk-visualizations-conf.js');
+
     console.log('\nrefresh-splunk-viz-dev: verifying deploy…');
     run('node bin/verify-viz-deploy.js');
 

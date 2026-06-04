@@ -10,9 +10,12 @@ yarn dev:splunk-viz
 That script:
 
 1. Runs `yarn build` (webpack + copy to `stage/` + `deliver/`)
-2. Removes stale `local/data/ui/views/custom_viz_gallery.xml` override (unless `SYNC_SPLUNK_GALLERY_KEEP_LOCAL=1`)
-3. Verifies `formatter.html`, `visualization.js`, and `visualization.css` match between `src/` and `stage/`
-4. Prints Splunk UI steps (hard refresh, format Apply, optional restart)
+2. Syncs `default/visualizations.conf` (registers all gallery viz types in Splunk)
+3. Removes stale `local/data/ui/views/custom_viz_gallery.xml` override (unless `SYNC_SPLUNK_GALLERY_KEEP_LOCAL=1`)
+4. Verifies `formatter.html`, `visualization.js`, and `visualization.css` match between `src/` and `stage/`
+5. Prints Splunk UI steps (hard refresh, format Apply, optional restart)
+
+If panels show **No matching visualization found**, the usual cause is a stale `stage/default/visualizations.conf` — run `yarn sync:splunk-visualizations-conf` or `yarn dev:splunk-viz`.
 
 ## One viz only
 

@@ -13,6 +13,7 @@
     "verify:radial-meter": "node bin/verify-radial-meter-arc.js",
     "verify:gallery-vizs": "node bin/verify-radial-meter-arc.js && node bin/verify-sparkline-features.js && node bin/verify-pie-topn.js && node bin/verify-viz-deploy.js",
     "sync:splunk-gallery": "node bin/sync-splunk-gallery.js",
+    "sync:splunk-visualizations-conf": "node bin/sync-splunk-visualizations-conf.js",
     "dev:splunk-viz": "node bin/refresh-splunk-viz-dev.js",
     "eslint": "eslint src --ext \".ts,.tsx,.js,.jsx\"",
     "eslint:fix": "eslint src --ext \".ts,.tsx,.js,.jsx\" --fix",

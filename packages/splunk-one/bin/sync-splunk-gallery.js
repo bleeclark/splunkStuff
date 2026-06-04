@@ -51,6 +51,7 @@ function main() {
         'splunkstuff_pie_chart_react',
         'splunkstuff_kpi_sparkline',
         'splunkstuff_kpi_sparkline_react',
+        'splunkstuff_kpi_sparkline_react_remade',
         'radial_meter',
         'radial_meter_react',
         'radial_meter_react_advanced',
