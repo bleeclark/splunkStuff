@@ -1,34 +1,35 @@
 <!--
-  SplunkStuff — Value + sparkline (extended formatter)
+  SplunkStuff — KPI + sparkline (extended formatter)
 
   {{VIZ_NAMESPACE}} → display.visualizations.custom.<app_id>.splunkstuff_kpi_sparkline
-
-  Option map (full key = NS + shortName):
-  ---------------------------------------------------------------------------
-  Spark scale       sparkMin, sparkMax, sparkAuto
-  Trend / tile      goodColor, badColor, invertTrend, textColor, background
-  Headline          subheader, unit, precision, showDelta, deltaMode
-  Spark line        showSparkline, sparkStroke, sparkStrokeWidth
-  Targets           showTarget, target
-  Thresholds        showThresholdBand, thresholdMin, thresholdMax
-  Interaction       showHover, showHoverAnnotation, tooltipPrefix
-  Indicator labels  majorLabel, deltaLabel, badgeText
-  Spark labels      sparkPointLabels, showPointLabels
-  Empty state       emptyText
-
-  Test SPL (panel search):
-    | makeresults count=72
-    | streamstats count as n
-    | eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
-    | eval value = 28 + ((n * 13) % 52)
-    | fields _time value
-    | sort 0 _time
-    | tail 20
-
-  Panel type: <app_id>.splunkstuff_kpi_sparkline
-
-  Avoid parentheses in section-label — Splunk builds DOM ids from labels.
 -->
+<form class="splunk-formatter-section" section-label="Layout">
+    <splunk-control-group label="Headline layout">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.headlineLayout" value="stacked">
+            <option value="stacked">Stacked</option>
+            <option value="inline">Side by side</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Indicator label position">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.labelPosition" value="above">
+            <option value="above">Above value</option>
+            <option value="right">Right of value</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Subheader style">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.subheaderStyle" value="matchTile">
+            <option value="matchTile">Match tile color</option>
+            <option value="darkBlue">Dark blue bar</option>
+            <option value="overlay">Dark overlay</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Sparkline edge to edge">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.sparkEdgeToEdge" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+</form>
 <form class="splunk-formatter-section" section-label="Spark scale">
     <splunk-control-group label="Spark min (blank if auto)">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkMin" value=""></splunk-text-input>
@@ -37,7 +38,10 @@
         <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkMax" value=""></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="Auto scale from data">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkAuto" value="false"></splunk-text-input>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.sparkAuto" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
     </splunk-control-group>
 </form>
 <form class="splunk-formatter-section" section-label="Trend and tile">
@@ -48,7 +52,10 @@
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.badColor" value="#DFA611"></splunk-color-picker>
     </splunk-control-group>
     <splunk-control-group label="Invert trend (down is good)">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.invertTrend" value="false"></splunk-text-input>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.invertTrend" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Text color">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
@@ -68,15 +75,24 @@
         <splunk-text-input name="{{VIZ_NAMESPACE}}.precision" value="2"></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="Show delta">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.showDelta" value="true"></splunk-text-input>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showDelta" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
     </splunk-control-group>
-    <splunk-control-group label="Delta mode: absolute or percent">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.deltaMode" value="absolute"></splunk-text-input>
+    <splunk-control-group label="Delta mode">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.deltaMode" value="absolute">
+            <option value="absolute">Absolute</option>
+            <option value="percent">Percent</option>
+        </splunk-radio-input>
     </splunk-control-group>
 </form>
 <form class="splunk-formatter-section" section-label="Spark line">
     <splunk-control-group label="Show sparkline">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.showSparkline" value="true"></splunk-text-input>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showSparkline" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Spark stroke color">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.sparkStroke" value="#FFFFFF"></splunk-color-picker>
@@ -85,9 +101,32 @@
         <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkStrokeWidth" value="2"></splunk-text-input>
     </splunk-control-group>
 </form>
+<form class="splunk-formatter-section" section-label="Annotations from search">
+    <splunk-control-group label="Annotation field name">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.annotationField" value="annotation"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        String column in search results (e.g. <strong>annotation</strong>). Leave blank to disable.
+    </div>
+    <splunk-control-group label="Show annotation on hover">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showAnnotationHover" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show annotation on spark">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showAnnotationLabels" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+</form>
 <form class="splunk-formatter-section" section-label="Targets">
     <splunk-control-group label="Show target line">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.showTarget" value="false"></splunk-text-input>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showTarget" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Target value">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.target" value="50"></splunk-text-input>
@@ -95,7 +134,10 @@
 </form>
 <form class="splunk-formatter-section" section-label="Thresholds">
     <splunk-control-group label="Show threshold band on spark">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.showThresholdBand" value="false"></splunk-text-input>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showThresholdBand" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Threshold min">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.thresholdMin" value="20"></splunk-text-input>
@@ -106,48 +148,44 @@
 </form>
 <form class="splunk-formatter-section" section-label="Interaction">
     <splunk-control-group label="Show hover tooltip on sparkline">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.showHover" value="true"></splunk-text-input>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showHover" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="In-chart hover annotation">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.showHoverAnnotation" value="true"></splunk-text-input>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showHoverAnnotation" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Tooltip prefix">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.tooltipPrefix" value=""></splunk-text-input>
     </splunk-control-group>
-    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Optional word before the hovered value, e.g. <strong>Requests</strong>
-    </div>
 </form>
 <form class="splunk-formatter-section" section-label="Indicator labels">
     <splunk-control-group label="Major value label">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.majorLabel" value=""></splunk-text-input>
     </splunk-control-group>
-    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Text above the headline number, e.g. <strong>Current:</strong>. Leave blank to hide.
-    </div>
     <splunk-control-group label="Delta label">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.deltaLabel" value=""></splunk-text-input>
     </splunk-control-group>
-    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Text above the trend value, e.g. <strong>Change:</strong>. Leave blank to hide.
-    </div>
     <splunk-control-group label="Badge / status text">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.badgeText" value=""></splunk-text-input>
     </splunk-control-group>
-    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Top-right annotation, e.g. <strong>SLA OK</strong>. Clear this field completely to remove the badge.
-    </div>
 </form>
 <form class="splunk-formatter-section" section-label="Spark point labels">
     <splunk-control-group label="Point labels by index">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkPointLabels" value=""></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Comma-separated <strong>index:word</strong> pairs (0-based, oldest→newest). Example:
-        <strong>0:Start,9:Peak,19:Now</strong>. Shown in tooltip when hovering that point.
+        Comma-separated <strong>index:word</strong> pairs (0-based). Example: <strong>0:Start,19:Now</strong>
     </div>
     <splunk-control-group label="Always show point labels on spark">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.showPointLabels" value="false"></splunk-text-input>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showPointLabels" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
     </splunk-control-group>
 </form>
 <form class="splunk-formatter-section" section-label="Empty state">

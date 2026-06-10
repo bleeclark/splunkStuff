@@ -61,6 +61,17 @@ function loadKpiSparklineViz() {
         src.indexOf("if (badgeText)") !== -1,
         'kpi sparkline must only render badge when badgeText is set'
     );
+    assert(src.indexOf('appendIndicatorPair') !== -1, 'kpi sparkline must support indicator pair layout');
+    assert(src.indexOf('stringFields') !== -1, 'kpi sparkline must extract stringFields in formatData');
+    assert(src.indexOf('headlineLayout') !== -1, 'kpi sparkline must support headlineLayout');
+    assert(src.indexOf('showAnnotationHover') !== -1, 'kpi sparkline must support annotation hover');
+    assert(src.indexOf('subheaderStyle') !== -1, 'kpi sparkline must support subheaderStyle');
+    assert(src.indexOf('applySubheaderStyle') !== -1, 'kpi sparkline must apply subheader styles');
+    assert(src.indexOf('getBoundingClientRect') !== -1, 'kpi sparkline must measure spark via layout rect');
+    assert(
+        src.indexOf('splunkstuff-sparkline-value-viz__hoverOverlay') !== -1,
+        'kpi sparkline must use HTML hover overlay'
+    );
     return filePath;
 }
 

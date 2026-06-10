@@ -5,7 +5,7 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20260601-kpi-sparkline-blank-legacy-value-prefix';
+    var VIZ_BUILD = '20260609-kpi-sparkline-header-hover-fix';
     var DEMO_LABELS = {
         majorLabel: '',
         deltaLabel: '',
@@ -25,6 +25,39 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         el.style.background = 'rgba(0,0,0,0.28)';
         el.style.marginBottom = '2px';
         el.style.textAlign = 'center';
+    }
+
+    function appendIndicatorPair(container, valueEl, labelText, textColor, position) {
+        var pos = position === 'right' ? 'right' : 'above';
+        var pair = document.createElement('div');
+        pair.className =
+            'splunkstuff-sparkline-value-viz__indicatorPair splunkstuff-sparkline-value-viz__indicatorPair--' +
+            pos;
+
+        function makeLabel() {
+            var lbl = document.createElement('div');
+            lbl.className = 'splunkstuff-sparkline-value-viz__indicatorLabel';
+            lbl.textContent = labelText;
+            inlineCaptionStyle(lbl, textColor);
+            if (pos === 'right') {
+                lbl.style.marginBottom = '0';
+            }
+            return lbl;
+        }
+
+        if (pos === 'right') {
+            pair.appendChild(valueEl);
+            if (labelText) {
+                pair.appendChild(makeLabel());
+            }
+        } else {
+            if (labelText) {
+                pair.appendChild(makeLabel());
+            }
+            pair.appendChild(valueEl);
+        }
+        container.appendChild(pair);
+        return pair;
     }
 
     function inlineBadgeStyle(el) {
@@ -271,6 +304,64 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         el.style.pointerEvents = 'auto';
     }
 
+    function resolveSubheaderStyle(config, viz) {
+        var styleFound = findConfigValue(config, 'subheaderStyle', viz);
+        if (styleFound.found && String(styleFound.value).trim()) {
+            return String(styleFound.value).trim().toLowerCase();
+        }
+        return truthy(optOrFromConfig(config, viz, 'subheaderMatchTile', 'true')) ? 'matchtile' : 'overlay';
+    }
+
+    function optOrFromConfig(config, viz, prop, builtInDefault) {
+        var found = findConfigValue(config, prop, viz);
+        if (!found.found) {
+            return builtInDefault;
+        }
+        var raw = found.value;
+        if (typeof raw === 'string' && raw.trim() === '') {
+            return builtInDefault;
+        }
+        return raw;
+    }
+
+    function applySubheaderStyle(head, subheaderStyle, bg, goodColor, textColor) {
+        if (!head) {
+            return;
+        }
+        var style = String(subheaderStyle || 'matchtile').toLowerCase();
+        var bgColor = 'rgba(0,0,0,0.52)';
+        if (style === 'matchtile') {
+            bgColor = bg;
+            head.className += ' splunkstuff-sparkline-value-viz__header--matchTile';
+        } else if (style === 'darkblue') {
+            bgColor = goodColor;
+            head.className += ' splunkstuff-sparkline-value-viz__header--darkBlue';
+        } else {
+            head.className += ' splunkstuff-sparkline-value-viz__header--overlay';
+        }
+        head.style.setProperty('background', bgColor, 'important');
+        head.style.setProperty('color', textColor, 'important');
+    }
+
+    function measureSparkWrap(sparkWrap) {
+        var rect = sparkWrap.getBoundingClientRect();
+        return {
+            w: Math.max(1, Math.round(rect.width) || sparkWrap.clientWidth || 360),
+            h: Math.max(1, Math.round(rect.height) || sparkWrap.clientHeight || 46),
+        };
+    }
+
+    function sizeSparkSvg(svg, w, h) {
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+        svg.setAttribute('width', String(w));
+        svg.setAttribute('height', String(h));
+        svg.style.width = w + 'px';
+        svg.style.height = h + 'px';
+        svg.style.overflow = 'visible';
+        svg.style.display = 'block';
+    }
+
     function pickNumericColumnIndex(rawData) {
         var fields = fieldsList(rawData);
         if (!rawData || !rawData.columns || !fields.length) {
@@ -294,28 +385,25 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return best;
     }
 
-    function reorderSeriesByTime(rawData, valueIdx) {
+    function getTimeSortedValuePairs(rawData, valueIdx) {
         var col = rawData.columns[valueIdx] || [];
         if (!col.length) {
-            return { values: [], times: [] };
+            return [];
         }
         var n = col.length;
         var tIdx = findTimeColumnIndex(rawData);
-        var values = [];
-        var times = [];
+        var pairs = [];
         var r;
         if (tIdx < 0 || !rawData.columns[tIdx] || rawData.columns[tIdx].length !== n) {
             for (r = 0; r < n; r += 1) {
                 var v0 = parseNum(col[r]);
                 if (isFinite(v0)) {
-                    values.push(v0);
-                    times.push(null);
+                    pairs.push({ v: v0, timeRaw: null, rowIdx: r });
                 }
             }
-            return { values: values, times: times };
+            return pairs;
         }
         var timeCol = rawData.columns[tIdx];
-        var pairs = [];
         for (r = 0; r < n; r += 1) {
             var v = parseNum(col[r]);
             if (!isFinite(v)) {
@@ -325,20 +413,110 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 t: timeSortKey(rawData, tIdx, r),
                 v: v,
                 timeRaw: cellValue(timeCol[r]),
-                i: r,
+                rowIdx: r,
             });
         }
         pairs.sort(function (a, b) {
             if (a.t !== b.t) {
                 return a.t - b.t;
             }
-            return a.i - b.i;
+            return a.rowIdx - b.rowIdx;
         });
+        return pairs;
+    }
+
+    function reorderSeriesByTime(rawData, valueIdx) {
+        var pairs = getTimeSortedValuePairs(rawData, valueIdx);
+        var values = [];
+        var times = [];
+        var r;
         for (r = 0; r < pairs.length; r += 1) {
             values.push(pairs[r].v);
             times.push(pairs[r].timeRaw);
         }
         return { values: values, times: times };
+    }
+
+    function pickColumnIndexByName(rawData, name) {
+        var fields = fieldsList(rawData);
+        var i;
+        for (i = 0; i < fields.length; i += 1) {
+            if (fieldName(fields, i) === name) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function reorderStringColumnByTime(rawData, strIdx, valueIdx) {
+        var pairs = getTimeSortedValuePairs(rawData, valueIdx);
+        var strCol = rawData.columns[strIdx] || [];
+        var out = [];
+        var r;
+        for (r = 0; r < pairs.length; r += 1) {
+            var cell = strCol[pairs[r].rowIdx];
+            var raw = cellValue(cell);
+            out.push(raw == null ? '' : String(raw).trim());
+        }
+        return out;
+    }
+
+    function reorderAllStringFieldsByTime(rawData, valueIdx) {
+        var fields = fieldsList(rawData);
+        var out = {};
+        var c;
+        if (!rawData || !rawData.columns) {
+            return out;
+        }
+        for (c = 0; c < rawData.columns.length; c += 1) {
+            var fn = fieldName(fields, c);
+            if (!fn || fn === '_time' || c === valueIdx) {
+                continue;
+            }
+            out[fn] = reorderStringColumnByTime(rawData, c, valueIdx);
+        }
+        return out;
+    }
+
+    function drawSparkLabelAtIndex(
+        svg,
+        values,
+        pi,
+        labelText,
+        w,
+        h,
+        padL,
+        padR,
+        padT,
+        padB,
+        vmin,
+        vmax,
+        sparkStroke
+    ) {
+        var xy = sparkXY(values, pi, w, h, padL, padR, padT, padB, vmin, vmax);
+        var mark = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        mark.setAttribute('cx', xy.x.toFixed(1));
+        mark.setAttribute('cy', xy.y.toFixed(1));
+        mark.setAttribute('r', '3');
+        mark.setAttribute('fill', sparkStroke);
+        svg.appendChild(mark);
+        var lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        lbl.setAttribute('x', xy.x.toFixed(1));
+        lbl.setAttribute('y', String(Math.max(10, xy.y - 7)));
+        lbl.setAttribute('fill', 'rgba(255,255,255,0.9)');
+        lbl.setAttribute('font-size', '9');
+        lbl.setAttribute('font-weight', '700');
+        if (xy.x <= padL + 2) {
+            lbl.setAttribute('text-anchor', 'start');
+            lbl.setAttribute('dx', '2');
+        } else if (xy.x >= w - padR - 2) {
+            lbl.setAttribute('text-anchor', 'end');
+            lbl.setAttribute('dx', '-2');
+        } else {
+            lbl.setAttribute('text-anchor', 'middle');
+        }
+        lbl.textContent = labelText;
+        svg.appendChild(lbl);
     }
 
     function normalizeTimes(rawTimes, len) {
@@ -513,9 +691,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return pre ? pre + ' ' + core : core;
     }
 
-    function clearSparkHover(svg, tooltip, hoverAnnEl) {
-        if (svg) {
-            var old = svg.querySelector('.splunkstuff-sparkline-value-viz__hover');
+    function clearSparkHover(sparkWrap, tooltip, hoverAnnEl) {
+        if (sparkWrap) {
+            var old = sparkWrap.querySelector('.splunkstuff-sparkline-value-viz__hoverOverlay');
             if (old && old.parentNode) {
                 old.parentNode.removeChild(old);
             }
@@ -529,36 +707,45 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
     }
 
-    function updateSparkHover(svg, tooltip, ownerDoc, opts) {
-        clearSparkHover(svg, tooltip, opts.hoverAnnEl);
-        var g = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('class', 'splunkstuff-sparkline-value-viz__hover');
-        g.setAttribute('pointer-events', 'none');
+    function updateSparkHover(sparkWrap, tooltip, ownerDoc, opts) {
+        clearSparkHover(sparkWrap, tooltip, opts.hoverAnnEl);
+        var rect = sparkWrap.getBoundingClientRect();
+        var drawW = Math.max(1, rect.width);
+        var drawH = Math.max(1, rect.height);
+        var px = (opts.hx / opts.w) * drawW;
+        var py = (opts.hy / opts.h) * drawH;
+        var topPx = (opts.padT / opts.h) * drawH;
+        var bottomPx = drawH - (opts.padB / opts.h) * drawH;
 
-        var line = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', opts.hx.toFixed(1));
-        line.setAttribute('x2', opts.hx.toFixed(1));
-        line.setAttribute('y1', String(opts.padT));
-        line.setAttribute('y2', String(opts.h - opts.padB));
-        line.setAttribute('stroke', 'rgba(255,255,255,0.35)');
-        line.setAttribute('stroke-width', '1');
-        g.appendChild(line);
+        var overlay = ownerDoc.createElement('div');
+        overlay.className = 'splunkstuff-sparkline-value-viz__hoverOverlay';
+        overlay.setAttribute('aria-hidden', 'true');
 
-        var dot = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        dot.setAttribute('cx', opts.hx.toFixed(1));
-        dot.setAttribute('cy', opts.hy.toFixed(1));
-        dot.setAttribute('r', '4');
-        dot.setAttribute('fill', opts.stroke);
-        dot.setAttribute('stroke', 'rgba(0,0,0,0.35)');
-        dot.setAttribute('stroke-width', '1');
-        g.appendChild(dot);
-        svg.appendChild(g);
+        var line = ownerDoc.createElement('div');
+        line.className = 'splunkstuff-sparkline-value-viz__hoverLine';
+        line.style.left = px.toFixed(1) + 'px';
+        line.style.top = topPx.toFixed(1) + 'px';
+        line.style.height = Math.max(0, bottomPx - topPx).toFixed(1) + 'px';
+        overlay.appendChild(line);
+
+        var dot = ownerDoc.createElement('div');
+        dot.className = 'splunkstuff-sparkline-value-viz__hoverDot';
+        dot.style.left = (px - 4).toFixed(1) + 'px';
+        dot.style.top = (py - 4).toFixed(1) + 'px';
+        dot.style.background = opts.stroke;
+        overlay.appendChild(dot);
+
+        sparkWrap.appendChild(overlay);
 
         var valueLabel = formatHoverValue(opts.v, opts.precision, opts.tooltipPrefix);
         var timeLabel = opts.timeLabel || '';
+        var annotationLabel = opts.annotationLabel || '';
         var pointLabel = opts.pointLabel || '';
         var lines = [];
-        if (pointLabel) {
+        if (annotationLabel) {
+            lines.push(annotationLabel);
+        }
+        if (pointLabel && pointLabel !== annotationLabel) {
             lines.push(pointLabel);
         }
         lines.push(valueLabel);
@@ -567,13 +754,14 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
 
         tooltip.textContent = '';
+        var valueLineIdx = lines.indexOf(valueLabel);
         var i;
         for (i = 0; i < lines.length; i += 1) {
             var row = ownerDoc.createElement('div');
             row.className =
-                i === 0 && pointLabel
+                i < valueLineIdx
                     ? 'splunkstuff-sparkline-value-viz__tooltipPoint'
-                    : i === (pointLabel ? 1 : 0)
+                    : i === valueLineIdx
                       ? 'splunkstuff-sparkline-value-viz__tooltipValue'
                       : 'splunkstuff-sparkline-value-viz__tooltipTime';
             row.textContent = lines[i];
@@ -607,7 +795,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
         formatData: function (rawData) {
             if (!rawData || !rawData.columns || rawData.columns.length === 0) {
-                return { values: [], times: [], fieldName: '' };
+                return { values: [], times: [], fieldName: '', stringFields: {} };
             }
             var fields = fieldsList(rawData);
             var idx = pickNumericColumnIndex(rawData);
@@ -626,6 +814,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 values: series.values,
                 times: series.times,
                 fieldName: fieldName(fields, idx),
+                stringFields: reorderAllStringFieldsByTime(rawData, idx),
             };
         },
 
@@ -715,6 +904,20 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 optLabel('sparkPointLabels', DEMO_LABELS.sparkPointLabels)
             );
             var showPointLabels = truthy(optOr('showPointLabels', 'false'));
+            var headlineLayout = String(opt('headlineLayout', 'stacked') || 'stacked').toLowerCase();
+            var labelPosition = String(opt('labelPosition', 'above') || 'above').toLowerCase();
+            var sparkEdgeToEdge = truthy(opt('sparkEdgeToEdge', 'false'));
+            var subheaderStyle = resolveSubheaderStyle(config, viz);
+            var annotationField = String(opt('annotationField', 'annotation') || '').trim();
+            var showAnnotationHover = truthy(optOr('showAnnotationHover', 'true'));
+            var showAnnotationLabels = truthy(optOr('showAnnotationLabels', 'false'));
+            var annotations = [];
+            if (annotationField && data && data.stringFields && data.stringFields[annotationField]) {
+                annotations = data.stringFields[annotationField];
+            }
+            while (annotations.length < values.length) {
+                annotations.push('');
+            }
 
             var delta = trendDelta(values);
             var last = values[values.length - 1];
@@ -749,6 +952,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (subheader) {
                 var head = document.createElement('div');
                 head.className = 'splunkstuff-sparkline-value-viz__header';
+                applySubheaderStyle(head, subheaderStyle, bg, goodColor, textColor);
                 head.textContent = subheader;
                 root.appendChild(head);
             }
@@ -764,18 +968,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             body.style.padding = '12px 12px 76px';
             body.style.boxSizing = 'border-box';
 
+            var headlineRow = document.createElement('div');
+            headlineRow.className =
+                'splunkstuff-sparkline-value-viz__headlineRow splunkstuff-sparkline-value-viz__headlineRow--' +
+                (headlineLayout === 'inline' ? 'inline' : 'stacked');
+
             var major = document.createElement('div');
             major.className = 'splunkstuff-sparkline-value-viz__major';
-            major.style.display = 'flex';
-            major.style.flexDirection = 'column';
-            major.style.alignItems = 'center';
-            if (majorLabel) {
-                var majorLbl = document.createElement('div');
-                majorLbl.className = 'splunkstuff-sparkline-value-viz__indicatorLabel';
-                majorLbl.textContent = majorLabel;
-                inlineCaptionStyle(majorLbl, textColor);
-                major.appendChild(majorLbl);
-            }
             var majorVal = document.createElement('div');
             majorVal.className = 'splunkstuff-sparkline-value-viz__majorValue';
             majorVal.textContent = formatMajor(last, precision, unit);
@@ -783,32 +982,23 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             majorVal.style.fontWeight = '600';
             majorVal.style.lineHeight = '1.05';
             majorVal.style.color = textColor;
-            major.appendChild(majorVal);
-            body.appendChild(major);
+            appendIndicatorPair(major, majorVal, majorLabel, textColor, labelPosition);
+            headlineRow.appendChild(major);
 
             if (showDelta) {
                 var trend = document.createElement('div');
                 trend.className = 'splunkstuff-sparkline-value-viz__trend';
-                trend.style.display = 'flex';
-                trend.style.flexDirection = 'column';
-                trend.style.alignItems = 'center';
-                trend.style.marginTop = '8px';
-                if (deltaLabel) {
-                    var deltaLbl = document.createElement('div');
-                    deltaLbl.className = 'splunkstuff-sparkline-value-viz__indicatorLabel';
-                    deltaLbl.textContent = deltaLabel;
-                    inlineCaptionStyle(deltaLbl, textColor);
-                    trend.appendChild(deltaLbl);
-                }
                 var deltaVal = document.createElement('div');
                 deltaVal.className = 'splunkstuff-sparkline-value-viz__trendValue';
                 deltaVal.textContent = formatDelta(delta, last, deltaMode, precision);
                 deltaVal.style.fontSize = '16px';
                 deltaVal.style.fontWeight = '600';
                 deltaVal.style.color = textColor;
-                trend.appendChild(deltaVal);
-                body.appendChild(trend);
+                appendIndicatorPair(trend, deltaVal, deltaLabel, textColor, labelPosition);
+                headlineRow.appendChild(trend);
             }
+
+            body.appendChild(headlineRow);
 
             var hoverAnnEl = null;
             if (showHoverAnnotation) {
@@ -818,27 +1008,51 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 body.appendChild(hoverAnnEl);
             }
 
-            var padL = 34;
-            var padR = 34;
+            var padL = sparkEdgeToEdge ? 0 : 34;
+            var padR = sparkEdgeToEdge ? 0 : 34;
             var padT = 14;
             var padB = 6;
             var w = 360;
             var h = 46;
             var n = values.length;
+            var sparkWrap = null;
 
             if (showSparkline) {
-                var sparkWrap = document.createElement('div');
+                sparkWrap = document.createElement('div');
                 sparkWrap.className = 'splunkstuff-sparkline-value-viz__spark';
+                if (sparkEdgeToEdge) {
+                    sparkWrap.className += ' splunkstuff-sparkline-value-viz__spark--edgeToEdge';
+                }
                 sparkWrap.style.position = 'absolute';
-                sparkWrap.style.left = '10px';
-                sparkWrap.style.right = '10px';
+                sparkWrap.style.left = sparkEdgeToEdge ? '0' : '10px';
+                sparkWrap.style.right = sparkEdgeToEdge ? '0' : '10px';
                 sparkWrap.style.bottom = '8px';
-                sparkWrap.style.height = '58px';
                 sparkWrap.style.overflow = 'visible';
-                var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.setAttribute('preserveAspectRatio', 'none');
-                svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
-                svg.style.overflow = 'visible';
+                body.appendChild(sparkWrap);
+            }
+
+            root.appendChild(body);
+            this.el.appendChild(root);
+            this._lastData = data;
+            this._lastConfig = config;
+
+            if (showSparkline && sparkWrap) {
+                var paintSpark = function (deferred) {
+                    sparkWrap.innerHTML = '';
+                    var measured = measureSparkWrap(sparkWrap);
+                    if (measured.w < 2 && !deferred) {
+                        var rafWin = ownerDoc.defaultView || window;
+                        if (rafWin && typeof rafWin.requestAnimationFrame === 'function') {
+                            rafWin.requestAnimationFrame(function () {
+                                paintSpark(true);
+                            });
+                        }
+                        return;
+                    }
+                    w = measured.w;
+                    h = measured.h;
+                    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    sizeSparkSvg(svg, w, h);
 
                 if (showThresholdBand && isFinite(thresholdMin) && isFinite(thresholdMax)) {
                     var y1 = yFromValue(thresholdMax, h, padT, padB, scale.min, scale.max);
@@ -876,47 +1090,52 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     svg.appendChild(path);
                 }
 
-                if (showPointLabels && n >= 1) {
+                if (n >= 1) {
+                    var effectivePointLabels = {};
                     var pi;
+                    if (showPointLabels) {
+                        for (pi = 0; pi < n; pi += 1) {
+                            if (Object.prototype.hasOwnProperty.call(sparkPointLabels, pi)) {
+                                effectivePointLabels[pi] = sparkPointLabels[pi];
+                            }
+                        }
+                    }
+                    if (showAnnotationLabels && annotations.length) {
+                        for (pi = 0; pi < annotations.length; pi += 1) {
+                            if (annotations[pi]) {
+                                effectivePointLabels[pi] = annotations[pi];
+                            }
+                        }
+                    }
                     for (pi = 0; pi < n; pi += 1) {
-                        if (!Object.prototype.hasOwnProperty.call(sparkPointLabels, pi)) {
+                        if (!Object.prototype.hasOwnProperty.call(effectivePointLabels, pi)) {
                             continue;
                         }
-                        var xy = sparkXY(values, pi, w, h, padL, padR, padT, padB, scale.min, scale.max);
-                        var mark = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                        mark.setAttribute('cx', xy.x.toFixed(1));
-                        mark.setAttribute('cy', xy.y.toFixed(1));
-                        mark.setAttribute('r', '3');
-                        mark.setAttribute('fill', sparkStroke);
-                        svg.appendChild(mark);
-                        var lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        lbl.setAttribute('x', xy.x.toFixed(1));
-                        lbl.setAttribute('y', String(Math.max(10, xy.y - 7)));
-                        lbl.setAttribute('fill', 'rgba(255,255,255,0.9)');
-                        lbl.setAttribute('font-size', '9');
-                        lbl.setAttribute('font-weight', '700');
-                        if (xy.x <= padL + 2) {
-                            lbl.setAttribute('text-anchor', 'start');
-                            lbl.setAttribute('dx', '2');
-                        } else if (xy.x >= w - padR - 2) {
-                            lbl.setAttribute('text-anchor', 'end');
-                            lbl.setAttribute('dx', '-2');
-                        } else {
-                            lbl.setAttribute('text-anchor', 'middle');
-                        }
-                        lbl.textContent = sparkPointLabels[pi];
-                        svg.appendChild(lbl);
+                        drawSparkLabelAtIndex(
+                            svg,
+                            values,
+                            pi,
+                            effectivePointLabels[pi],
+                            w,
+                            h,
+                            padL,
+                            padR,
+                            padT,
+                            padB,
+                            scale.min,
+                            scale.max,
+                            sparkStroke
+                        );
                     }
                 }
 
                 sparkWrap.appendChild(svg);
-                body.appendChild(sparkWrap);
 
                 var tooltip = ownerDoc.createElement('div');
                 tooltip.className = 'splunkstuff-sparkline-value-viz__tooltip';
                 tooltip.setAttribute('role', 'status');
                 tooltip.style.display = 'none';
-                this._hoverTooltipEl = tooltip;
+                viz._hoverTooltipEl = tooltip;
 
                 if (showHover && n >= 2) {
                     function hitTestSpark(px, py) {
@@ -934,18 +1153,21 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     var teardown = [];
                     function onDocPointerMove(e) {
                         if (!hitTestSpark(e.clientX, e.clientY)) {
-                            clearSparkHover(svg, tooltip, hoverAnnEl);
+                            clearSparkHover(sparkWrap, tooltip, hoverAnnEl);
                             return;
                         }
                         var idx = sparkIndexFromPointer(e.clientX, sparkWrap, padL, padR, w, n);
                         if (idx == null) {
-                            clearSparkHover(svg, tooltip, hoverAnnEl);
+                            clearSparkHover(sparkWrap, tooltip, hoverAnnEl);
                             return;
                         }
                         var xy = sparkXY(values, idx, w, h, padL, padR, padT, padB, scale.min, scale.max);
-                        updateSparkHover(svg, tooltip, ownerDoc, {
+                        var hoverAnnotation =
+                            showAnnotationHover && annotations[idx] ? annotations[idx] : '';
+                        updateSparkHover(sparkWrap, tooltip, ownerDoc, {
                             hx: xy.x,
                             hy: xy.y,
+                            w: w,
                             h: h,
                             padT: padT,
                             padB: padB,
@@ -955,6 +1177,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                             unit: unit,
                             tooltipPrefix: tooltipPrefix,
                             timeLabel: formatHoverTime(times, norm, idx),
+                            annotationLabel: hoverAnnotation,
                             pointLabel: sparkPointLabels[idx] || '',
                             clientX: e.clientX,
                             clientY: e.clientY,
@@ -974,21 +1197,24 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     if (ownerDoc.defaultView) {
                         ownerDoc.defaultView.addEventListener('mousemove', onDocPointerMove, true);
                     }
-                    this._docHoverCleanup = function () {
+                    viz._docHoverCleanup = function () {
                         var ti;
                         for (ti = 0; ti < teardown.length; ti += 1) {
                             teardown[ti]();
                         }
-                        clearSparkHover(svg, tooltip, hoverAnnEl);
+                        clearSparkHover(sparkWrap, tooltip, hoverAnnEl);
                     };
                 }
+                };
+                paintSpark(false);
             }
-
-            root.appendChild(body);
-            this.el.appendChild(root);
         },
 
-        reflow: function () {},
+        reflow: function () {
+            if (this._lastData && this._lastConfig) {
+                this.updateView(this._lastData, this._lastConfig);
+            }
+        },
 
         remove: function () {
             if (typeof this._docHoverCleanup === 'function') {

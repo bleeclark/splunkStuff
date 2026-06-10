@@ -146,6 +146,14 @@ display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.bad
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.sparkPointLabels = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showPointLabels = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.emptyText = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.headlineLayout = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.labelPosition = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.sparkEdgeToEdge = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.subheaderMatchTile = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.subheaderStyle = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.annotationField = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showAnnotationHover = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showAnnotationLabels = <string>
 
 # Declares format-menu properties for viz radial_meter (Splunk 9.4 tutorial).
 
