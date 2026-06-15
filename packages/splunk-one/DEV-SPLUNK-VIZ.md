@@ -17,6 +17,18 @@ That script:
 
 If panels show **No matching visualization found**, the usual cause is a stale `stage/default/visualizations.conf` — run `yarn sync:splunk-visualizations-conf` or `yarn dev:splunk-viz`.
 
+## Dashboard Studio extension (`splunkstuff_kpi_sparkline_studio`)
+
+Requires Splunk **10.4+**. Built from `packages/splunk-kpi-sparkline-studio` and synced into `stage/` by `postBuildVizSync`.
+
+```bash
+yarn workspace @splunk/kpi-sparkline-studio build
+node packages/splunk-one/bin/sync-studio-kpi-sparkline.js
+node packages/splunk-one/bin/verify-studio-kpi-sparkline.js
+```
+
+Add chart in **Dashboard Studio** (not Save from Search). See `packages/splunk-kpi-sparkline-studio/README.md`.
+
 ## One viz only
 
 ```bash

@@ -1,0 +1,828 @@
+{
+    "showTitleAndDescription": true,
+    "includeInToolbar": true,
+    "includeInVizSwitcher": true,
+    "showDrilldown": false,
+    "config": {
+        "name": "SplunkStuff KPI + Sparkline",
+        "description": "Dashboard Studio KPI tile with delta, sparkline, optional area fill, annotations, thresholds, and trellis.",
+        "category": "Custom",
+        "dataContract": {
+            "requiredDataSources": [
+                "primary"
+            ]
+        },
+        "size": {
+            "initialWidth": 400,
+            "initialHeight": 280
+        },
+        "optionsSchema": {
+            "align": {
+                "type": "string",
+                "default": "center"
+            },
+            "headlineLayout": {
+                "type": "string",
+                "default": "stacked"
+            },
+            "labelPosition": {
+                "type": "string",
+                "default": "above"
+            },
+            "subheaderStyle": {
+                "type": "string",
+                "default": "matchTile"
+            },
+            "sparkEdgeToEdge": {
+                "type": "boolean",
+                "default": false
+            },
+            "sparklineDisplay": {
+                "type": "string",
+                "default": "below"
+            },
+            "sparkMin": {
+                "type": "string",
+                "default": ""
+            },
+            "sparkMax": {
+                "type": "string",
+                "default": ""
+            },
+            "sparkAuto": {
+                "type": "boolean",
+                "default": false
+            },
+            "goodColor": {
+                "type": "string",
+                "default": "#01417F"
+            },
+            "badColor": {
+                "type": "string",
+                "default": "#DFA611"
+            },
+            "invertTrend": {
+                "type": "boolean",
+                "default": false
+            },
+            "textColor": {
+                "type": "string",
+                "default": "#FFFFFF"
+            },
+            "background": {
+                "type": "string",
+                "default": "#0B1F3B"
+            },
+            "backgroundColor": {
+                "type": "string",
+                "default": ""
+            },
+            "subheader": {
+                "type": "string",
+                "default": ""
+            },
+            "unit": {
+                "type": "string",
+                "default": ""
+            },
+            "unitPosition": {
+                "type": "string",
+                "default": "after"
+            },
+            "precision": {
+                "type": "number",
+                "default": 2
+            },
+            "numberPrecision": {
+                "type": "number",
+                "default": 2
+            },
+            "showDelta": {
+                "type": "boolean",
+                "default": true
+            },
+            "deltaMode": {
+                "type": "string",
+                "default": "absolute"
+            },
+            "trendDisplay": {
+                "type": "string",
+                "default": "absolute"
+            },
+            "showSparkline": {
+                "type": "boolean",
+                "default": true
+            },
+            "sparkStroke": {
+                "type": "string",
+                "default": "#FFFFFF"
+            },
+            "sparklineStrokeColor": {
+                "type": "string",
+                "default": "#FFFFFF"
+            },
+            "sparkStrokeWidth": {
+                "type": "number",
+                "default": 2
+            },
+            "showSparklineAreaGraph": {
+                "type": "boolean",
+                "default": false
+            },
+            "sparklineAreaColor": {
+                "type": "string",
+                "default": "#FFFFFF"
+            },
+            "sparklineNullValueDisplay": {
+                "type": "string",
+                "default": "gaps"
+            },
+            "sparklineHighlightDots": {
+                "type": "number",
+                "default": 0
+            },
+            "sparklineHighlightSegments": {
+                "type": "number",
+                "default": 0
+            },
+            "annotationField": {
+                "type": "string",
+                "default": "annotation"
+            },
+            "showAnnotationHover": {
+                "type": "boolean",
+                "default": true
+            },
+            "showAnnotationLabels": {
+                "type": "boolean",
+                "default": false
+            },
+            "showTarget": {
+                "type": "boolean",
+                "default": false
+            },
+            "target": {
+                "type": "number",
+                "default": 50
+            },
+            "showThresholdBand": {
+                "type": "boolean",
+                "default": false
+            },
+            "thresholdMin": {
+                "type": "number",
+                "default": 20
+            },
+            "thresholdMax": {
+                "type": "number",
+                "default": 80
+            },
+            "showHover": {
+                "type": "boolean",
+                "default": true
+            },
+            "showSparklineTooltip": {
+                "type": "boolean",
+                "default": true
+            },
+            "showHoverAnnotation": {
+                "type": "boolean",
+                "default": true
+            },
+            "tooltipPrefix": {
+                "type": "string",
+                "default": ""
+            },
+            "majorLabel": {
+                "type": "string",
+                "default": ""
+            },
+            "deltaLabel": {
+                "type": "string",
+                "default": ""
+            },
+            "badgeText": {
+                "type": "string",
+                "default": ""
+            },
+            "underLabel": {
+                "type": "string",
+                "default": ""
+            },
+            "underLabelColor": {
+                "type": "string",
+                "default": ""
+            },
+            "underLabelFontSize": {
+                "type": "number",
+                "default": 12
+            },
+            "majorColor": {
+                "type": "string",
+                "default": "#FFFFFF"
+            },
+            "majorFontSize": {
+                "type": "number",
+                "default": 0
+            },
+            "majorValueField": {
+                "type": "string",
+                "default": ""
+            },
+            "shouldAbbreviateMajorValue": {
+                "type": "boolean",
+                "default": false
+            },
+            "shouldAbbreviateTrendValue": {
+                "type": "boolean",
+                "default": false
+            },
+            "shouldUseThousandSeparators": {
+                "type": "boolean",
+                "default": true
+            },
+            "trendColor": {
+                "type": "string",
+                "default": "#FFFFFF"
+            },
+            "trendFontSize": {
+                "type": "number",
+                "default": 0
+            },
+            "sparkPointLabels": {
+                "type": "string",
+                "default": ""
+            },
+            "showPointLabels": {
+                "type": "boolean",
+                "default": false
+            },
+            "emptyText": {
+                "type": "string",
+                "default": "No numeric results to display."
+            },
+            "splitByLayout": {
+                "type": "string",
+                "default": "off"
+            },
+            "trellisSplitBy": {
+                "type": "string",
+                "default": ""
+            },
+            "trellisBackgroundColor": {
+                "type": "string",
+                "default": ""
+            },
+            "trellisColumns": {
+                "type": "number",
+                "default": 0
+            },
+            "trellisMinColumnWidth": {
+                "type": "number",
+                "default": 100
+            },
+            "trellisPageCount": {
+                "type": "number",
+                "default": 20
+            },
+            "trellisRowHeight": {
+                "type": "number",
+                "default": 70
+            },
+            "trellisSortBy": {
+                "type": "string",
+                "default": "result"
+            },
+            "trellisSortOrder": {
+                "type": "string",
+                "default": "ascending"
+            }
+        },
+        "editorConfig": [
+            {
+                "label": "Layout",
+                "layout": [
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Content align",
+                            "option": "align"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Headline layout",
+                            "option": "headlineLayout"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Label position",
+                            "option": "labelPosition"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Subheader style",
+                            "option": "subheaderStyle"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Spark edge to edge",
+                            "option": "sparkEdgeToEdge"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Sparkline display",
+                            "option": "sparklineDisplay"
+                        }
+                    ]
+                ]
+            },
+            {
+                "label": "Major value",
+                "layout": [
+                    [
+                        {
+                            "editor": "editor.color",
+                            "label": "Major color",
+                            "option": "majorColor"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Major font size (px)",
+                            "option": "majorFontSize"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Major value field",
+                            "option": "majorValueField"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Decimal precision",
+                            "option": "numberPrecision"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Abbreviate major",
+                            "option": "shouldAbbreviateMajorValue"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Thousand separators",
+                            "option": "shouldUseThousandSeparators"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Unit",
+                            "option": "unit"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Unit position",
+                            "option": "unitPosition"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Under label",
+                            "option": "underLabel"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.color",
+                            "label": "Under label color",
+                            "option": "underLabelColor"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Under label font size",
+                            "option": "underLabelFontSize"
+                        }
+                    ]
+                ]
+            },
+            {
+                "label": "Trend",
+                "layout": [
+                    [
+                        {
+                            "editor": "editor.color",
+                            "label": "Trend color",
+                            "option": "trendColor"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Trend font size (px)",
+                            "option": "trendFontSize"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Trend display",
+                            "option": "trendDisplay"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Abbreviate trend",
+                            "option": "shouldAbbreviateTrendValue"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Show delta (legacy)",
+                            "option": "showDelta"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Delta mode (legacy)",
+                            "option": "deltaMode"
+                        }
+                    ]
+                ]
+            },
+            {
+                "label": "Colors and tile",
+                "layout": [
+                    [
+                        {
+                            "editor": "editor.color",
+                            "label": "Background color",
+                            "option": "backgroundColor"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.color",
+                            "label": "Up trend color",
+                            "option": "goodColor"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.color",
+                            "label": "Down trend color",
+                            "option": "badColor"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Invert trend",
+                            "option": "invertTrend"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.color",
+                            "label": "Text color",
+                            "option": "textColor"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.color",
+                            "label": "Empty background",
+                            "option": "background"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Subheader",
+                            "option": "subheader"
+                        }
+                    ]
+                ]
+            },
+            {
+                "label": "Sparkline",
+                "layout": [
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Show sparkline",
+                            "option": "showSparkline"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Area graph",
+                            "option": "showSparklineAreaGraph"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.color",
+                            "label": "Stroke color",
+                            "option": "sparklineStrokeColor"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.color",
+                            "label": "Area color",
+                            "option": "sparklineAreaColor"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Stroke width",
+                            "option": "sparkStrokeWidth"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Null value display",
+                            "option": "sparklineNullValueDisplay"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Highlight dots",
+                            "option": "sparklineHighlightDots"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Highlight segments",
+                            "option": "sparklineHighlightSegments"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Spark min",
+                            "option": "sparkMin"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Spark max",
+                            "option": "sparkMax"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Auto scale",
+                            "option": "sparkAuto"
+                        }
+                    ]
+                ]
+            },
+            {
+                "label": "Annotations",
+                "layout": [
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Annotation field",
+                            "option": "annotationField"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Annotation on hover",
+                            "option": "showAnnotationHover"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Annotation on spark",
+                            "option": "showAnnotationLabels"
+                        }
+                    ]
+                ]
+            },
+            {
+                "label": "Targets and thresholds",
+                "layout": [
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Show target",
+                            "option": "showTarget"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Target value",
+                            "option": "target"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Threshold band",
+                            "option": "showThresholdBand"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Threshold min",
+                            "option": "thresholdMin"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Threshold max",
+                            "option": "thresholdMax"
+                        }
+                    ]
+                ]
+            },
+            {
+                "label": "Interaction",
+                "layout": [
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Spark tooltip",
+                            "option": "showSparklineTooltip"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "In-chart hover text",
+                            "option": "showHoverAnnotation"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Tooltip prefix",
+                            "option": "tooltipPrefix"
+                        }
+                    ]
+                ]
+            },
+            {
+                "label": "Labels",
+                "layout": [
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Major label",
+                            "option": "majorLabel"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Delta label",
+                            "option": "deltaLabel"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Badge text",
+                            "option": "badgeText"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Point labels",
+                            "option": "sparkPointLabels"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.checkbox",
+                            "label": "Show point labels",
+                            "option": "showPointLabels"
+                        }
+                    ]
+                ]
+            },
+            {
+                "label": "Trellis",
+                "layout": [
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Split layout",
+                            "option": "splitByLayout"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Split by field",
+                            "option": "trellisSplitBy"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.color",
+                            "label": "Trellis background",
+                            "option": "trellisBackgroundColor"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Columns",
+                            "option": "trellisColumns"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Min column width",
+                            "option": "trellisMinColumnWidth"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Page size",
+                            "option": "trellisPageCount"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Row height",
+                            "option": "trellisRowHeight"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Sort by",
+                            "option": "trellisSortBy"
+                        }
+                    ],
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Sort order",
+                            "option": "trellisSortOrder"
+                        }
+                    ]
+                ]
+            },
+            {
+                "label": "Empty state",
+                "layout": [
+                    [
+                        {
+                            "editor": "editor.text",
+                            "label": "Empty message",
+                            "option": "emptyText"
+                        }
+                    ]
+                ]
+            }
+        ]
+    }
+}

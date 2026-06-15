@@ -1,0 +1,20 @@
+{
+  "name": "@splunk/kpi-sparkline-studio",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "build": "node generate-config.mjs && node build.mjs",
+    "verify": "node ../splunk-one/bin/verify-studio-kpi-sparkline.js"
+  },
+  "dependencies": {
+    "@splunk/dashboard-studio-extension": "^1.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

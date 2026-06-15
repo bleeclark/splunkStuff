@@ -3,9 +3,9 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "setup": "yarn install && yarn workspace @splunk/splunk-one run build",
+    "setup": "yarn install && yarn workspace @splunk/kpi-sparkline-studio run build && yarn workspace @splunk/splunk-one run build",
     "start": "yarn workspace @splunk/splunk-one run start",
-    "build": "yarn workspace @splunk/splunk-one run build",
+    "build": "yarn workspace @splunk/kpi-sparkline-studio run build && yarn workspace @splunk/splunk-one run build",
     "package:viz": "yarn workspace @splunk/splunk-one run package:viz",
     "package:manual-viz": "yarn workspace @splunk/splunk-one run package:manual-viz"
   },

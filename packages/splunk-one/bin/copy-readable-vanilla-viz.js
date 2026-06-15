@@ -215,6 +215,13 @@ function postBuildVizSync(pkgRoot) {
         // eslint-disable-next-line no-console
         console.warn('postBuildVizSync: sync-splunk-gallery skipped', err.message || err);
     }
+    try {
+        // eslint-disable-next-line global-require
+        require('./sync-studio-kpi-sparkline').main();
+    } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('postBuildVizSync: sync-studio-kpi-sparkline skipped', err.message || err);
+    }
 }
 
 module.exports = {

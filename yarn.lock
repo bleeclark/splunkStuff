@@ -1410,6 +1410,11 @@
   resolved "https://registry.yarnpkg.com/@splunk/charting-bundle/-/charting-bundle-28.5.3.tgz#2e2c7366d2ad2e6bf3939b6d6ce27391528dbd4f"
   integrity sha512-bxyZm+AMbrJxnOCSSyAelZCbz3DwqGSfqmT/xP6SIcGG07FOQVoQaBkoPhsuuYkWXTnpyKgu8l/i8K5XmSAXPQ==
 
+"@splunk/dashboard-studio-extension@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@splunk/dashboard-studio-extension/-/dashboard-studio-extension-1.0.0.tgz#8c953dd677764a841f6c980822bd843fb8451fae"
+  integrity sha512-BnC/h3F/rRewYuqMj4U0Q+B+iVRjtPJqiPMtd3xuJTlpfT5BkxHsSCuMv2WVZ0w6rRCpSTRVSWBV92xpaLUrHw==
+
 "@splunk/eslint-config@^5.1.0":
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/@splunk/eslint-config/-/eslint-config-5.1.0.tgz#c451277e0c2790ea2762d305f74fe8bda2f8edb4"

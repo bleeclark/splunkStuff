@@ -26,6 +26,7 @@ const REQUIRED_STANZAS = [
     'splunkstuff_kpi_sparkline',
     'splunkstuff_kpi_sparkline_react',
     'splunkstuff_kpi_sparkline_react_remade',
+    'splunkstuff_kpi_sparkline_studio',
     'radial_meter',
     'radial_meter_react',
     'radial_meter_react_advanced',

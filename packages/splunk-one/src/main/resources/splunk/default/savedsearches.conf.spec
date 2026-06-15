@@ -155,6 +155,14 @@ display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.ann
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showAnnotationHover = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showAnnotationLabels = <string>
 
+# Dashboard Studio extension splunkstuff_kpi_sparkline_studio (optionsSchema keys; configured in Studio editor).
+
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_studio.showSparklineAreaGraph = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_studio.sparklineAreaColor = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_studio.align = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_studio.splitByLayout = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_studio.trellisSplitBy = <string>
+
 # Declares format-menu properties for viz radial_meter (Splunk 9.4 tutorial).
 
 display.visualizations.custom.so_BUI_pickulationts.radial_meter.mainColor = <string>
