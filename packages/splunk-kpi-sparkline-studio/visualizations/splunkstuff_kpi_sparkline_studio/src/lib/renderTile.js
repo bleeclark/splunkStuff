@@ -1,3 +1,29 @@
+/**
+ * @file renderTile.js
+ * @description DOM rendering for the Dashboard Studio KPI + sparkline tile. Builds the
+ *   BEM-classed tile tree (badge, subheader, headline, delta, spark SVG, hover UI) and
+ *   optional trellis grid. This is the presentation layer — data arrives from
+ *   parsePrimarySearchData and options from resolveOptions.
+ *
+ * DOM tree (single tile):
+ *   .splunkstuff-sparkline-value-viz [data-ss-viz-build]
+ *     ├── .__badge (optional static status)
+ *     ├── .__header (optional subheader bar)
+ *     └── .__body
+ *           ├── .__headlineRow (major + trend blocks)
+ *           ├── .__hoverAnn (optional in-chart hover strip)
+ *           └── .__spark (SVG + hover overlay)
+ *
+ * Annotation display:
+ *   - Search column via stringFieldsByName[annotationFieldName]
+ *   - Hover: showAnnotationOnHover → tooltip top line
+ *   - On-spark: showAnnotationOnSpark → SVG text labels (overrides static point labels)
+ *
+ * @see visualization.js — calls renderKpiSparklineTile / renderTrellisGrid
+ * @see parsePrimaryData.js — seriesData shape
+ * @see resolveOptions.js — resolvedOptions shape
+ */
+
 import { sanitizeHexColor } from './booleanParsing.js';
 import { calculateTrendDelta, resolveTrendTileColor } from './trendColors.js';
 import {
@@ -19,8 +45,17 @@ import {
     valueToVerticalPosition,
 } from './sparkMath.js';
 
-const VIZ_BUILD = '20260610-kpi-sparkline-studio-v1';
+/** Cache-bust token exposed on tile root as data-ss-viz-build for Splunk static asset verification. */
+const VIZ_BUILD = '20260602-kpi-sparkline-studio-comments';
 
+// --- Headline label helpers ---
+
+/**
+ * Applies inline pill styles to major/delta indicator labels (above or beside values).
+ *
+ * @param {HTMLElement} labelElement - Label DOM node
+ * @param {string} textColor - Foreground color from resolved options
+ */
 function applyIndicatorLabelStyles(labelElement, textColor) {
     labelElement.style.display = 'block';
     labelElement.style.fontSize = '13px';
@@ -35,6 +70,15 @@ function applyIndicatorLabelStyles(labelElement, textColor) {
     labelElement.style.textAlign = 'center';
 }
 
+/**
+ * Wraps a value element with its optional label in "above" or "right" layout.
+ *
+ * @param {HTMLElement} containerElement - Parent block (.major or .trend)
+ * @param {HTMLElement} valueElement - Numeric display element
+ * @param {string} labelText - Label copy (empty hides label)
+ * @param {string} textColor - Label foreground color
+ * @param {string} labelPosition - "above" | "right"
+ */
 function appendLabelValuePair(containerElement, valueElement, labelText, textColor, labelPosition) {
     const position = labelPosition === 'right' ? 'right' : 'above';
     const pairElement = document.createElement('div');
@@ -65,6 +109,16 @@ function appendLabelValuePair(containerElement, valueElement, labelText, textCol
     containerElement.appendChild(pairElement);
 }
 
+/**
+ * Styles the subheader bar per subheaderStyle: matchtile, darkblue, or overlay.
+ * Uses setProperty(..., 'important') so Splunk dashboard CSS cannot override backgrounds.
+ *
+ * @param {HTMLElement} headerElement - Subheader bar node
+ * @param {string} subheaderStyle - Resolved style name
+ * @param {string} tileBackgroundColor - Current tile background
+ * @param {string} upTrendColor - Good/up trend color (darkblue style)
+ * @param {string} textColor - Header text color
+ */
 function applySubheaderBarStyles(headerElement, subheaderStyle, tileBackgroundColor, upTrendColor, textColor) {
     const styleName = String(subheaderStyle || 'matchtile').toLowerCase();
     let headerBackgroundColor = 'rgba(0,0,0,0.52)';
@@ -81,6 +135,15 @@ function applySubheaderBarStyles(headerElement, subheaderStyle, tileBackgroundCo
     headerElement.style.setProperty('color', textColor, 'important');
 }
 
+// --- Spark hover UI ---
+
+/**
+ * Removes hover overlay, hides tooltip, and clears in-chart hover annotation strip.
+ *
+ * @param {HTMLElement} sparkContainer - Spark wrapper containing overlay
+ * @param {HTMLElement} tooltipElement - Shared fixed-position tooltip
+ * @param {HTMLElement|null} hoverAnnotationElement - Optional in-chart strip
+ */
 function clearSparkHoverState(sparkContainer, tooltipElement, hoverAnnotationElement) {
     if (sparkContainer) {
         const existingOverlay = sparkContainer.querySelector('.splunkstuff-sparkline-value-viz__hoverOverlay');
@@ -97,6 +160,16 @@ function clearSparkHoverState(sparkContainer, tooltipElement, hoverAnnotationEle
     }
 }
 
+/**
+ * Draws vertical hover line + dot overlay and populates tooltip rows.
+ * Tooltip order: annotation → static point label → value → time.
+ * Optionally mirrors full tooltip text into hoverAnnotationElement (showHoverAnnotation).
+ *
+ * @param {HTMLElement} sparkContainer - Spark wrapper
+ * @param {HTMLElement} tooltipElement - Tooltip appended to document.body
+ * @param {Document} ownerDocument - Tile document for overlay creation
+ * @param {object} hoverState - Coordinates, labels, and display flags for hovered point
+ */
 function updateSparkHoverState(sparkContainer, tooltipElement, ownerDocument, hoverState) {
     clearSparkHoverState(sparkContainer, tooltipElement, hoverState.hoverAnnotationElement);
     const containerRect = sparkContainer.getBoundingClientRect();
@@ -174,6 +247,26 @@ function updateSparkHoverState(sparkContainer, tooltipElement, ownerDocument, ho
     }
 }
 
+// --- Spark SVG labels ---
+
+/**
+ * Draws a marker circle and SVG text label at a sparkline point index.
+ * Text anchor adjusts near left/right edges to avoid clipping.
+ *
+ * @param {SVGSVGElement} svgElement - Spark SVG root
+ * @param {number[]} valueSeries - Plotted values
+ * @param {number} pointIndex - Label index
+ * @param {string} labelText - Label copy (annotation or sparkPointLabels)
+ * @param {number} svgWidth - SVG width
+ * @param {number} svgHeight - SVG height
+ * @param {number} paddingLeft - Left padding
+ * @param {number} paddingRight - Right padding
+ * @param {number} paddingTop - Top padding
+ * @param {number} paddingBottom - Bottom padding
+ * @param {number} scaleMinimum - Y scale min
+ * @param {number} scaleMaximum - Y scale max
+ * @param {string} sparklineStrokeColor - Marker fill color
+ */
 function drawSparkPointLabel(
     svgElement,
     valueSeries,
@@ -227,6 +320,20 @@ function drawSparkPointLabel(
     svgElement.appendChild(labelElement);
 }
 
+/**
+ * Renders the sparkline SVG into sparkContainer: threshold band, target line,
+ * area fill, stroke, on-spark labels, and document-level pointer hover handlers.
+ * Defers one animation frame when container width is not yet measurable.
+ *
+ * @param {HTMLElement} sparkContainer - Absolute-positioned spark wrapper
+ * @param {object} seriesData - { valueSeries, timeSeries, stringFieldsByName }
+ * @param {object} resolvedOptions - Normalized formatter options
+ * @param {string} sparklineStrokeColor - Sanitized stroke hex
+ * @param {{ scaleMinimum: number, scaleMaximum: number }} scale - Y scale from deriveSparkScale
+ * @param {Document} ownerDocument - Document for events and tooltip
+ * @param {HTMLElement|null} hoverAnnotationElement - In-chart hover strip target
+ * @param {object} sharedHover - Shared tooltip + cleanup handler registry (trellis-safe)
+ */
 function paintSparkline(
     sparkContainer,
     seriesData,
@@ -352,6 +459,7 @@ function paintSparkline(
             svgElement.appendChild(strokePath);
         }
 
+        // Merge static sparkPointLabels with search annotations; annotations win at each index.
         const pointLabelsByIndex = parseSparkPointLabelMap(resolvedOptions.sparkPointLabelsRaw);
         const annotationSeries =
             resolvedOptions.annotationFieldName &&
@@ -500,6 +608,18 @@ function paintSparkline(
     renderSparkSvg(false);
 }
 
+// --- Single KPI tile (exported) ---
+
+/**
+ * Renders one full KPI + sparkline tile into mountElement.
+ * Computes trend-based tile background, builds headline row, and delegates spark to paintSparkline.
+ *
+ * @param {HTMLElement} mountElement - Studio chart mount node (#root child)
+ * @param {object} seriesData - Output slice from parsePrimarySearchData (primary or trellis group)
+ * @param {object} resolvedOptions - Output of resolveOptions
+ * @param {Document} ownerDocument - Tile document
+ * @param {object} sharedHover - Shared hover state for cleanup across re-renders
+ */
 export function renderKpiSparklineTile(
     mountElement,
     seriesData,
@@ -701,6 +821,15 @@ export function renderKpiSparklineTile(
     }
 }
 
+// --- Trellis grid (exported) ---
+
+/**
+ * Sorts trellis category groups by name, latest value, or trend delta.
+ *
+ * @param {Array} trellisGroups - Groups from parsePrimarySearchData
+ * @param {object} resolvedOptions - trellisSortBy, trellisSortOrder
+ * @returns {Array} Sorted copy of trellisGroups
+ */
 export function sortTrellisGroups(trellisGroups, resolvedOptions) {
     const sortedGroups = trellisGroups.slice();
     const sortDescending = resolvedOptions.trellisSortOrder === 'descending';
@@ -720,6 +849,16 @@ export function sortTrellisGroups(trellisGroups, resolvedOptions) {
     return sortedGroups;
 }
 
+/**
+ * Renders a CSS grid of trellis cells; each cell mounts an independent KPI tile.
+ * Respects trellisPageSize, column count, and minimum column width from options.
+ *
+ * @param {HTMLElement} mountElement - Studio chart mount node
+ * @param {Array} trellisGroups - Parsed trellis groups
+ * @param {object} resolvedOptions - Trellis layout options
+ * @param {Document} ownerDocument - Tile document
+ * @param {object} sharedHover - Shared hover cleanup registry
+ */
 export function renderTrellisGrid(mountElement, trellisGroups, resolvedOptions, ownerDocument, sharedHover) {
     const sortedGroups = sortTrellisGroups(trellisGroups, resolvedOptions);
     const pageSize = Math.max(1, resolvedOptions.trellisPageSize || 20);
@@ -758,6 +897,12 @@ export function renderTrellisGrid(mountElement, trellisGroups, resolvedOptions, 
     mountElement.appendChild(gridElement);
 }
 
+/**
+ * Tears down document-level pointer listeners and removes the shared tooltip element.
+ * Called before each full re-render from visualization.js.
+ *
+ * @param {object} sharedHover - { cleanupHandlers: Function[], tooltipElement: HTMLElement|null }
+ */
 export function cleanupSharedHover(sharedHover) {
     if (sharedHover.cleanupHandlers) {
         for (let handlerIndex = 0; handlerIndex < sharedHover.cleanupHandlers.length; handlerIndex += 1) {

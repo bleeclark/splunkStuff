@@ -1,3 +1,11 @@
+/**
+ * @file build.mjs
+ * @description esbuild pipeline for the Dashboard Studio KPI sparkline extension.
+ *   Bundles src/visualization.js (and lib imports) into dist/ as ESM visualization.js.
+ *   minify: false preserves JSDoc/block comments in the runtime bundle for onboarding.
+ *   Copies config.json and visualization.css alongside the JS artifact.
+ */
+
 import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';

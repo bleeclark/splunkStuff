@@ -1,5 +1,39 @@
+/**
+ * @file sparkMath.js
+ * @description SVG geometry for the KPI sparkline: coordinate mapping, path generation,
+ *   container measurement, and pointer hit-testing. Values are plotted in a padded
+ *   coordinate system where Y increases downward (standard SVG). The horizontal axis
+ *   distributes points evenly across inner width regardless of actual timestamps —
+ *   time labels appear only in the hover tooltip.
+ *
+ * Null handling for stroke/area paths follows sparklineNullValueDisplay:
+ *   gaps — break the path at null points
+ *   zero — plot nulls as 0
+ *   connect — skip nulls but keep the path continuous
+ *
+ * @see formatters.js — deriveSparkScale supplies scaleMinimum / scaleMaximum
+ * @see renderTile.js — builds SVG elements from these path strings
+ */
+
 import { clampNumber } from './booleanParsing.js';
 
+// --- Coordinate mapping ---
+
+/**
+ * Maps a value-series point index to SVG (x, y) coordinates inside padded bounds.
+ *
+ * @param {number[]} valueSeries - Full series (determines point count and horizontal step)
+ * @param {number} pointIndex - Zero-based index into valueSeries
+ * @param {number} width - SVG width in pixels
+ * @param {number} height - SVG height in pixels
+ * @param {number} paddingLeft - Left inset
+ * @param {number} paddingRight - Right inset
+ * @param {number} paddingTop - Top inset
+ * @param {number} paddingBottom - Bottom inset
+ * @param {number} scaleMinimum - Y-axis domain minimum
+ * @param {number} scaleMaximum - Y-axis domain maximum
+ * @returns {{ x: number, y: number, horizontalStep: number }} Pixel coordinates and step size
+ */
 export function sparkPointCoordinates(
     valueSeries,
     pointIndex,
@@ -26,6 +60,17 @@ export function sparkPointCoordinates(
     };
 }
 
+/**
+ * Converts a single numeric value to a vertical pixel position (for target/threshold lines).
+ *
+ * @param {number} value - Data value on the spark Y scale
+ * @param {number} height - SVG height
+ * @param {number} paddingTop - Top inset
+ * @param {number} paddingBottom - Bottom inset
+ * @param {number} scaleMinimum - Y-axis domain minimum
+ * @param {number} scaleMaximum - Y-axis domain maximum
+ * @returns {number} Y coordinate in SVG space
+ */
 export function valueToVerticalPosition(value, height, paddingTop, paddingBottom, scaleMinimum, scaleMaximum) {
     const innerHeight = Math.max(1, height - paddingTop - paddingBottom);
     const valueRatio = (value - scaleMinimum) / (scaleMaximum - scaleMinimum);
@@ -33,6 +78,16 @@ export function valueToVerticalPosition(value, height, paddingTop, paddingBottom
     return paddingTop + innerHeight - clampedRatio * innerHeight;
 }
 
+// --- Path generation ---
+
+/**
+ * Filters value series into plottable { pointIndex, numericValue } pairs respecting
+ * nullValueDisplay mode. Internal helper for stroke path building.
+ *
+ * @param {number[]} valueSeries - Raw series possibly containing null/NaN
+ * @param {string} nullValueDisplay - "gaps" | "zero" | "connect"
+ * @returns {Array<{ pointIndex: number, numericValue: number }>}
+ */
 function prepareRenderableValues(valueSeries, nullValueDisplay) {
     const renderableValues = [];
     for (let pointIndex = 0; pointIndex < valueSeries.length; pointIndex += 1) {
@@ -48,6 +103,22 @@ function prepareRenderableValues(valueSeries, nullValueDisplay) {
     return renderableValues;
 }
 
+/**
+ * Builds an SVG path `d` attribute for the sparkline stroke (M/L segments).
+ * Returns empty string when fewer than two plottable points exist.
+ *
+ * @param {number[]} valueSeries - Time-ordered values
+ * @param {number} width - SVG width
+ * @param {number} height - SVG height
+ * @param {number} paddingLeft - Left inset
+ * @param {number} paddingRight - Right inset
+ * @param {number} paddingTop - Top inset
+ * @param {number} paddingBottom - Bottom inset
+ * @param {number} scaleMinimum - Y scale minimum
+ * @param {number} scaleMaximum - Y scale maximum
+ * @param {string} nullValueDisplay - How to treat null cells in the series
+ * @returns {string} SVG path data or "" when insufficient points
+ */
 export function buildSparklineStrokePath(
     valueSeries,
     width,
@@ -93,6 +164,22 @@ export function buildSparklineStrokePath(
     return pathSegments.join(' ');
 }
 
+/**
+ * Closes the stroke path down to the baseline to form a filled area polygon.
+ * Reuses buildSparklineStrokePath then appends baseline corners (Z close).
+ *
+ * @param {number[]} valueSeries - Time-ordered values
+ * @param {number} width - SVG width
+ * @param {number} height - SVG height
+ * @param {number} paddingLeft - Left inset
+ * @param {number} paddingRight - Right inset
+ * @param {number} paddingTop - Top inset
+ * @param {number} paddingBottom - Bottom inset
+ * @param {number} scaleMinimum - Y scale minimum
+ * @param {number} scaleMaximum - Y scale maximum
+ * @param {string} nullValueDisplay - Null handling mode
+ * @returns {string} Closed SVG path for area fill, or "" when stroke path is empty
+ */
 export function buildSparklineAreaPath(
     valueSeries,
     width,
@@ -132,6 +219,21 @@ export function buildSparklineAreaPath(
     return `${strokePath} L${lastX} ${baselineY.toFixed(1)} L${firstPoint[1]} ${baselineY.toFixed(1)} Z`;
 }
 
+// --- Interaction and layout ---
+
+/**
+ * Maps a document pointer X coordinate to the nearest sparkline point index.
+ * Uses the spark container's bounding rect for responsive scaling when SVG
+ * width differs from CSS layout width.
+ *
+ * @param {number} clientX - Pointer X in viewport coordinates
+ * @param {HTMLElement} sparkContainer - Wrapper element around the SVG
+ * @param {number} paddingLeft - SVG left padding
+ * @param {number} paddingRight - SVG right padding
+ * @param {number} svgWidth - Logical SVG width used for path math
+ * @param {number} pointCount - Number of points in the value series
+ * @returns {number|null} Clamped point index, or null when hit test is invalid
+ */
 export function sparkPointIndexFromPointer(
     clientX,
     sparkContainer,
@@ -151,6 +253,13 @@ export function sparkPointIndexFromPointer(
     return clampNumber(pointIndex, 0, pointCount - 1);
 }
 
+/**
+ * Reads the spark container's rendered size for SVG viewBox sizing.
+ * Falls back to clientWidth/height or sensible defaults when layout is not ready.
+ *
+ * @param {HTMLElement} sparkContainer - Sparkline wrapper element
+ * @returns {{ width: number, height: number }} Pixel dimensions (minimum 1)
+ */
 export function measureSparkContainerSize(sparkContainer) {
     const containerRect = sparkContainer.getBoundingClientRect();
     return {
@@ -159,6 +268,14 @@ export function measureSparkContainerSize(sparkContainer) {
     };
 }
 
+/**
+ * Applies width, height, viewBox, and display styles to the spark SVG element.
+ * preserveAspectRatio "none" allows the spark to stretch edge-to-edge when enabled.
+ *
+ * @param {SVGSVGElement} svgElement - Root sparkline SVG
+ * @param {number} width - Target width in pixels
+ * @param {number} height - Target height in pixels
+ */
 export function sizeSparkSvgElement(svgElement, width, height) {
     svgElement.setAttribute('preserveAspectRatio', 'none');
     svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);

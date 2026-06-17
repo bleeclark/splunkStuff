@@ -1,3 +1,24 @@
+/**
+ * @file visualization.js
+ * @description Dashboard Studio extension entry point for SplunkStuff KPI + Sparkline.
+ *   Splunk 10.4+ loads this ESM bundle into a host page with `<div id="root">` and wires
+ *   search data + formatter options through VisualizationAPI listeners.
+ *
+ * Data flow:
+ *   VisualizationAPI.addDataSourcesListener → visualizationState.searchData
+ *   VisualizationAPI.addOptionsListener      → visualizationState.rawOptions
+ *        ↓
+ *   resolveOptions(rawOptions) → resolvedOptions
+ *   parsePrimarySearchData(searchData, resolvedOptions) → primary | trellisGroups
+ *        ↓
+ *   splitByLayout === 'trellis' ? renderTrellisGrid : renderKpiSparklineTile
+ *
+ * @requires @splunk/dashboard-studio-extension
+ * @see lib/renderTile.js — DOM rendering
+ * @see lib/parsePrimaryData.js — search data contract
+ * @see lib/resolveOptions.js — config.json option mapping
+ */
+
 import { VisualizationAPI } from '@splunk/dashboard-studio-extension';
 import './visualization.css';
 import { parsePrimarySearchData } from './lib/parsePrimaryData.js';
@@ -8,7 +29,13 @@ import {
     renderTrellisGrid,
 } from './lib/renderTile.js';
 
+/** Studio host mount node provided in the extension HTML shell. */
 const mountElement = document.getElementById('root');
+
+/**
+ * Mutable visualization state shared across API listener callbacks.
+ * Re-rendered synchronously on each data or options change.
+ */
 const visualizationState = {
     searchData: null,
     loading: false,
@@ -16,6 +43,10 @@ const visualizationState = {
     sharedHover: { cleanupHandlers: [], tooltipElement: null },
 };
 
+/**
+ * Full render pass: cleanup hover listeners, parse data, render tile or trellis grid.
+ * Surfaces parse errors via VisualizationAPI.setError and inline mount text.
+ */
 function renderVisualization() {
     if (!mountElement) {
         return;
@@ -60,6 +91,7 @@ function renderVisualization() {
     }
 }
 
+/** Primary search data + loading flag from Dashboard Studio data sources. */
 VisualizationAPI.addDataSourcesListener(
     ({ dataSources, loading }) => {
         visualizationState.loading = loading;
@@ -69,6 +101,7 @@ VisualizationAPI.addDataSourcesListener(
     { invokeImmediately: true }
 );
 
+/** Formatter / visualization options from Studio editor (maps to config.json keys). */
 VisualizationAPI.addOptionsListener(({ options }) => {
     visualizationState.rawOptions = options || {};
     renderVisualization();

@@ -379,15 +379,18 @@ function resolveOptions(rawOptions) {
   const sparklineStrokeColor = readOptionString(rawOptions, "sparklineStrokeColor", "sparkStroke") || "#FFFFFF";
   const sparklineAreaColor = readOptionString(rawOptions, "sparklineAreaColor") || sparklineStrokeColor;
   return {
+    // --- Layout ---
     align: readOptionString(rawOptions, "align", "center").toLowerCase() || "center",
     headlineLayout: readOptionString(rawOptions, "headlineLayout", "stacked").toLowerCase() || "stacked",
     labelPosition: readOptionString(rawOptions, "labelPosition", "above").toLowerCase() || "above",
     subheaderStyle: resolveSubheaderStyle(rawOptions || {}),
     sparkEdgeToEdge: readOptionBoolean(rawOptions, ["sparkEdgeToEdge"], false),
     sparklineDisplay: readOptionString(rawOptions, "sparklineDisplay", "below").toLowerCase() || "below",
+    // --- Spark scale ---
     sparkScaleMinimum: readOptionString(rawOptions, "sparkMin"),
     sparkScaleMaximum: readOptionString(rawOptions, "sparkMax"),
     autoScaleSparkline: readOptionBoolean(rawOptions, ["sparkAuto"], false),
+    // --- Trend colors ---
     upTrendColor: readOptionString(rawOptions, "goodColor") || "#01417F",
     downTrendColor: readOptionString(rawOptions, "badColor") || "#DFA611",
     invertTrendDirection: readOptionBoolean(rawOptions, ["invertTrend"], false),
@@ -400,6 +403,7 @@ function resolveOptions(rawOptions) {
     numberPrecision,
     showTrendDelta: trendDisplay.showTrendDelta,
     trendDisplayMode: trendDisplay.trendDisplayMode,
+    // --- Sparkline appearance ---
     showSparkline: readOptionBoolean(rawOptions, ["showSparkline"], true),
     sparklineStrokeColor,
     sparklineStrokeWidth: readOptionNumber(rawOptions, ["sparkStrokeWidth"], 2),
@@ -408,14 +412,17 @@ function resolveOptions(rawOptions) {
     sparklineNullValueDisplay: readOptionString(rawOptions, "sparklineNullValueDisplay", "gaps").toLowerCase() || "gaps",
     sparklineHighlightDotCount: readOptionNumber(rawOptions, ["sparklineHighlightDots"], 0),
     sparklineHighlightSegmentCount: readOptionNumber(rawOptions, ["sparklineHighlightSegments"], 0),
+    // --- Search-driven annotations (see parsePrimaryData stringFieldsByName) ---
     annotationFieldName: readOptionString(rawOptions, "annotationField", "annotation"),
     showAnnotationOnHover: readOptionBoolean(rawOptions, ["showAnnotationHover"], true),
     showAnnotationOnSpark: readOptionBoolean(rawOptions, ["showAnnotationLabels"], false),
+    // --- Targets and thresholds ---
     showTargetLine: readOptionBoolean(rawOptions, ["showTarget"], false),
     targetValue: readOptionNumber(rawOptions, ["target"], 50),
     showThresholdBand: readOptionBoolean(rawOptions, ["showThresholdBand"], false),
     thresholdMinimum: readOptionNumber(rawOptions, ["thresholdMin"], 20),
     thresholdMaximum: readOptionNumber(rawOptions, ["thresholdMax"], 80),
+    // --- Hover / interaction ---
     showSparklineTooltip: readOptionBoolean(
       rawOptions,
       ["showSparklineTooltip", "showHover"],
@@ -423,6 +430,7 @@ function resolveOptions(rawOptions) {
     ),
     showInChartHoverAnnotation: readOptionBoolean(rawOptions, ["showHoverAnnotation"], true),
     tooltipPrefix: readOptionString(rawOptions, "tooltipPrefix"),
+    // --- Static labels ---
     majorLabelText: readOptionString(rawOptions, "majorLabel"),
     deltaLabelText: readOptionString(rawOptions, "deltaLabel"),
     badgeStatusText: readOptionString(rawOptions, "badgeText"),
@@ -434,6 +442,7 @@ function resolveOptions(rawOptions) {
       "emptyText",
       "No numeric results to display."
     ),
+    // --- Single Value typography overrides ---
     majorColor: readOptionString(rawOptions, "majorColor"),
     majorFontSize: readOptionNumber(rawOptions, ["majorFontSize"], 0),
     majorValueOverride: rawOptions?.majorValue,
@@ -448,6 +457,7 @@ function resolveOptions(rawOptions) {
     underLabelColor: readOptionString(rawOptions, "underLabelColor"),
     underLabelFontSize: readOptionNumber(rawOptions, ["underLabelFontSize"], 12),
     sparklineValuesOverride: rawOptions?.sparklineValues,
+    // --- Trellis ---
     splitByLayout: readOptionString(rawOptions, "splitByLayout", "off").toLowerCase() || "off",
     trellisSplitByField: readOptionString(rawOptions, "trellisSplitBy"),
     trellisBackgroundColor: readOptionString(rawOptions, "trellisBackgroundColor"),
@@ -799,7 +809,7 @@ function sizeSparkSvgElement(svgElement, width, height) {
 }
 
 // visualizations/splunkstuff_kpi_sparkline_studio/src/lib/renderTile.js
-var VIZ_BUILD = "20260610-kpi-sparkline-studio-v1";
+var VIZ_BUILD = "20260602-kpi-sparkline-studio-comments";
 function applyIndicatorLabelStyles(labelElement, textColor) {
   labelElement.style.display = "block";
   labelElement.style.fontSize = "13px";

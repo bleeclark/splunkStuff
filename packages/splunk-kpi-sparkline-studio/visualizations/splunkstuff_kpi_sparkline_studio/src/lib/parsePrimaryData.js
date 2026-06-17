@@ -1,3 +1,27 @@
+/**
+ * @file parsePrimaryData.js
+ * @description Converts Dashboard Studio primary search results (column-major Splunk
+ *   data tables) into time-sorted value/time series and parallel string-field maps
+ *   used for per-point annotations. All string columns are reordered to match the
+ *   numeric series sort key so annotation[i] aligns with value[i].
+ *
+ * Data contract:
+ *   - Required: _time column + at least one numeric column (e.g. value)
+ *   - Optional: string columns (e.g. annotation) — exposed via stringFieldsByName
+ *   - Trellis: optional split field groups rows into per-category mini-series
+ *
+ * @see resolveOptions.js — majorValueFieldName, trellisSplitByField, splitByLayout
+ * @see renderTile.js — consumes primary and trellisGroups for rendering
+ */
+
+// --- Splunk column-major helpers ---
+
+/**
+ * Reads the fields metadata array from Studio search data (top-level or meta.fields).
+ *
+ * @param {object} searchData - Raw primary data source payload
+ * @returns {Array<string|object>} Field descriptors
+ */
 function readFieldsList(searchData) {
     if (searchData && searchData.fields && searchData.fields.length) {
         return searchData.fields;
@@ -8,6 +32,12 @@ function readFieldsList(searchData) {
     return [];
 }
 
+/**
+ * Unwraps Splunk table cells that may be plain values or { value: ... } objects.
+ *
+ * @param {*} cell - Single table cell
+ * @returns {*} Scalar cell value
+ */
 function readCellValue(cell) {
     if (cell == null) {
         return cell;
@@ -18,11 +48,24 @@ function readCellValue(cell) {
     return cell;
 }
 
+/**
+ * Parses a table cell as a float; returns NaN when not numeric.
+ *
+ * @param {*} cell - Table cell
+ * @returns {number} Parsed number or NaN
+ */
 function parseNumericCell(cell) {
     const parsed = parseFloat(readCellValue(cell), 10);
     return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
 
+/**
+ * Resolves a field name from the fields array at a column index.
+ *
+ * @param {Array} fields - Field metadata from readFieldsList
+ * @param {number} columnIndex - Column position
+ * @returns {string} Field name or empty string
+ */
 function readFieldName(fields, columnIndex) {
     if (!fields || columnIndex < 0 || columnIndex >= fields.length) {
         return '';
@@ -37,6 +80,12 @@ function readFieldName(fields, columnIndex) {
     return '';
 }
 
+/**
+ * Locates the _time column index required for chronological sorting.
+ *
+ * @param {object} searchData - Column-major search results
+ * @returns {number} Column index or -1 when _time is absent
+ */
 function findTimeColumnIndex(searchData) {
     const fields = readFieldsList(searchData);
     for (let columnIndex = 0; columnIndex < fields.length; columnIndex += 1) {
@@ -47,6 +96,15 @@ function findTimeColumnIndex(searchData) {
     return -1;
 }
 
+/**
+ * Produces a numeric sort key for a row's _time cell (seconds since epoch preferred).
+ * Supports epoch numbers, ISO strings, and numeric string timestamps.
+ *
+ * @param {object} searchData - Full search payload
+ * @param {number} timeColumnIndex - Index of _time column
+ * @param {number} rowIndex - Row to read
+ * @returns {number} Sort key (0 when unparseable)
+ */
 function readTimeSortKey(searchData, timeColumnIndex, rowIndex) {
     const cell = readCellValue(searchData.columns[timeColumnIndex][rowIndex]);
     if (cell == null || cell === '') {
@@ -68,6 +126,16 @@ function readTimeSortKey(searchData, timeColumnIndex, rowIndex) {
     return Number.isFinite(fallback) ? fallback : 0;
 }
 
+// --- Column selection ---
+
+/**
+ * Picks the numeric value column: prefers majorValueFieldName when set, otherwise
+ * the first non-_time column containing at least one parseable number.
+ *
+ * @param {object} searchData - Column-major search results
+ * @param {string} preferredFieldName - majorValueField from resolved options
+ * @returns {number} Column index or -1 when no numeric column exists
+ */
 function pickNumericColumnIndex(searchData, preferredFieldName) {
     const fields = readFieldsList(searchData);
     if (!searchData || !searchData.columns || !fields.length) {
@@ -96,6 +164,17 @@ function pickNumericColumnIndex(searchData, preferredFieldName) {
     return bestColumnIndex;
 }
 
+// --- Time sorting and string-field alignment ---
+
+/**
+ * Builds time-sorted { numericValue, timeRaw, rowIndex } pairs from the value column.
+ * When _time is missing or length-mismatched, returns pairs in row order without sorting.
+ * Rows with non-numeric values are skipped.
+ *
+ * @param {object} searchData - Column-major search results
+ * @param {number} valueColumnIndex - Index of the metric column
+ * @returns {Array<{ sortKey?: number, numericValue: number, timeRaw: *, rowIndex: number }>}
+ */
 function buildTimeSortedValuePairs(searchData, valueColumnIndex) {
     const valueColumn = searchData.columns[valueColumnIndex] || [];
     if (!valueColumn.length) {
@@ -137,6 +216,15 @@ function buildTimeSortedValuePairs(searchData, valueColumnIndex) {
     return sortedPairs;
 }
 
+/**
+ * Reorders a string column to align with the time-sorted value series.
+ * Critical for annotation index parity: annotation[i] must match value[i].
+ *
+ * @param {object} searchData - Full search payload
+ * @param {number} stringColumnIndex - String field column index
+ * @param {number} valueColumnIndex - Metric column used for sort order
+ * @returns {string[]} Trimmed strings parallel to sorted value series
+ */
 function reorderStringColumnByTime(searchData, stringColumnIndex, valueColumnIndex) {
     const sortedPairs = buildTimeSortedValuePairs(searchData, valueColumnIndex);
     const stringColumn = searchData.columns[stringColumnIndex] || [];
@@ -149,6 +237,14 @@ function reorderStringColumnByTime(searchData, stringColumnIndex, valueColumnInd
     return orderedStrings;
 }
 
+/**
+ * Builds stringFieldsByName: every non-_time, non-value string column reordered by time.
+ * annotationFieldName in resolveOptions selects which key renderTile reads for annotations.
+ *
+ * @param {object} searchData - Column-major search results
+ * @param {number} valueColumnIndex - Metric column index
+ * @returns {Object.<string, string[]>} Field name → aligned string array
+ */
 function buildStringFieldsByTime(searchData, valueColumnIndex) {
     const fields = readFieldsList(searchData);
     const stringFieldsByName = {};
@@ -165,6 +261,12 @@ function buildStringFieldsByTime(searchData, valueColumnIndex) {
     return stringFieldsByName;
 }
 
+/**
+ * Splits sorted pairs into parallel value and time arrays for rendering.
+ *
+ * @param {Array} sortedPairs - Output of buildTimeSortedValuePairs
+ * @returns {{ valueSeries: number[], timeSeries: Array<*> }}
+ */
 function buildSeriesFromPairs(sortedPairs) {
     const valueSeries = [];
     const timeSeries = [];
@@ -175,6 +277,19 @@ function buildSeriesFromPairs(sortedPairs) {
     return { valueSeries, timeSeries };
 }
 
+// --- Public API ---
+
+/**
+ * Main entry: parses primary Studio search data into render-ready structures.
+ *
+ * @param {object} searchData - dataSources.primary.data from VisualizationAPI
+ * @param {object} resolvedOptions - Output of resolveOptions
+ * @returns {{
+ *   primary: { valueSeries: number[], timeSeries: Array<*>, valueFieldName: string, stringFieldsByName: object },
+ *   trellisGroups: Array
+ * }}
+ * @throws {Error} When no numeric column or no parseable numbers exist
+ */
 export function parsePrimarySearchData(searchData, resolvedOptions) {
     if (!searchData || !searchData.columns || searchData.columns.length === 0) {
         return {
@@ -210,6 +325,17 @@ export function parsePrimarySearchData(searchData, resolvedOptions) {
     return { primary, trellisGroups };
 }
 
+// --- Trellis grouping ---
+
+/**
+ * Splits search rows by a category field and parses each subset as an independent
+ * mini-series (same time-sort and string-field alignment rules as primary).
+ *
+ * @param {object} searchData - Full primary search payload
+ * @param {number} valueColumnIndex - Metric column index
+ * @param {string} splitByFieldName - trellisSplitBy field name
+ * @returns {Array<{ categoryLabel: string, valueSeries: number[], timeSeries: Array<*>, valueFieldName: string, stringFieldsByName: object }>}
+ */
 function buildTrellisGroups(searchData, valueColumnIndex, splitByFieldName) {
     const fields = readFieldsList(searchData);
     let categoryColumnIndex = -1;

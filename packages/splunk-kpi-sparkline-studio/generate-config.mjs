@@ -1,3 +1,14 @@
+/**
+ * @file generate-config.mjs
+ * @description Generates Dashboard Studio config.json from optionDefinitions.
+ *   Each entry becomes a config.options key with type/default and an editorConfig
+ *   row in the Studio visualization property panel (including the Annotations section:
+ *   annotationField, showAnnotationHover, showAnnotationLabels).
+ *
+ * Run before build when adding or renaming formatter options:
+ *   node generate-config.mjs
+ */
+
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
