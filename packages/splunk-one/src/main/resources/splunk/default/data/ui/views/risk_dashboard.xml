@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+<dashboard version="1.1">
+    <label>Risk Dashboard (Classic)</label>
+    <description>Token-driven Classic dashboard for Splunk 9.4+. For dependent filters use the React Risk page.</description>
+
+    <fieldset submitButton="true" autoRun="true">
+        <input type="time" token="filter_earliest">
+            <label>Earliest</label>
+            <default>-7d@d</default>
+        </input>
+        <input type="time" token="filter_latest">
+            <label>Latest</label>
+            <default>now</default>
+        </input>
+        <input type="dropdown" token="filter_bu">
+            <label>Business Unit</label>
+            <choice value="*">All</choice>
+            <choice value="finance">Finance</choice>
+            <choice value="engineering">Engineering</choice>
+            <choice value="operations">Operations</choice>
+            <default>*</default>
+        </input>
+        <input type="dropdown" token="filter_domain">
+            <label>Domain</label>
+            <choice value="*">All</choice>
+            <choice value="identity">Identity</choice>
+            <choice value="network">Network</choice>
+            <choice value="endpoint">Endpoint</choice>
+            <choice value="cloud">Cloud</choice>
+            <default>*</default>
+        </input>
+        <input type="dropdown" token="filter_severity">
+            <label>Severity</label>
+            <choice value="*">All</choice>
+            <choice value="critical">Critical</choice>
+            <choice value="high">High</choice>
+            <default>*</default>
+        </input>
+    </fieldset>
+
+    <row>
+        <panel>
+            <title>Total Risk Score</title>
+            <search id="risk_classic_summary">
+                <query>
+| makeresults count=20
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "h@m")
+| eval value = 800 + n * 2
+| fields _time value
+                </query>
+                <earliest>$filter_earliest$</earliest>
+                <latest>$filter_latest$</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_kpi_sparkline">
+                <search base="risk_classic_summary" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.precision">0</option>
+            </viz>
+        </panel>
+        <panel>
+            <title>Risk Trend</title>
+            <search id="risk_classic_trend">
+                <query>
+| makeresults count=24
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "h@m")
+| eval value = 700 + n * 5
+| fields _time value
+                </query>
+                <earliest>$filter_earliest$</earliest>
+                <latest>$filter_latest$</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.fixed_loaded_line">
+                <search base="risk_classic_trend" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line.anomalies">deltaZscore</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line.anomalySensitivity">3</option>
+            </viz>
+        </panel>
+    </row>
+    <row>
+        <panel>
+            <title>Anomaly data</title>
+            <table>
+                <search>
+                    <query>| makeresults count=5 | eval entity=case(_serial=1,"host-abc-01", _serial=2,"user-jdoe", 1=1,"host-db-02") | eval severity=case(_serial=1,"critical", _serial=2,"high", 1=1,"medium") | eval risk_score=90-_serial*3</query>
+                    <earliest>$filter_earliest$</earliest>
+                    <latest>$filter_latest$</latest>
+                </search>
+            </table>
+        </panel>
+    </row>
+</dashboard>

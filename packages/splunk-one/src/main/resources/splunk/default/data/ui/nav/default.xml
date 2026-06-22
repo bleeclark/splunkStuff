@@ -6,4 +6,6 @@
     <view name="integration" />
     <view name="documentation" />
     <view name="architecture" />
+    <view name="risk" />
+    <view name="risk_dashboard" />
 </nav>
