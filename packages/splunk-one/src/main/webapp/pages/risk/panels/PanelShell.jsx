@@ -56,6 +56,7 @@ export default function PanelShell({
     progress,
     dispatchState,
     loadingMessage,
+    compact,
 }) {
     const subtitle = lastUpdated
         ? `Updated ${new Date(lastUpdated).toLocaleTimeString()}`
@@ -64,15 +65,50 @@ export default function PanelShell({
     return (
         <Card
             style={{
-                marginBottom: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                width: '100%',
+                height: compact ? 'auto' : '100%',
+                boxSizing: 'border-box',
+                marginBottom: 0,
                 border: '1px solid #d5dce5',
                 borderRadius: 8,
                 overflow: 'hidden',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             }}
         >
-            <Card.Header title={title} subtitle={subtitle} />
-            <Card.Body style={{ padding: status === 'loading' ? 16 : 12, minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ padding: compact ? '14px 18px 8px' : '18px 20px 12px' }}>
+                <div
+                    style={{
+                        color: '#2f3b47',
+                        fontSize: 16,
+                        fontWeight: 700,
+                        lineHeight: 1.25,
+                    }}
+                >
+                    {title}
+                </div>
+                {subtitle ? (
+                    <div
+                        style={{
+                            color: '#4a5a6a',
+                            fontSize: 13,
+                            lineHeight: 1.35,
+                            marginTop: 4,
+                        }}
+                    >
+                        {subtitle}
+                    </div>
+                ) : null}
+            </div>
+            <Card.Body
+                style={{
+                    flex: 1,
+                    padding: compact ? '0 18px 14px' : '0 20px 18px',
+                    minWidth: 0,
+                    overflow: 'hidden',
+                }}
+            >
                 {status === 'loading' ? (
                     <PanelLoadingState
                         progress={progress}
@@ -81,11 +117,22 @@ export default function PanelShell({
                     />
                 ) : null}
                 {status === 'error' ? (
-                    <div style={{ padding: 12, color: '#c62828' }}>
+                    <div style={{ padding: compact ? 8 : 12, color: '#c62828' }}>
                         {emptyState || 'Error loading panel'}
                     </div>
                 ) : null}
-                {status === 'ok' && emptyState ? emptyState : null}
+                {status === 'ok' && emptyState ? (
+                    <div
+                        style={{
+                            color: '#516173',
+                            fontSize: 13,
+                            lineHeight: 1.4,
+                            padding: compact ? '4px 0' : 12,
+                        }}
+                    >
+                        {emptyState}
+                    </div>
+                ) : null}
                 {status !== 'error' && !emptyState && status !== 'loading' ? children : null}
             </Card.Body>
         </Card>
@@ -101,6 +148,7 @@ PanelShell.propTypes = {
     progress: PropTypes.number,
     dispatchState: PropTypes.string,
     loadingMessage: PropTypes.string,
+    compact: PropTypes.bool,
 };
 
 PanelShell.defaultProps = {
@@ -111,4 +159,5 @@ PanelShell.defaultProps = {
     progress: 0,
     dispatchState: null,
     loadingMessage: null,
+    compact: false,
 };

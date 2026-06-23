@@ -1,5 +1,5 @@
 /**
- * Risk Anomaly Detection dashboard — React page with global filter bar and P1–P9 panels.
+ * Risk Anomaly Detection dashboard — React page with global filter bar, tables, and trend line.
  */
 import React from 'react';
 import layout from '@splunk/react-page/18';
@@ -9,43 +9,52 @@ import Heading from '@splunk/react-ui/Heading';
 
 import { DashboardFilterProvider } from './context/DashboardFilterProvider.jsx';
 import GlobalFilterBar from './filters/GlobalFilterBar.jsx';
-import { RiskPageContainer, ScorecardRow, TwoColumnRow } from './RiskStyles.jsx';
-import RiskScoreKpi from './panels/RiskScoreKpi.jsx';
-import AnomalyCountKpi from './panels/AnomalyCountKpi.jsx';
-import SeverityKpi from './panels/SeverityKpi.jsx';
-import MttdKpi from './panels/MttdKpi.jsx';
+import { PanelStack, RiskPageContainer, TwoColumnRow } from './RiskStyles.jsx';
+import {
+    AnomalyRowsTable,
+    CalendarRiskTable,
+    DomainDistributionHistogram,
+    EntityCategoryTable,
+    RiskScoresTable,
+    SeverityBreakdownTable,
+} from './panels/RiskTablePanels.jsx';
 import RiskTrendChart from './panels/RiskTrendChart.jsx';
-import EntityCategoryHeatmap from './panels/EntityCategoryHeatmap.jsx';
-import DomainTreemap from './panels/DomainTreemap.jsx';
-import CalendarHeatmap from './panels/CalendarHeatmap.jsx';
-import AnomalyTable from './panels/AnomalyTable.jsx';
-import EntityDetailDrawer from './panels/EntityDetailDrawer.jsx';
 
 getUserTheme()
     .then((theme) => {
         const RiskPage = () => (
             <DashboardFilterProvider>
                 <RiskPageContainer>
-                    <Heading level={1} style={{ marginBottom: 4 }}>
+                    <Heading level={1} style={{ marginBottom: 6 }}>
                         Risk Anomaly Detection
                     </Heading>
+                    <p
+                        style={{
+                            maxWidth: 920,
+                            margin: '0 0 18px',
+                            color: '#4a5a6a',
+                            fontSize: 14,
+                            lineHeight: 1.45,
+                        }}
+                    >
+                        Monitor risk-score movement, domain concentration, and active anomaly
+                        clusters across the selected time window. Use the filters to focus the
+                        investigation by business unit, severity, domain, entity type, or entity.
+                    </p>
                     <GlobalFilterBar />
-                    <EntityDetailDrawer />
-                    <TwoColumnRow>
-                        <RiskScoreKpi />
+                    <PanelStack>
+                        <RiskScoresTable />
                         <RiskTrendChart />
-                    </TwoColumnRow>
-                    <ScorecardRow>
-                        <AnomalyCountKpi />
-                        <SeverityKpi />
-                        <MttdKpi />
-                    </ScorecardRow>
-                    <TwoColumnRow>
-                        <EntityCategoryHeatmap />
-                        <DomainTreemap />
-                    </TwoColumnRow>
-                    <CalendarHeatmap />
-                    <AnomalyTable />
+                        <TwoColumnRow>
+                            <EntityCategoryTable />
+                            <DomainDistributionHistogram />
+                        </TwoColumnRow>
+                        <CalendarRiskTable />
+                        <TwoColumnRow>
+                            <SeverityBreakdownTable />
+                            <AnomalyRowsTable />
+                        </TwoColumnRow>
+                    </PanelStack>
                 </RiskPageContainer>
             </DashboardFilterProvider>
         );

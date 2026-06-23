@@ -7,24 +7,20 @@
 export function filtersToSplunkParams(filters) {
     const { dateRange, businessUnit, domains, entityType, entityIds, severities, entityFocus } =
         filters;
+    const earliest = dateRange.earliest || dateRange.from;
+    const latest = dateRange.latest || dateRange.to;
 
     return {
-        filter_earliest: dateRange.from,
-        filter_latest: dateRange.to,
+        filter_earliest: earliest,
+        filter_latest: latest,
         filter_bu: businessUnit || '*',
         filter_domain: domains.length ? domains.join(',') : '*',
         filter_entity_type: entityType || '*',
         filter_entity_ids: entityIds.length ? entityIds.join(',') : '*',
         filter_severity: severities.length ? severities.join(',') : '*',
         filter_entity_id: entityFocus || '*',
-        earliest: `-@${Math.max(
-            1,
-            Math.ceil(
-                (new Date(dateRange.to).getTime() - new Date(dateRange.from).getTime()) /
-                    86400000
-            )
-        )}d@d`,
-        latest: 'now',
+        earliest,
+        latest,
     };
 }
 

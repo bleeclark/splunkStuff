@@ -7,9 +7,139 @@ export const FILTER_IDS = {
     ENTITY_TYPE: 'F4',
     ENTITY: 'F5',
     SEVERITY: 'F6',
+    HIDE_EMPTY_PANELS: 'F7',
 };
 
-/** @typedef {{ from: string, to: string, timezone: string }} DateRange */
+const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+function toDateValue(date) {
+    return date.toISOString().slice(0, 10);
+}
+
+function subtractMs(date, ms) {
+    return new Date(date.getTime() - ms);
+}
+
+function startOfLocalDay(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+export const TIME_RANGE_OPTIONS = [
+    {
+        value: 'last_15m',
+        label: 'Last 15 minutes',
+        mode: 'relative',
+        earliest: '-15m',
+        latest: 'now',
+        fromDate: (now) => subtractMs(now, 15 * MINUTE_MS),
+    },
+    {
+        value: 'last_60m',
+        label: 'Last 60 minutes',
+        mode: 'relative',
+        earliest: '-60m',
+        latest: 'now',
+        fromDate: (now) => subtractMs(now, HOUR_MS),
+    },
+    {
+        value: 'last_24h',
+        label: 'Last 24 hours',
+        mode: 'relative',
+        earliest: '-24h',
+        latest: 'now',
+        fromDate: (now) => subtractMs(now, DAY_MS),
+    },
+    {
+        value: 'last_7d',
+        label: 'Last 7 days',
+        mode: 'relative',
+        earliest: '-7d@d',
+        latest: 'now',
+        fromDate: (now) => subtractMs(now, 7 * DAY_MS),
+    },
+    {
+        value: 'today',
+        label: 'Today',
+        mode: 'relative',
+        earliest: '@d',
+        latest: 'now',
+        fromDate: (now) => startOfLocalDay(now),
+    },
+    {
+        value: 'yesterday',
+        label: 'Yesterday',
+        mode: 'relative',
+        earliest: '-1d@d',
+        latest: '@d',
+        fromDate: (now) => subtractMs(startOfLocalDay(now), DAY_MS),
+        toDate: (now) => subtractMs(startOfLocalDay(now), DAY_MS),
+    },
+    {
+        value: 'realtime_5m',
+        label: 'Real-time 5 minutes',
+        mode: 'real-time',
+        earliest: 'rt-5m',
+        latest: 'rt',
+        fromDate: (now) => subtractMs(now, 5 * MINUTE_MS),
+    },
+    {
+        value: 'realtime_30m',
+        label: 'Real-time 30 minutes',
+        mode: 'real-time',
+        earliest: 'rt-30m',
+        latest: 'rt',
+        fromDate: (now) => subtractMs(now, 30 * MINUTE_MS),
+    },
+    {
+        value: 'custom',
+        label: 'Custom date range',
+        mode: 'absolute',
+        earliest: null,
+        latest: null,
+    },
+];
+
+export function resolveTimeRangePreset(value, now = new Date(), currentRange = {}) {
+    const option =
+        TIME_RANGE_OPTIONS.find((entry) => entry.value === value) ||
+        TIME_RANGE_OPTIONS.find((entry) => entry.value === 'last_7d');
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+    if (option.value === 'custom') {
+        const from = currentRange.from || toDateValue(subtractMs(now, 7 * DAY_MS));
+        const to = currentRange.to || toDateValue(now);
+        return {
+            ...currentRange,
+            from,
+            to,
+            timezone: currentRange.timezone || timezone,
+            preset: option.value,
+            label: option.label,
+            mode: option.mode,
+            earliest: from,
+            latest: to,
+        };
+    }
+
+    const fromDate = option.fromDate ? option.fromDate(now) : subtractMs(now, 7 * DAY_MS);
+    const toDate = option.toDate ? option.toDate(now) : now;
+
+    return {
+        ...currentRange,
+        from: toDateValue(fromDate),
+        to: toDateValue(toDate),
+        timezone: currentRange.timezone || timezone,
+        preset: option.value,
+        label: option.label,
+        mode: option.mode,
+        earliest: option.earliest,
+        latest: option.latest,
+    };
+}
+
+/** @typedef {{ from: string, to: string, timezone: string, preset?: string, label?: string, mode?: string, earliest?: string, latest?: string }} DateRange */
 
 /**
  * @typedef {Object} AppliedFilters
@@ -20,6 +150,7 @@ export const FILTER_IDS = {
  * @property {string[]} entityIds
  * @property {string[]} severities
  * @property {string|null} entityFocus
+ * @property {boolean} hideEmptyPanels
  */
 
 export const FILTER_CATALOG = [
@@ -80,22 +211,17 @@ export const FILTER_CATALOG = [
 
 /** @returns {AppliedFilters} */
 export function createDefaultFilters() {
-    const to = new Date();
-    const from = new Date(to);
-    from.setDate(from.getDate() - 7);
+    const dateRange = resolveTimeRangePreset('last_7d');
 
     return {
-        dateRange: {
-            from: from.toISOString().slice(0, 10),
-            to: to.toISOString().slice(0, 10),
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-        },
+        dateRange,
         businessUnit: null,
         domains: [],
         entityType: null,
         entityIds: [],
         severities: ['critical', 'high'],
         entityFocus: null,
+        hideEmptyPanels: false,
     };
 }
 
@@ -121,6 +247,9 @@ export function setFilterValue(filters, filterId, value) {
             break;
         case FILTER_IDS.SEVERITY:
             next.severities = Array.isArray(value) ? value : [];
+            break;
+        case FILTER_IDS.HIDE_EMPTY_PANELS:
+            next.hideEmptyPanels = Boolean(value);
             break;
         default:
             break;

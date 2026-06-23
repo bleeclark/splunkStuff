@@ -12,7 +12,7 @@ const CHART_HEIGHT = 240;
 export default function RiskTrendChart() {
     const riskData = useRiskData('timeseries');
     const { data: timeSeries, lastRefreshedAt } = riskData;
-    const { setEntityFocus } = useDashboardFilters();
+    const { appliedFilters, setEntityFocus } = useDashboardFilters();
     const { hostRef, width: chartWidth } = useContainerSize({
         minWidth: 320,
         defaultWidth: 800,
@@ -37,11 +37,19 @@ export default function RiskTrendChart() {
         }
     };
 
+    const isEmptyOk = riskData.status === 'ok' && !values.length;
+
+    if (appliedFilters.hideEmptyPanels && isEmptyOk) {
+        return null;
+    }
+
     return (
         <PanelShell
             title="Risk Score Over Time"
             lastUpdated={lastRefreshedAt}
             {...panelShellPropsFromRiskData(riskData)}
+            compact={isEmptyOk}
+            emptyState={isEmptyOk ? 'No trend data for selected filters' : undefined}
         >
             <div
                 ref={hostRef}

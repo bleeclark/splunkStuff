@@ -1,4 +1,7 @@
 import React from 'react';
+import PropTypes from 'prop-types';
+
+export const PANEL_GAP = 16;
 
 /** Risk dashboard page layout styles. */
 export function RiskPageContainer({ children, ...rest }) {
@@ -19,14 +22,42 @@ export function RiskPageContainer({ children, ...rest }) {
     );
 }
 
+RiskPageContainer.propTypes = {
+    children: PropTypes.node,
+};
+
+RiskPageContainer.defaultProps = {
+    children: null,
+};
+
+export function PanelStack({ children }) {
+    return (
+        <div
+            style={{
+                display: 'grid',
+                gap: PANEL_GAP,
+            }}
+        >
+            {children}
+        </div>
+    );
+}
+
+PanelStack.propTypes = {
+    children: PropTypes.node,
+};
+
+PanelStack.defaultProps = {
+    children: null,
+};
+
 export function ScorecardRow({ children }) {
     return (
         <div
             style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                gap: 16,
-                marginBottom: 16,
+                gap: PANEL_GAP,
             }}
         >
             {React.Children.map(children, (child) => (
@@ -38,20 +69,37 @@ export function ScorecardRow({ children }) {
     );
 }
 
+ScorecardRow.propTypes = {
+    children: PropTypes.node,
+};
+
+ScorecardRow.defaultProps = {
+    children: null,
+};
+
 export function TwoColumnRow({ children }) {
     return (
         <div
             style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 16,
-                marginBottom: 16,
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
+                gap: PANEL_GAP,
+                alignItems: 'start',
+                marginBottom: 0,
             }}
         >
             {children}
         </div>
     );
 }
+
+TwoColumnRow.propTypes = {
+    children: PropTypes.node,
+};
+
+TwoColumnRow.defaultProps = {
+    children: null,
+};
 
 export function KpiTile({ children }) {
     return (
@@ -68,3 +116,11 @@ export function KpiTile({ children }) {
         </div>
     );
 }
+
+KpiTile.propTypes = {
+    children: PropTypes.node,
+};
+
+KpiTile.defaultProps = {
+    children: null,
+};

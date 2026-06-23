@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import Button from '@splunk/react-ui/Button';
 import Card from '@splunk/react-ui/Card';
@@ -6,12 +6,12 @@ import Chip from '@splunk/react-ui/Chip';
 import Message from '@splunk/react-ui/Message';
 
 import { FILTER_CATALOG, FILTER_IDS } from './filterCatalog.js';
-import FilterControl from './FilterControl.jsx';
+import FilterControl, { TimeRangeSelectorPanel } from './FilterControl.jsx';
 import { useDashboardFilters } from '../context/DashboardFilterProvider.jsx';
 
 function formatAppliedSummary(applied) {
     const parts = [];
-    parts.push(`${applied.dateRange.from} → ${applied.dateRange.to}`);
+    parts.push(`Time: ${applied.dateRange.label || `${applied.dateRange.from} → ${applied.dateRange.to}`}`);
     if (applied.businessUnit) {
         parts.push(`BU: ${applied.businessUnit}`);
     }
@@ -27,6 +27,9 @@ function formatAppliedSummary(applied) {
     if (applied.severities.length) {
         parts.push(`Severity: ${applied.severities.join(', ')}`);
     }
+    if (applied.hideEmptyPanels) {
+        parts.push('Hide empty panels');
+    }
     return parts;
 }
 
@@ -39,7 +42,9 @@ export default function GlobalFilterBar() {
         appliedFilters,
         filtersValid,
         draftFilters,
+        setFilter,
     } = useDashboardFilters();
+    const [timeRangeOpen, setTimeRangeOpen] = useState(false);
 
     const appliedChips = useMemo(
         () => formatAppliedSummary(appliedFilters),
@@ -67,31 +72,82 @@ export default function GlobalFilterBar() {
     return (
         <Card
             style={{
+                display: 'block',
+                width: '100%',
+                boxSizing: 'border-box',
                 marginBottom: 20,
                 border: '1px solid #d5dce5',
                 borderRadius: 8,
                 overflow: 'hidden',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             }}
         >
-            <Card.Body style={{ padding: 16, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Card.Body style={{ padding: 0, overflow: 'hidden' }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: 16,
+                        alignItems: 'flex-start',
+                        flexWrap: 'wrap',
+                        padding: '16px 16px 18px',
+                    }}
+                >
+                    <div>
+                        <div style={{ fontWeight: 700, color: '#2f3b47', marginBottom: 4 }}>
+                            Investigation filters
+                        </div>
+                        <div style={{ color: '#5f6f7f', fontSize: 13, lineHeight: 1.4 }}>
+                            Scope every table and trend panel to the risk period and entities
+                            currently under review.
+                        </div>
+                    </div>
+                    <span
+                        style={{
+                            color: '#5f6f7f',
+                            fontSize: 12,
+                            whiteSpace: 'nowrap',
+                            paddingTop: 2,
+                        }}
+                    >
+                        Last refreshed {refreshedLabel}
+                    </span>
+                </div>
+
+                <div
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 14,
+                        padding: '16px',
+                    }}
+                >
                     <div
                         style={{
                             display: 'grid',
-                            gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr)',
-                            gap: 12,
+                            gridTemplateColumns:
+                                'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
+                            gap: 14,
                             alignItems: 'end',
                         }}
                     >
-                        <FilterControl catalogEntry={dateEntry} />
+                        <FilterControl
+                            catalogEntry={dateEntry}
+                            timeRangeOpen={timeRangeOpen}
+                            onTimeRangeOpenChange={setTimeRangeOpen}
+                        />
                         <FilterControl catalogEntry={buEntry} />
                         <FilterControl catalogEntry={severityEntry} />
                     </div>
+                    {timeRangeOpen ? (
+                        <TimeRangeSelectorPanel onClose={() => setTimeRangeOpen(false)} />
+                    ) : null}
                     <div
                         style={{
                             display: 'grid',
-                            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                            gap: 12,
+                            gridTemplateColumns:
+                                'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
+                            gap: 14,
                             alignItems: 'end',
                         }}
                     >
@@ -99,33 +155,61 @@ export default function GlobalFilterBar() {
                         <FilterControl catalogEntry={entityTypeEntry} />
                         <FilterControl catalogEntry={entityEntry} />
                     </div>
+                    <label
+                        htmlFor="risk-hide-empty-panels"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            color: '#2f3b47',
+                            fontSize: 13,
+                            width: 'fit-content',
+                        }}
+                    >
+                        <input
+                            id="risk-hide-empty-panels"
+                            type="checkbox"
+                            checked={Boolean(draftFilters.hideEmptyPanels)}
+                            onChange={(e) =>
+                                setFilter(FILTER_IDS.HIDE_EMPTY_PANELS, e.target.checked)
+                            }
+                        />
+                        Hide empty panels
+                    </label>
                 </div>
 
                 <div
                     style={{
-                        display: 'flex',
-                        alignItems: 'center',
+                        display: 'grid',
+                        gridTemplateColumns:
+                            'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
                         gap: 12,
-                        marginTop: 16,
-                        flexWrap: 'wrap',
+                        padding: '0 16px 16px',
                     }}
                 >
-                    <Button label="Apply filters" appearance="primary" onClick={handleApply} />
-                    <Button label="Reset" appearance="secondary" onClick={reset} />
-                    <span style={{ fontSize: 12, color: '#666' }}>
-                        Last refreshed {refreshedLabel}
-                    </span>
+                    <Button
+                        label="Submit"
+                        appearance="primary"
+                        onClick={handleApply}
+                        style={{ width: '100%' }}
+                    />
+                    <Button
+                        label="Reset"
+                        appearance="secondary"
+                        onClick={reset}
+                        style={{ width: '100%' }}
+                    />
                 </div>
 
                 {isDirty ? (
-                    <Message type="warning" style={{ marginTop: 12 }}>
-                        You have unsaved filter changes. Click <strong>Apply filters</strong> to
-                        update all panels.
+                    <Message style={{ margin: '0 16px 16px' }} type="warning">
+                        You have unsaved filter changes. Click <strong>Submit</strong> to update
+                        all panels.
                     </Message>
                 ) : null}
 
                 {!filtersValid && draftFilters.entityIds.length && !draftFilters.entityType ? (
-                    <Message type="error" style={{ marginTop: 12 }}>
+                    <Message style={{ margin: '0 16px 16px' }} type="error">
                         Select an entity type before choosing specific entities.
                     </Message>
                 ) : null}
@@ -136,7 +220,7 @@ export default function GlobalFilterBar() {
                             display: 'flex',
                             flexWrap: 'wrap',
                             gap: 8,
-                            marginTop: 12,
+                            padding: '0 16px 16px',
                             alignItems: 'center',
                         }}
                     >
