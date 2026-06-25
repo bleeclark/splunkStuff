@@ -1,3 +1,8 @@
+/**
+ * MODULE: Reusable filter input components for the risk dashboard—time range
+ * picker panel, date fields, and catalog-driven single/multi select controls.
+ */
+
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 
@@ -70,6 +75,10 @@ const tokenInputStyle = {
     font: 'inherit',
 };
 
+/**
+ * WHAT: Renders a labeled Splunk DatePicker for custom from/to date selection.
+ * WORKS WITH: TimeRangeSelectorPanel, Splunk React UI DatePicker, AppliedFilters.dateRange.
+ */
 function DateField({ label, value, onChange }) {
     return (
         <div style={{ minWidth: 0 }}>
@@ -91,6 +100,10 @@ DateField.propTypes = {
     onChange: PropTypes.func.isRequired,
 };
 
+/**
+ * WHAT: Formats the draft dateRange as a display string for real-time, relative, or absolute modes.
+ * WORKS WITH: TimeRangeControl, TimeRangeSelectorPanel, AppliedFilters.dateRange, Splunk time modifiers.
+ */
 function formatResolvedRange(dateRange) {
     if (dateRange.mode === 'real-time') {
         return `${dateRange.earliest} to ${dateRange.latest}`;
@@ -101,6 +114,10 @@ function formatResolvedRange(dateRange) {
     return `${dateRange.from} to ${dateRange.to}`;
 }
 
+/**
+ * WHAT: Collapsible button that shows the current time-range label and toggles the selector panel.
+ * WORKS WITH: FilterControl, TimeRangeSelectorPanel, useFilterDraft, FILTER_IDS.DATE_RANGE.
+ */
 function TimeRangeControl({ expanded, onExpandedChange }) {
     const { draft } = useFilterDraft();
     const label = draft.dateRange.label || formatResolvedRange(draft.dateRange);
@@ -154,6 +171,10 @@ TimeRangeControl.propTypes = {
     onExpandedChange: PropTypes.func.isRequired,
 };
 
+/**
+ * WHAT: Tabbed panel for preset, relative, real-time, custom date, and advanced Splunk time ranges.
+ * WORKS WITH: TIME_RANGE_OPTIONS, resolveTimeRangePreset, DateField, useFilterDraft, GlobalFilterBar.
+ */
 export function TimeRangeSelectorPanel({ onClose }) {
     const { draft, setFilter } = useFilterDraft();
     const currentPreset = draft.dateRange.preset || 'custom';
@@ -400,6 +421,10 @@ TimeRangeSelectorPanel.propTypes = {
     onClose: PropTypes.func.isRequired,
 };
 
+/**
+ * WHAT: Returns the Multiselect/Select placeholder text based on load state and parent dependencies.
+ * WORKS WITH: canLoadFilterOptions, useFilterOptions, FILTER_IDS, FilterControl.
+ */
 function getPlaceholder({ canLoad, loading, catalogEntry }) {
     if (!canLoad) {
         if (catalogEntry.id === FILTER_IDS.DOMAIN) {
@@ -413,6 +438,10 @@ function getPlaceholder({ canLoad, loading, catalogEntry }) {
     return loading ? 'Loading…' : 'All';
 }
 
+/**
+ * WHAT: Reads the current multi-select values from draft state for a catalog entry.
+ * WORKS WITH: AppliedFilters, FILTER_IDS, FilterControl Multiselect, useFilterDraft.
+ */
 function getMultiValues(catalogEntry, draft) {
     if (catalogEntry.id === FILTER_IDS.DOMAIN) {
         return draft.domains;
@@ -426,6 +455,10 @@ function getMultiValues(catalogEntry, draft) {
     return [];
 }
 
+/**
+ * WHAT: Renders a single filter control (time range, multi-select, or single-select) from catalog metadata.
+ * WORKS WITH: FILTER_CATALOG, useFilterOptions, useFilterDraft, TimeRangeControl, Splunk React UI Select/Multiselect.
+ */
 export default function FilterControl({ catalogEntry, timeRangeOpen, onTimeRangeOpenChange }) {
     const { draft, setFilter } = useFilterDraft();
     const { options, loading, canLoad } = useFilterOptions(catalogEntry.id);

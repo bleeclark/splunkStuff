@@ -1,3 +1,8 @@
+/**
+ * MODULE: Client-side mock data filtering that applies AppliedFilters to
+ * riskFixtures datasets when the dashboard runs in mock (non-Splunk) data mode.
+ */
+
 import {
     mockAnomalies,
     mockCalendarCells,
@@ -7,6 +12,10 @@ import {
     mockTimeSeries,
 } from './riskFixtures.js';
 
+/**
+ * WHAT: Returns true when no filter list is set or the value is included in the list.
+ * WORKS WITH: applyFiltersToFixtures, AppliedFilters severities/domains/entityIds matching.
+ */
 function matchesList(value, filterList) {
     if (!filterList || filterList.length === 0) {
         return true;
@@ -14,6 +23,10 @@ function matchesList(value, filterList) {
     return filterList.includes(value);
 }
 
+/**
+ * WHAT: Filters mock fixture datasets and scales summary metrics to match applied filters.
+ * WORKS WITH: riskFixtures, AppliedFilters, mock data mode panels, DashboardFilterProvider.
+ */
 /** @param {import('../filters/filterCatalog.js').AppliedFilters} filters */
 export function applyFiltersToFixtures(filters) {
     const filteredAnomalies = mockAnomalies.filter((row) => {

@@ -1,3 +1,6 @@
+/**
+ * Shared table panel components for the risk dashboard with consistent styling and empty-state handling.
+ */
 import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 
@@ -33,14 +36,26 @@ const BODY_CELL_STYLE = {
     whiteSpace: 'nowrap',
 };
 
+/**
+ * WHAT: Formats a numeric value as a locale-aware string, defaulting non-finite values to '0'.
+ * WORKS WITH: RiskDataTable panels, summary and anomaly row data.
+ */
 function numberCell(value) {
     return Number.isFinite(Number(value)) ? Number(value).toLocaleString() : '0';
 }
 
+/**
+ * WHAT: Formats a numeric value as a fixed-one-decimal percentage string.
+ * WORKS WITH: RiskScoresTable, DomainDistributionHistogram, summary deltaPercent.
+ */
 function percentCell(value) {
     return `${Number(value || 0).toFixed(1)}%`;
 }
 
+/**
+ * WHAT: Wraps Splunk Table with shared fixed-layout styling and configurable minimum width.
+ * WORKS WITH: HeadCell, DataCell, Splunk Table, all exported table panel components.
+ */
 function RiskDataTable({ minWidth, children }) {
     return (
         <Table style={{ ...TABLE_STYLE, minWidth }}>
@@ -59,6 +74,10 @@ RiskDataTable.defaultProps = {
     children: null,
 };
 
+/**
+ * WHAT: Renders a table header cell with shared head-cell padding and nowrap styling.
+ * WORKS WITH: RiskDataTable, Splunk Table.HeadCell.
+ */
 function HeadCell({ children }) {
     return <Table.HeadCell style={HEAD_CELL_STYLE}>{children}</Table.HeadCell>;
 }
@@ -71,6 +90,10 @@ HeadCell.defaultProps = {
     children: null,
 };
 
+/**
+ * WHAT: Renders a table body cell with shared ellipsis and padding styling.
+ * WORKS WITH: RiskDataTable, Splunk Table.Cell.
+ */
 function DataCell({ children }) {
     return <Table.Cell style={BODY_CELL_STYLE}>{children}</Table.Cell>;
 }
@@ -83,6 +106,10 @@ DataCell.defaultProps = {
     children: null,
 };
 
+/**
+ * WHAT: Wraps table content in PanelShell with empty-state and hideEmptyPanels support.
+ * WORKS WITH: panelShellPropsFromRiskData, useDashboardFilters, PanelShell, all exported table components.
+ */
 function EmptyAwarePanel({ riskData, title, emptyState, isEmpty, children }) {
     const shellProps = panelShellPropsFromRiskData(riskData);
     const { appliedFilters } = useDashboardFilters();
@@ -121,6 +148,10 @@ EmptyAwarePanel.defaultProps = {
     children: null,
 };
 
+/**
+ * WHAT: Displays summary KPI metrics (risk score, anomalies, MTTD, severity) in a comparison table.
+ * WORKS WITH: useRiskData, EmptyAwarePanel, RiskDataTable, numberCell, percentCell.
+ */
 export function RiskScoresTable() {
     const riskData = useRiskData('summary');
     const summary = riskData.data;
@@ -194,6 +225,10 @@ export function RiskScoresTable() {
     );
 }
 
+/**
+ * WHAT: Displays entity-by-category heatmap data as a flat tabular listing.
+ * WORKS WITH: useRiskData, EmptyAwarePanel, RiskDataTable, heatmap panel data.
+ */
 export function EntityCategoryTable() {
     const riskData = useRiskData('heatmap');
     const rows = Array.isArray(riskData.data) ? riskData.data : [];
@@ -227,6 +262,10 @@ export function EntityCategoryTable() {
     );
 }
 
+/**
+ * WHAT: Displays domain risk scores as a horizontal bar histogram with share percentages.
+ * WORKS WITH: useRiskData, EmptyAwarePanel, numberCell, percentCell, domain breakdown data.
+ */
 export function DomainDistributionHistogram() {
     const riskData = useRiskData('domain');
     const rows = useMemo(
@@ -305,6 +344,10 @@ export function DomainDistributionHistogram() {
     );
 }
 
+/**
+ * WHAT: Displays calendar heatmap data as a flat day-hour-risk-value table.
+ * WORKS WITH: useRiskData, EmptyAwarePanel, RiskDataTable, calendar panel data.
+ */
 export function CalendarRiskTable() {
     const riskData = useRiskData('calendar');
     const rows = Array.isArray(riskData.data) ? riskData.data : [];
@@ -336,6 +379,10 @@ export function CalendarRiskTable() {
     );
 }
 
+/**
+ * WHAT: Displays non-zero severity counts from summary data in a two-column table.
+ * WORKS WITH: useRiskData, EmptyAwarePanel, RiskDataTable, summary.severityCounts.
+ */
 export function SeverityBreakdownTable() {
     const riskData = useRiskData('summary');
     const severity = riskData.data?.severityCounts || {};
@@ -372,6 +419,10 @@ export function SeverityBreakdownTable() {
     );
 }
 
+/**
+ * WHAT: Displays anomaly investigation rows with severity, entity, domain, score, and status columns.
+ * WORKS WITH: useRiskData, EmptyAwarePanel, RiskDataTable, anomalies panel data.
+ */
 export function AnomalyRowsTable() {
     const riskData = useRiskData('anomalies');
     const rows = Array.isArray(riskData.data) ? riskData.data : [];

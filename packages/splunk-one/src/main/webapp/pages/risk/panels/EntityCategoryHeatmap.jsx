@@ -1,3 +1,6 @@
+/**
+ * Entity-by-category heatmap panel with clickable cells for entity focus navigation.
+ */
 import React, { useMemo } from 'react';
 
 import { useRiskData } from '../hooks/useRiskData.js';
@@ -5,6 +8,10 @@ import { useDashboardFilters } from '../context/DashboardFilterProvider.jsx';
 import PanelShell from './PanelShell.jsx';
 import { panelShellPropsFromRiskData } from './panelShellProps.js';
 
+/**
+ * WHAT: Computes an RGB background color proportional to a cell value relative to the matrix maximum.
+ * WORKS WITH: EntityCategoryHeatmap, heatmap cell values.
+ */
 function heatColor(value, max) {
     const ratio = max > 0 ? value / max : 0;
     const r = Math.round(255 * ratio);
@@ -12,6 +19,10 @@ function heatColor(value, max) {
     return `rgb(${r},${g},80)`;
 }
 
+/**
+ * WHAT: Renders an interactive entity-by-risk-category heatmap grid with entity focus on cell click.
+ * WORKS WITH: useRiskData, useDashboardFilters, PanelShell, AnomalyTable scroll target.
+ */
 export default function EntityCategoryHeatmap() {
     const riskData = useRiskData('heatmap');
     const { data: cells, lastRefreshedAt } = riskData;

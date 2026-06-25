@@ -1,8 +1,11 @@
+/**
+ * Resize-aware hook for measuring a host element's dimensions for pixel-based visualizations.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * Measure a host element's width/height for pixel-based visualizations.
- * @param {{ minWidth?: number, minHeight?: number, defaultWidth?: number, defaultHeight?: number }} [opts]
+ * WHAT: Tracks host element width/height via ResizeObserver (or window resize) for responsive charts and KPIs.
+ * WORKS WITH: ResizeObserver, hostRef, measure callback (re-reads getBoundingClientRect and updates size state), RiskTrendChart, ResponsiveKpiValue.
  */
 export function useContainerSize({
     minWidth = 120,

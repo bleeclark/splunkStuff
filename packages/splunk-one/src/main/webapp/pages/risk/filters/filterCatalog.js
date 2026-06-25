@@ -1,5 +1,15 @@
-/** Filter IDs and dependency graph for the risk dashboard global filter bar. */
+/**
+ * Filter IDs and dependency graph for the risk dashboard global filter bar.
+ *
+ * MODULE: Central catalog of filter definitions, time-range presets, and pure
+ * helpers that create, mutate, validate, and compare AppliedFilters state
+ * shared by the filter bar, URL sync, Splunk param mapping, and mock data layer.
+ */
 
+/**
+ * WHAT: Stable string IDs for each global filter control in the risk dashboard.
+ * WORKS WITH: FILTER_CATALOG, FilterControl, GlobalFilterBar, filterUrlSync, getMockFilterOptions.
+ */
 export const FILTER_IDS = {
     DATE_RANGE: 'F1',
     BUSINESS_UNIT: 'F2',
@@ -14,18 +24,34 @@ const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
+/**
+ * WHAT: Formats a Date as an ISO calendar date string (YYYY-MM-DD).
+ * WORKS WITH: resolveTimeRangePreset, TIME_RANGE_OPTIONS, AppliedFilters.dateRange.
+ */
 function toDateValue(date) {
     return date.toISOString().slice(0, 10);
 }
 
+/**
+ * WHAT: Returns a new Date shifted backward by the given milliseconds.
+ * WORKS WITH: toDateValue, startOfLocalDay, TIME_RANGE_OPTIONS preset fromDate handlers.
+ */
 function subtractMs(date, ms) {
     return new Date(date.getTime() - ms);
 }
 
+/**
+ * WHAT: Returns midnight at the start of the given date in local timezone.
+ * WORKS WITH: TIME_RANGE_OPTIONS (today, yesterday presets), subtractMs.
+ */
 function startOfLocalDay(date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+/**
+ * WHAT: Preset time-range choices with Splunk earliest/latest tokens and date math.
+ * WORKS WITH: resolveTimeRangePreset, FilterControl, TimeRangeSelectorPanel, Splunk search time bounds.
+ */
 export const TIME_RANGE_OPTIONS = [
     {
         value: 'last_15m',
@@ -101,6 +127,10 @@ export const TIME_RANGE_OPTIONS = [
     },
 ];
 
+/**
+ * WHAT: Resolves a preset or custom time-range value into a full dateRange object.
+ * WORKS WITH: TIME_RANGE_OPTIONS, createDefaultFilters, parseFiltersFromUrl, TimeRangeSelectorPanel.
+ */
 export function resolveTimeRangePreset(value, now = new Date(), currentRange = {}) {
     const option =
         TIME_RANGE_OPTIONS.find((entry) => entry.value === value) ||
@@ -153,6 +183,10 @@ export function resolveTimeRangePreset(value, now = new Date(), currentRange = {
  * @property {boolean} hideEmptyPanels
  */
 
+/**
+ * WHAT: Metadata for each filter control including type, dependencies, and cascade clears.
+ * WORKS WITH: FILTER_IDS, GlobalFilterBar, FilterControl, setFilterValue, canLoadFilterOptions.
+ */
 export const FILTER_CATALOG = [
     {
         id: FILTER_IDS.DATE_RANGE,
@@ -209,6 +243,10 @@ export const FILTER_CATALOG = [
     },
 ];
 
+/**
+ * WHAT: Builds the initial AppliedFilters object with default time range and severities.
+ * WORKS WITH: resolveTimeRangePreset, DashboardFilterProvider, parseFiltersFromUrl.
+ */
 /** @returns {AppliedFilters} */
 export function createDefaultFilters() {
     const dateRange = resolveTimeRangePreset('last_7d');
@@ -225,6 +263,10 @@ export function createDefaultFilters() {
     };
 }
 
+/**
+ * WHAT: Immutably updates one filter field and clears dependent child filters per catalog rules.
+ * WORKS WITH: FILTER_CATALOG, FILTER_IDS, DashboardFilterProvider, FilterControl.
+ */
 /** @param {AppliedFilters} filters @param {string} filterId @param {*} value */
 export function setFilterValue(filters, filterId, value) {
     const next = { ...filters };
@@ -277,7 +319,10 @@ export function setFilterValue(filters, filterId, value) {
     return next;
 }
 
-/** Strip navigation-only fields before comparing draft vs applied. */
+/**
+ * WHAT: Strips navigation-only fields before comparing draft vs applied filter state.
+ * WORKS WITH: filtersEqual, DashboardFilterProvider, entityFocus, dataMode URL params.
+ */
 export function normalizeFiltersForCompare(filters) {
     if (!filters) {
         return {};
@@ -286,6 +331,10 @@ export function normalizeFiltersForCompare(filters) {
     return rest;
 }
 
+/**
+ * WHAT: Deep-compares two filter objects after normalizing out non-filter fields.
+ * WORKS WITH: normalizeFiltersForCompare, DashboardFilterProvider isDirty checks.
+ */
 /** @param {AppliedFilters} a @param {AppliedFilters} b */
 export function filtersEqual(a, b) {
     return (
@@ -294,7 +343,10 @@ export function filtersEqual(a, b) {
     );
 }
 
-/** Whether dropdown options can be loaded for this filter given current draft parents. */
+/**
+ * WHAT: Returns whether dropdown options can load for a filter given current parent selections.
+ * WORKS WITH: FILTER_IDS, useFilterOptions, FilterControl, getMockFilterOptions.
+ */
 export function canLoadFilterOptions(filterId, draft) {
     switch (filterId) {
         case FILTER_IDS.BUSINESS_UNIT:
@@ -311,6 +363,10 @@ export function canLoadFilterOptions(filterId, draft) {
     }
 }
 
+/**
+ * WHAT: Validates that required date bounds exist and entity selections have a type.
+ * WORKS WITH: AppliedFilters, GlobalFilterBar, DashboardFilterProvider filtersValid.
+ */
 /** @param {AppliedFilters} filters */
 export function filtersAreValid(filters) {
     if (!filters?.dateRange?.from || !filters?.dateRange?.to) {
@@ -322,6 +378,10 @@ export function filtersAreValid(filters) {
     return true;
 }
 
+/**
+ * WHAT: Returns child filter IDs that should clear when a parent filter changes.
+ * WORKS WITH: FILTER_CATALOG, FILTER_IDS, setFilterValue cascade logic.
+ */
 /** @param {AppliedFilters} draft @param {AppliedFilters} applied */
 export function getDescendantIdsToClear(changedFilterId) {
     const entry = FILTER_CATALOG.find((f) => f.id === changedFilterId);

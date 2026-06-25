@@ -1,4 +1,11 @@
-/** Shared NewSingleValue props for risk KPI sparkline tiles. */
+/**
+ * Shared NewSingleValue visualization defaults for risk dashboard KPI sparkline tiles.
+ */
+
+/**
+ * WHAT: Provides consistent height, colors, sparkline layout, and font sizes for all KPI widgets.
+ * WORKS WITH: NewSingleValue, ResponsiveKpiValue, RiskScoreKpi, AnomalyCountKpi, MttdKpi.
+ */
 export const KPI_WIDGET_COMMON = {
     height: 150,
     goodColor: '#01417F',

@@ -1,5 +1,14 @@
+/**
+ * MODULE: Bidirectional mapping between AppliedFilters state and browser URL
+ * query parameters so filter selections are shareable and survive page reloads.
+ */
+
 import { createDefaultFilters, resolveTimeRangePreset } from './filterCatalog.js';
 
+/**
+ * WHAT: Parses URL search params into a full AppliedFilters object with defaults.
+ * WORKS WITH: createDefaultFilters, resolveTimeRangePreset, DashboardFilterProvider, URLSearchParams.
+ */
 /** @returns {import('./filterCatalog.js').AppliedFilters} */
 export function parseFiltersFromUrl(searchParams) {
     const defaults = createDefaultFilters();
@@ -61,6 +70,10 @@ export function parseFiltersFromUrl(searchParams) {
     };
 }
 
+/**
+ * WHAT: Serializes AppliedFilters into URLSearchParams for bookmarking and sharing.
+ * WORKS WITH: AppliedFilters, parseFiltersFromUrl, syncFiltersToUrl, Splunk dashboard deep links.
+ */
 /** @param {import('./filterCatalog.js').AppliedFilters & { dataMode?: string }} filters */
 export function serializeFiltersToUrl(filters) {
     const params = new URLSearchParams();
@@ -103,6 +116,10 @@ export function serializeFiltersToUrl(filters) {
     return params;
 }
 
+/**
+ * WHAT: Writes the current filters into the browser URL via history.replaceState.
+ * WORKS WITH: serializeFiltersToUrl, DashboardFilterProvider apply/reset, window.history.
+ */
 /** @param {import('./filterCatalog.js').AppliedFilters & { dataMode?: string }} filters */
 export function syncFiltersToUrl(filters) {
     const params = serializeFiltersToUrl(filters);

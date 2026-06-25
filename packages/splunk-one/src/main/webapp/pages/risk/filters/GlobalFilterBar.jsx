@@ -1,3 +1,8 @@
+/**
+ * MODULE: Top-level investigation filter card that renders all global filter
+ * controls, submit/reset actions, validation messages, and applied-filter chips.
+ */
+
 import React, { useMemo, useState } from 'react';
 
 import Button from '@splunk/react-ui/Button';
@@ -9,6 +14,10 @@ import { FILTER_CATALOG, FILTER_IDS } from './filterCatalog.js';
 import FilterControl, { TimeRangeSelectorPanel } from './FilterControl.jsx';
 import { useDashboardFilters } from '../context/DashboardFilterProvider.jsx';
 
+/**
+ * WHAT: Builds human-readable summary strings for each active applied filter.
+ * WORKS WITH: AppliedFilters, GlobalFilterBar appliedChips, Splunk React UI Chip.
+ */
 function formatAppliedSummary(applied) {
     const parts = [];
     parts.push(`Time: ${applied.dateRange.label || `${applied.dateRange.from} → ${applied.dateRange.to}`}`);
@@ -33,6 +42,10 @@ function formatAppliedSummary(applied) {
     return parts;
 }
 
+/**
+ * WHAT: Renders the global filter bar with controls, submit/reset, and active filter chips.
+ * WORKS WITH: DashboardFilterProvider, FilterControl, FILTER_CATALOG, Splunk React UI Card/Button/Message.
+ */
 export default function GlobalFilterBar() {
     const {
         apply,

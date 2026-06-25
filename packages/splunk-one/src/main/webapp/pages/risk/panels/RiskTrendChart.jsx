@@ -1,3 +1,6 @@
+/**
+ * Risk score time-series line chart panel with anomaly point navigation.
+ */
 import React, { useMemo } from 'react';
 
 import LineChart from '../../../components/visualizations/LineChart';
@@ -9,6 +12,10 @@ import { panelShellPropsFromRiskData } from './panelShellProps.js';
 
 const CHART_HEIGHT = 240;
 
+/**
+ * WHAT: Renders the risk score over time line chart with clickable anomaly markers and entity focus.
+ * WORKS WITH: useRiskData, useContainerSize, useDashboardFilters, LineChart, PanelShell.
+ */
 export default function RiskTrendChart() {
     const riskData = useRiskData('timeseries');
     const { data: timeSeries, lastRefreshedAt } = riskData;
@@ -30,6 +37,10 @@ export default function RiskTrendChart() {
         return { values: valuesOut, times: timesOut, anomalyIndices: anomalyIndicesOut };
     }, [timeSeries]);
 
+    /**
+     * WHAT: Sets entity focus in dashboard filters when an anomaly point button is clicked.
+     * WORKS WITH: setEntityFocus, timeSeries entityId, EntityDetailDrawer.
+     */
     const handleAnomalyClick = (index) => {
         const point = timeSeries[index];
         if (point?.entityId) {

@@ -1,3 +1,6 @@
+/**
+ * Day-by-hour calendar heatmap panel showing risk intensity across the week.
+ */
 import React, { useMemo } from 'react';
 
 import { useRiskData } from '../hooks/useRiskData.js';
@@ -7,11 +10,19 @@ import { panelShellPropsFromRiskData } from './panelShellProps.js';
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i));
 
+/**
+ * WHAT: Computes a semi-transparent blue background color proportional to a calendar cell value.
+ * WORKS WITH: CalendarHeatmap, calendar heatmap cell values.
+ */
 function heatColor(value, max) {
     const ratio = max > 0 ? value / max : 0;
     return `rgba(1, 65, 127, ${0.15 + ratio * 0.85})`;
 }
 
+/**
+ * WHAT: Renders a 7-day by 24-hour calendar grid with color-coded risk intensity cells.
+ * WORKS WITH: useRiskData, PanelShell, calendar saved search data.
+ */
 export default function CalendarHeatmap() {
     const riskData = useRiskData('calendar');
     const { data: cells, lastRefreshedAt } = riskData;

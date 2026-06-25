@@ -1,9 +1,16 @@
+/**
+ * KPI panel displaying critical and high severity anomaly counts as badges.
+ */
 import React from 'react';
 
 import { useRiskData } from '../hooks/useRiskData.js';
 import PanelShell from './PanelShell.jsx';
 import { panelShellPropsFromRiskData } from './panelShellProps.js';
 
+/**
+ * WHAT: Returns inline style object for a severity badge based on severity level.
+ * WORKS WITH: SeverityKpi, severityCounts from useRiskData summary.
+ */
 const badgeStyle = (severity) => ({
     display: 'inline-block',
     padding: '16px 20px',
@@ -19,6 +26,10 @@ const badgeStyle = (severity) => ({
               : '#e0e0e0',
 });
 
+/**
+ * WHAT: Displays critical and high severity counts as colored badge labels.
+ * WORKS WITH: useRiskData, PanelShell, panelShellPropsFromRiskData, summary.severityCounts.
+ */
 export default function SeverityKpi() {
     const riskData = useRiskData('summary');
     const { data: summary, lastRefreshedAt, status } = riskData;

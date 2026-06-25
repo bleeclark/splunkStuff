@@ -1,3 +1,6 @@
+/**
+ * Expandable entity detail card with score breakdown, timeline chart, and contributing signals.
+ */
 import React from 'react';
 
 import Card from '@splunk/react-ui/Card';
@@ -8,6 +11,10 @@ import { useRiskData } from '../hooks/useRiskData.js';
 import { useDashboardFilters } from '../context/DashboardFilterProvider.jsx';
 import LineChart from '../../../components/visualizations/LineChart';
 
+/**
+ * WHAT: Renders a detailed entity inspection card when entityFocus is set in dashboard filters.
+ * WORKS WITH: useDashboardFilters, useRiskData, LineChart, Splunk Card, setEntityFocus.
+ */
 export default function EntityDetailDrawer() {
     const { appliedFilters, setEntityFocus } = useDashboardFilters();
     const entityId = appliedFilters.entityFocus;

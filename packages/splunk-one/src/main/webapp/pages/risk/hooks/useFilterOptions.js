@@ -1,3 +1,6 @@
+/**
+ * Hook for loading cascading filter dropdown options with debounce and in-memory cache.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { canLoadFilterOptions } from '../filters/filterCatalog.js';
@@ -8,8 +11,8 @@ import { filtersToQueryKey } from '../filters/filtersToSplunkParams.js';
 const optionCache = new Map();
 
 /**
- * Load filter dropdown options eagerly when parent dependencies are satisfied.
- * @param {string} filterId
+ * WHAT: Loads filter dropdown options when parent dependencies are satisfied, with debounce and cache.
+ * WORKS WITH: DashboardFilterProvider, filterCatalog, filterOptionFixtures, FilterControl, filtersToSplunkParams.
  */
 export function useFilterOptions(filterId) {
     const { draftFilters, dataMode } = useDashboardFilters();
@@ -79,6 +82,10 @@ export function useFilterOptions(filterId) {
     return { options, loading, error, canLoad, reload: loadOptions };
 }
 
+/**
+ * WHAT: Clears the in-memory filter option cache so dropdowns reload fresh data.
+ * WORKS WITH: useFilterOptions, optionCache, DashboardFilterProvider apply/reset.
+ */
 export function clearFilterOptionCache() {
     optionCache.clear();
 }

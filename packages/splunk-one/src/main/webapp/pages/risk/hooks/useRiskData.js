@@ -1,3 +1,6 @@
+/**
+ * Unified data hook and Splunk row mappers for risk dashboard panels (mock fixtures or saved searches).
+ */
 import { useEffect, useMemo, useState } from 'react';
 
 import { useDashboardFilters } from '../context/DashboardFilterProvider.jsx';
@@ -15,6 +18,10 @@ const PANEL_SEARCH_MAP = {
     entityDetail: 'risk_entity_detail',
 };
 
+/**
+ * WHAT: Maps the first Splunk summary search row into dashboard KPI summary shape.
+ * WORKS WITH: mapSplunkPanelData, risk_summary saved search, summary panel components.
+ */
 function mapSplunkSummary(rows) {
     const row = rows[0] || {};
     return {
@@ -37,6 +44,10 @@ function mapSplunkSummary(rows) {
     };
 }
 
+/**
+ * WHAT: Maps Splunk time-series rows into risk score trend points with anomaly flags.
+ * WORKS WITH: mapSplunkPanelData, risk_timeseries saved search, RiskTrendChart.
+ */
 function mapSplunkTimeSeries(rows) {
     return rows.map((row) => ({
         timestamp: row._time,
@@ -47,6 +58,10 @@ function mapSplunkTimeSeries(rows) {
     }));
 }
 
+/**
+ * WHAT: Maps Splunk heatmap rows into entity-by-category cell records.
+ * WORKS WITH: mapSplunkPanelData, risk_heatmap_entity_category saved search, EntityCategoryHeatmap.
+ */
 function mapSplunkHeatmapCells(rows) {
     return rows.map((row) => ({
         rowKey: row.entity_name,
@@ -56,6 +71,10 @@ function mapSplunkHeatmapCells(rows) {
     }));
 }
 
+/**
+ * WHAT: Maps Splunk domain breakdown rows into domain score pairs.
+ * WORKS WITH: mapSplunkPanelData, risk_breakdown_domain saved search, DomainTreemap.
+ */
 function mapSplunkDomainBreakdown(rows) {
     return rows.map((row) => ({
         domain: row.domain,
@@ -63,6 +82,10 @@ function mapSplunkDomainBreakdown(rows) {
     }));
 }
 
+/**
+ * WHAT: Maps Splunk calendar heatmap rows into day-by-hour cell records.
+ * WORKS WITH: mapSplunkPanelData, risk_calendar_heatmap saved search, CalendarHeatmap.
+ */
 function mapSplunkCalendarCells(rows) {
     return rows.map((row) => ({
         rowKey: row.day,
@@ -71,6 +94,10 @@ function mapSplunkCalendarCells(rows) {
     }));
 }
 
+/**
+ * WHAT: Maps Splunk anomaly rows into investigation table records.
+ * WORKS WITH: mapSplunkPanelData, risk_anomalies saved search, AnomalyTable.
+ */
 function mapSplunkAnomalies(rows) {
     return rows.map((row) => ({
         id: row.id,
@@ -85,6 +112,10 @@ function mapSplunkAnomalies(rows) {
     }));
 }
 
+/**
+ * WHAT: Dispatches Splunk search rows to the correct panel-specific mapper by panelId.
+ * WORKS WITH: mapSplunkSummary, mapSplunkTimeSeries, mapSplunkHeatmapCells, useRiskData, appliedFilters.entityFocus.
+ */
 function mapSplunkPanelData(panelId, rows, appliedFilters) {
     switch (panelId) {
         case 'summary':
@@ -120,8 +151,8 @@ function mapSplunkPanelData(panelId, rows, appliedFilters) {
 }
 
 /**
- * Unified data hook: mock fixtures or Splunk saved searches based on dataMode.
- * @param {'summary'|'timeseries'|'heatmap'|'domain'|'calendar'|'anomalies'|'entityDetail'} panelId
+ * WHAT: Loads panel data from mock fixtures or Splunk saved searches based on dataMode and applied filters.
+ * WORKS WITH: DashboardFilterProvider, splunkSearchClient, applyFiltersToFixtures, panelShellProps, all panel components.
  */
 export function useRiskData(panelId) {
     const { appliedFilters, refreshGeneration, dataMode, lastRefreshedAt } =
@@ -255,7 +286,10 @@ export function useRiskData(panelId) {
     };
 }
 
-/** Async fetch for Splunk mode (called from effects when dataMode=splunk). */
+/**
+ * WHAT: Imperatively fetches and maps a single panel's Splunk saved search results.
+ * WORKS WITH: runSavedSearch, mapSplunkPanelData, PANEL_SEARCH_MAP, appliedFilters.
+ */
 export async function fetchSplunkPanel(panelId, appliedFilters, options = {}) {
     const searchName = PANEL_SEARCH_MAP[panelId];
     if (!searchName) {

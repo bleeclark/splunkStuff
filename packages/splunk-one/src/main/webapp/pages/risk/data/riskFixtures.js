@@ -1,4 +1,9 @@
-/** Mock risk dashboard datasets for development before Splunk indexes exist. */
+/**
+ * Mock risk dashboard datasets for development before Splunk indexes exist.
+ *
+ * MODULE: Static panel payloads (summary KPIs, time series, heatmaps, anomalies,
+ * entity detail) consumed by applyFiltersToFixtures and mock-mode dashboard panels.
+ */
 
 export const mockRiskSummary = {
     totalRiskScore: 847,

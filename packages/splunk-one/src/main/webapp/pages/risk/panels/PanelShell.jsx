@@ -1,3 +1,6 @@
+/**
+ * Reusable card shell with loading, error, and empty states for risk dashboard panels.
+ */
 import React from 'react';
 import PropTypes from 'prop-types';
 
@@ -5,6 +8,10 @@ import Card from '@splunk/react-ui/Card';
 import Progress from '@splunk/react-ui/Progress';
 import WaitSpinner from '@splunk/react-ui/WaitSpinner';
 
+/**
+ * WHAT: Formats Splunk search dispatch state strings into human-readable lowercase labels.
+ * WORKS WITH: PanelLoadingState, Splunk search dispatch states (QUEUED, RUNNING, DONE).
+ */
 function formatDispatchState(state) {
     if (!state) {
         return '';
@@ -12,6 +19,10 @@ function formatDispatchState(state) {
     return String(state).replace(/_/g, ' ').toLowerCase();
 }
 
+/**
+ * WHAT: Renders a spinner, optional progress bar, and dispatch state label while a panel search runs.
+ * WORKS WITH: PanelShell, formatDispatchState, Splunk WaitSpinner, Progress.
+ */
 function PanelLoadingState({ progress, dispatchState, loadingMessage }) {
     const showBar = progress > 0;
     const stateLabel = formatDispatchState(dispatchState);
@@ -47,6 +58,10 @@ PanelLoadingState.defaultProps = {
     loadingMessage: null,
 };
 
+/**
+ * WHAT: Wraps panel content in a Splunk Card with title, last-updated subtitle, and status-driven body states.
+ * WORKS WITH: panelShellPropsFromRiskData, PanelLoadingState, useRiskData, Splunk Card.
+ */
 export default function PanelShell({
     title,
     status,

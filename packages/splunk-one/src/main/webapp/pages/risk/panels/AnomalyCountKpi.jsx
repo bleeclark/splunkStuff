@@ -1,3 +1,6 @@
+/**
+ * KPI panel displaying active anomaly count with delta sparkline.
+ */
 import React, { useMemo } from 'react';
 
 import { useRiskData } from '../hooks/useRiskData.js';
@@ -7,6 +10,10 @@ import PanelShell from './PanelShell.jsx';
 import { panelShellPropsFromRiskData } from './panelShellProps.js';
 import ResponsiveKpiValue from './ResponsiveKpiValue.jsx';
 
+/**
+ * WHAT: Shows active anomaly count with change-from-previous-period in a sparkline KPI tile.
+ * WORKS WITH: useRiskData, ResponsiveKpiValue, KPI_WIDGET_COMMON, PanelShell, KpiTile.
+ */
 export default function AnomalyCountKpi() {
     const riskData = useRiskData('summary');
     const { data: summary, lastRefreshedAt } = riskData;

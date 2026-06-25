@@ -1,3 +1,6 @@
+/**
+ * React context provider for global dashboard filter state, URL sync, and refresh lifecycle.
+ */
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 import {
@@ -12,6 +15,10 @@ import { parseFiltersFromUrl, syncFiltersToUrl } from '../filters/filterUrlSync.
 
 const DashboardFilterContext = createContext(null);
 
+/**
+ * WHAT: Reads initial filter state from the URL query string or returns defaults for SSR.
+ * WORKS WITH: filterUrlSync, filterCatalog, window.location.search.
+ */
 function readInitialState() {
     if (typeof window === 'undefined') {
         const defaults = createDefaultFilters();
@@ -21,6 +28,10 @@ function readInitialState() {
     return parseFiltersFromUrl(params);
 }
 
+/**
+ * WHAT: Provides draft/applied filter state, apply/reset actions, and URL synchronization to descendants.
+ * WORKS WITH: filterCatalog, filterUrlSync, useDashboardFilters, GlobalFilterBar, useRiskData.
+ */
 export function DashboardFilterProvider({ children }) {
     const initial = useMemo(() => readInitialState(), []);
     const [draftFilters, setDraftFilters] = useState(initial);
@@ -112,6 +123,10 @@ export function DashboardFilterProvider({ children }) {
     );
 }
 
+/**
+ * WHAT: Returns the full dashboard filter context including draft, applied, and action callbacks.
+ * WORKS WITH: DashboardFilterProvider, useAppliedFilters, useFilterDraft, panel hooks.
+ */
 export function useDashboardFilters() {
     const ctx = useContext(DashboardFilterContext);
     if (!ctx) {
@@ -120,10 +135,18 @@ export function useDashboardFilters() {
     return ctx;
 }
 
+/**
+ * WHAT: Returns only the currently applied (committed) filter values.
+ * WORKS WITH: useDashboardFilters, useRiskData, useFilterOptions, filtersToSplunkParams.
+ */
 export function useAppliedFilters() {
     return useDashboardFilters().appliedFilters;
 }
 
+/**
+ * WHAT: Returns draft filter state plus setFilter, apply, reset, and isDirty for the filter bar UI.
+ * WORKS WITH: useDashboardFilters, GlobalFilterBar, FilterControl.
+ */
 export function useFilterDraft() {
     const { draftFilters, setFilter, apply, reset, isDirty } = useDashboardFilters();
     return { draft: draftFilters, setFilter, apply, reset, isDirty };

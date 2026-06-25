@@ -1,6 +1,9 @@
 /**
  * Lightweight Splunk REST search client for the risk dashboard.
  * Uses saved search stanzas with token substitution.
+ *
+ * MODULE: Dispatches token-substituted SPL jobs via Splunk REST, polls for
+ * completion, and returns parsed row objects for live dashboard panels.
  */
 
 import { filtersToSplunkParams, substituteSplTokens } from '../filters/filtersToSplunkParams.js';
@@ -55,6 +58,10 @@ const SEARCH_TEMPLATES = {
 const DEFAULT_MAX_WAIT_MS = 300000;
 const POLL_INTERVAL_MS = 250;
 
+/**
+ * WHAT: Resolves the Splunk REST base URL from the Splunk Web page globals.
+ * WORKS WITH: runSavedSearch, waitForJob, window.__splunkd_partials__, Splunk REST /services/search/jobs.
+ */
 function getSplunkBase() {
     if (typeof window === 'undefined') {
         return '';
@@ -63,6 +70,10 @@ function getSplunkBase() {
     return cfg.splunkd?.rootUrl || '';
 }
 
+/**
+ * WHAT: Normalizes Splunk job results JSON into an array of field-name keyed row objects.
+ * WORKS WITH: runSavedSearch, Splunk REST results endpoint, output_mode=json.
+ */
 function parseResultsJson(json) {
     const fields = (json.fields || []).map((f) => (typeof f === 'string' ? f : f.name));
     const rows = json.results || json.rows || [];
@@ -81,6 +92,10 @@ function parseResultsJson(json) {
     return rows;
 }
 
+/**
+ * WHAT: Maps Splunk job content fields into a normalized progress snapshot for UI callbacks.
+ * WORKS WITH: waitForJob, runSavedSearch onProgress, Splunk search job dispatchState/doneProgress.
+ */
 /** @param {Record<string, unknown>} content */
 export function parseJobProgress(content = {}) {
     const rawProgress = Number(content.doneProgress);
@@ -97,12 +112,20 @@ export function parseJobProgress(content = {}) {
     };
 }
 
+/**
+ * WHAT: Throws an AbortError if the given AbortSignal has been cancelled.
+ * WORKS WITH: runSavedSearch, waitForJob, sleep, panel query cancellation.
+ */
 function throwIfAborted(signal) {
     if (signal?.aborted) {
         throw new DOMException('Search aborted', 'AbortError');
     }
 }
 
+/**
+ * WHAT: Promise-based delay that rejects early when an AbortSignal fires.
+ * WORKS WITH: waitForJob, POLL_INTERVAL_MS, runSavedSearch AbortSignal.
+ */
 function sleep(ms, signal) {
     return new Promise((resolve, reject) => {
         if (signal?.aborted) {
@@ -123,6 +146,10 @@ function sleep(ms, signal) {
     });
 }
 
+/**
+ * WHAT: Polls a Splunk search job until it completes, fails, times out, or is aborted.
+ * WORKS WITH: parseJobProgress, getSplunkBase, runSavedSearch, Splunk REST /services/search/jobs/{sid}.
+ */
 async function waitForJob(base, sid, { onProgress, signal, maxWaitMs = DEFAULT_MAX_WAIT_MS } = {}) {
     const deadline = Date.now() + maxWaitMs;
 
@@ -154,6 +181,8 @@ async function waitForJob(base, sid, { onProgress, signal, maxWaitMs = DEFAULT_M
 }
 
 /**
+ * WHAT: Creates a Splunk search job from a named template, waits for results, and returns parsed rows.
+ * WORKS WITH: SEARCH_TEMPLATES, filtersToSplunkParams, substituteSplTokens, waitForJob, AppliedFilters.
  * @param {string} searchName
  * @param {import('../filters/filterCatalog.js').AppliedFilters} filters
  * @param {{ onProgress?: (progress: ReturnType<typeof parseJobProgress>) => void, signal?: AbortSignal, maxWaitMs?: number }} [options]

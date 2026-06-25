@@ -1,9 +1,16 @@
+/**
+ * Domain risk breakdown panel rendered as proportional horizontal bar segments.
+ */
 import React, { useMemo } from 'react';
 
 import { useRiskData } from '../hooks/useRiskData.js';
 import PanelShell from './PanelShell.jsx';
 import { panelShellPropsFromRiskData } from './panelShellProps.js';
 
+/**
+ * WHAT: Renders a horizontal bar chart showing risk score share per domain.
+ * WORKS WITH: useRiskData, PanelShell, domain breakdown saved search data.
+ */
 export default function DomainTreemap() {
     const riskData = useRiskData('domain');
     const { data: breakdown, lastRefreshedAt } = riskData;

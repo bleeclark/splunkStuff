@@ -1,5 +1,5 @@
 /**
- * Risk Anomaly Detection dashboard — React page with global filter bar, tables, and trend line.
+ * Risk Anomaly Detection dashboard entry point — bootstraps the React page via Splunk layout.
  */
 import React from 'react';
 import layout from '@splunk/react-page/18';
@@ -22,6 +22,10 @@ import RiskTrendChart from './panels/RiskTrendChart.jsx';
 
 getUserTheme()
     .then((theme) => {
+        /**
+         * WHAT: Renders the full risk dashboard layout with filters, tables, and trend chart.
+         * WORKS WITH: DashboardFilterProvider, GlobalFilterBar, RiskStyles, RiskTablePanels, RiskTrendChart, Splunk react-page layout.
+         */
         const RiskPage = () => (
             <DashboardFilterProvider>
                 <RiskPageContainer>

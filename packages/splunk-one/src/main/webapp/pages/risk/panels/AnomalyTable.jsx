@@ -1,3 +1,6 @@
+/**
+ * Anomaly investigation table panel with entity focus links and inline sparklines.
+ */
 import React from 'react';
 
 import Table from '@splunk/react-ui/Table';
@@ -7,6 +10,10 @@ import { useDashboardFilters } from '../context/DashboardFilterProvider.jsx';
 import PanelShell from './PanelShell.jsx';
 import { panelShellPropsFromRiskData } from './panelShellProps.js';
 
+/**
+ * WHAT: Renders a small inline SVG polyline sparkline from a numeric values array.
+ * WORKS WITH: AnomalyTable, anomaly row sparkline data.
+ */
 function MiniSparkline({ values }) {
     const nums = (values || []).map(Number).filter(Number.isFinite);
     if (nums.length < 2) {
@@ -37,6 +44,10 @@ function MiniSparkline({ values }) {
     );
 }
 
+/**
+ * WHAT: Displays a sortable anomaly investigation table with entity focus navigation and trend sparklines.
+ * WORKS WITH: useRiskData, useDashboardFilters, PanelShell, Splunk Table, EntityDetailDrawer.
+ */
 export default function AnomalyTable() {
     const riskData = useRiskData('anomalies');
     const { data: anomalies, lastRefreshedAt } = riskData;

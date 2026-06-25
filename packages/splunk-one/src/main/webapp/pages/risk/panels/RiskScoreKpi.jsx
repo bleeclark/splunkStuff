@@ -1,3 +1,6 @@
+/**
+ * KPI panel displaying total risk score with delta sparkline.
+ */
 import React, { useMemo } from 'react';
 
 import { useRiskData } from '../hooks/useRiskData.js';
@@ -7,6 +10,10 @@ import PanelShell from './PanelShell.jsx';
 import { panelShellPropsFromRiskData } from './panelShellProps.js';
 import ResponsiveKpiValue from './ResponsiveKpiValue.jsx';
 
+/**
+ * WHAT: Shows total risk score with period-over-period delta in a sparkline KPI tile.
+ * WORKS WITH: useRiskData, ResponsiveKpiValue, KPI_WIDGET_COMMON, PanelShell, KpiTile.
+ */
 export default function RiskScoreKpi() {
     const riskData = useRiskData('summary');
     const { data, lastRefreshedAt } = riskData;

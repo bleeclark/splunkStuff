@@ -1,4 +1,11 @@
-/** Map useRiskData() result to PanelShell props. */
+/**
+ * Adapter utilities mapping useRiskData results to PanelShell presentation props.
+ */
+
+/**
+ * WHAT: Converts useRiskData status/progress fields into PanelShell-compatible props including emptyState on error.
+ * WORKS WITH: useRiskData, PanelShell, all risk panel components.
+ */
 export function panelShellPropsFromRiskData({
     status,
     progress,

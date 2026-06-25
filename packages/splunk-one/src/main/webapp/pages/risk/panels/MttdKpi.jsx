@@ -1,3 +1,6 @@
+/**
+ * KPI panel displaying mean time to detect with sparkline history.
+ */
 import React, { useMemo } from 'react';
 
 import { useRiskData } from '../hooks/useRiskData.js';
@@ -7,6 +10,10 @@ import PanelShell from './PanelShell.jsx';
 import { panelShellPropsFromRiskData } from './panelShellProps.js';
 import ResponsiveKpiValue from './ResponsiveKpiValue.jsx';
 
+/**
+ * WHAT: Shows mean time to detect in hours with a historical sparkline from summary data.
+ * WORKS WITH: useRiskData, ResponsiveKpiValue, KPI_WIDGET_COMMON, PanelShell, KpiTile.
+ */
 export default function MttdKpi() {
     const riskData = useRiskData('summary');
     const { data: summary, lastRefreshedAt } = riskData;
