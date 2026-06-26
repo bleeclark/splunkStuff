@@ -21,7 +21,7 @@ The page will be delivered as a Splunk HTML view that loads a React bundle from 
 - Show a spinner and progress bar while Splunk searches run.
 - Allow users to hide panels that do not have data.
 - Keep panel spacing even and proportional when panels are hidden or empty.
-- Persist filter state in the URL so links can be shared.
+- Keep filter state local to React so the URL stays clean.
 - Support mock data for local development and Splunk REST data for real searches.
 
 ## 3. Non-Goals
@@ -128,24 +128,14 @@ Required options:
 
 The selector should show the resolved search window so users understand what will be sent to Splunk.
 
-## 7. URL State
+## 7. Runtime URL State
 
-Filters should persist to URL query params after Submit.
+Filter selections should stay in React state and should not be serialized into the URL. Refreshing the page should reset filters to their defaults.
+
+The only URL query param this page should read is the runtime data mode:
 
 | Query param | Purpose |
 |-------------|---------|
-| `from` | Custom start date |
-| `to` | Custom end date |
-| `timeRange` | Selected preset |
-| `earliest` | Advanced earliest token |
-| `latest` | Advanced latest token |
-| `bu` | Business unit |
-| `domain` | Comma-separated domains |
-| `entityType` | Entity type |
-| `entities` | Comma-separated entity IDs |
-| `severity` | Comma-separated severities |
-| `entityFocus` | Selected entity for drilldown |
-| `hideEmpty` | `1` when empty panels should be hidden |
 | `data` | `splunk` when Splunk REST mode is enabled |
 
 ## 8. Data Modes
@@ -191,7 +181,7 @@ The same serializer should be used by panels and Splunk search templates.
 | Filter UI | `src/main/webapp/pages/risk/filters/GlobalFilterBar.jsx` |
 | Filter controls and time selector | `src/main/webapp/pages/risk/filters/FilterControl.jsx` |
 | Filter catalog | `src/main/webapp/pages/risk/filters/filterCatalog.js` |
-| URL sync | `src/main/webapp/pages/risk/filters/filterUrlSync.js` |
+| Runtime mode URL reader | `src/main/webapp/pages/risk/filters/filterUrlSync.js` |
 | Splunk param serialization | `src/main/webapp/pages/risk/filters/filtersToSplunkParams.js` |
 | Data hook | `src/main/webapp/pages/risk/hooks/useRiskData.js` |
 | Splunk REST client | `src/main/webapp/pages/risk/data/splunkSearchClient.js` |
@@ -329,9 +319,7 @@ Add focused tests for:
 
 - Filter dependency clearing.
 - Time range preset serialization.
-- Real-time time range URL round-trip.
-- Advanced time range URL round-trip.
-- Hide empty panels URL round-trip.
+- URL parsing preserves only the `data=splunk` runtime mode.
 - Splunk token mapping.
 - Invalid entity selection without entity type.
 - Mock severity filtering.
@@ -388,7 +376,7 @@ The work is complete when:
 - The time selector opens inline and has Presets, Relative, Real-time, Date Range, and Advanced sections.
 - Submit applies all draft filters.
 - Reset restores defaults.
-- Filters persist in the URL.
+- Filter state remains local to React and does not clutter the URL.
 - Panels show spinner/progress in Splunk mode.
 - Empty panels are compact when shown.
 - Empty panels disappear when Hide Empty Panels is enabled.
@@ -398,7 +386,7 @@ The work is complete when:
 ## 19. Implementation Sequence
 
 1. Create or update filter state objects.
-2. Add URL parsing and serialization.
+2. Add local filter state and read only the optional `data=splunk` runtime mode.
 3. Build the filter card.
 4. Build the inline time range selector.
 5. Build the shared panel shell.

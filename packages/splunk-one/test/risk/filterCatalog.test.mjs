@@ -9,7 +9,7 @@ import {
     resolveTimeRangePreset,
 } from '../../src/main/webapp/pages/risk/filters/filterCatalog.js';
 import { filtersToSplunkParams } from '../../src/main/webapp/pages/risk/filters/filtersToSplunkParams.js';
-import { parseFiltersFromUrl, serializeFiltersToUrl } from '../../src/main/webapp/pages/risk/filters/filterUrlSync.js';
+import { parseFiltersFromUrl } from '../../src/main/webapp/pages/risk/filters/filterUrlSync.js';
 import { applyFiltersToFixtures } from '../../src/main/webapp/pages/risk/data/applyFiltersToFixtures.js';
 
 test('F2 change clears F3-F5 descendants', () => {
@@ -45,43 +45,19 @@ test('relative time range maps exact Splunk earliest latest tokens', () => {
     assert.equal(params.filter_latest, 'now');
 });
 
-test('real-time range survives URL round-trip', () => {
-    const filters = createDefaultFilters();
-    filters.dateRange = resolveTimeRangePreset('realtime_5m');
-    const params = serializeFiltersToUrl(filters);
-    const parsed = parseFiltersFromUrl(params);
-    assert.equal(parsed.dateRange.preset, 'realtime_5m');
-    assert.equal(parsed.dateRange.earliest, 'rt-5m');
-    assert.equal(parsed.dateRange.latest, 'rt');
-});
+test('URL parsing only preserves runtime data mode', () => {
+    const parsed = parseFiltersFromUrl(
+        new URLSearchParams(
+            'data=splunk&timeRange=realtime_5m&bu=engineering&domain=cloud&hideEmpty=1'
+        )
+    );
+    const defaults = createDefaultFilters();
 
-test('advanced time range survives URL round-trip', () => {
-    const filters = createDefaultFilters();
-    filters.dateRange = {
-        ...filters.dateRange,
-        preset: 'advanced',
-        label: 'Advanced',
-        mode: 'advanced',
-        earliest: '-2h@h',
-        latest: 'now',
-    };
-    const params = serializeFiltersToUrl(filters);
-    const parsed = parseFiltersFromUrl(params);
-    assert.equal(parsed.dateRange.preset, 'advanced');
-    assert.equal(parsed.dateRange.earliest, '-2h@h');
-    assert.equal(parsed.dateRange.latest, 'now');
-});
-
-test('URL round-trip', () => {
-    const filters = createDefaultFilters();
-    filters.businessUnit = 'engineering';
-    filters.domains = ['cloud'];
-    filters.hideEmptyPanels = true;
-    const params = serializeFiltersToUrl(filters);
-    const parsed = parseFiltersFromUrl(params);
-    assert.equal(parsed.businessUnit, 'engineering');
-    assert.deepEqual(parsed.domains, ['cloud']);
-    assert.equal(parsed.hideEmptyPanels, true);
+    assert.equal(parsed.dataMode, 'splunk');
+    assert.equal(parsed.dateRange.preset, defaults.dateRange.preset);
+    assert.equal(parsed.businessUnit, null);
+    assert.deepEqual(parsed.domains, []);
+    assert.equal(parsed.hideEmptyPanels, false);
 });
 
 test('applyFiltersToFixtures filters anomalies by severity', () => {

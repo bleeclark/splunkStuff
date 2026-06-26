@@ -1,7 +1,8 @@
 /**
- * React context provider for global dashboard filter state, URL sync, and refresh lifecycle.
+ * React context provider for global dashboard filter state and refresh lifecycle.
  */
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 
 import {
     createDefaultFilters,
@@ -9,14 +10,14 @@ import {
     filtersEqual,
     setFilterValue,
 } from '../filters/filterCatalog.js';
-import { parseFiltersFromUrl, syncFiltersToUrl } from '../filters/filterUrlSync.js';
+import { parseFiltersFromUrl } from '../filters/filterUrlSync.js';
 
 /** @typedef {import('../filters/filterCatalog.js').AppliedFilters & { dataMode?: string }} FilterState */
 
 const DashboardFilterContext = createContext(null);
 
 /**
- * WHAT: Reads initial filter state from the URL query string or returns defaults for SSR.
+ * WHAT: Reads initial state from defaults plus URL runtime mode, or returns defaults for SSR.
  * WORKS WITH: filterUrlSync, filterCatalog, window.location.search.
  */
 function readInitialState() {
@@ -29,8 +30,8 @@ function readInitialState() {
 }
 
 /**
- * WHAT: Provides draft/applied filter state, apply/reset actions, and URL synchronization to descendants.
- * WORKS WITH: filterCatalog, filterUrlSync, useDashboardFilters, GlobalFilterBar, useRiskData.
+ * WHAT: Provides draft/applied filter state and apply/reset actions to descendants.
+ * WORKS WITH: filterCatalog, useDashboardFilters, GlobalFilterBar, useRiskData.
  */
 export function DashboardFilterProvider({ children }) {
     const initial = useMemo(() => readInitialState(), []);
@@ -55,7 +56,6 @@ export function DashboardFilterProvider({ children }) {
         const nextApplied = { ...draftFilters, entityFocus: appliedFilters.entityFocus };
         setDraftFilters(nextApplied);
         setAppliedFilters(nextApplied);
-        syncFiltersToUrl(nextApplied);
         setLastRefreshedAt(new Date().toISOString());
         setRefreshGeneration((g) => g + 1);
     }, [draftFilters, appliedFilters.entityFocus]);
@@ -65,7 +65,6 @@ export function DashboardFilterProvider({ children }) {
         const withMode = { ...defaults, dataMode: draftFilters.dataMode || 'mock' };
         setDraftFilters(withMode);
         setAppliedFilters(withMode);
-        syncFiltersToUrl(withMode);
         setLastRefreshedAt(new Date().toISOString());
         setRefreshGeneration((g) => g + 1);
     }, [draftFilters.dataMode]);
@@ -73,19 +72,17 @@ export function DashboardFilterProvider({ children }) {
     const applyDateOnly = useCallback(() => {
         setAppliedFilters((prev) => {
             const next = { ...prev, dateRange: { ...draftFilters.dateRange } };
-            syncFiltersToUrl({ ...next, dataMode: draftFilters.dataMode });
             setLastRefreshedAt(new Date().toISOString());
             setRefreshGeneration((g) => g + 1);
             return next;
         });
-    }, [draftFilters.dateRange, draftFilters.dataMode]);
+    }, [draftFilters.dateRange]);
 
     const setEntityFocus = useCallback((entityId) => {
         const next = { ...appliedFilters, entityFocus: entityId || null };
         setDraftFilters((prev) => ({ ...prev, entityFocus: entityId || null }));
         setAppliedFilters(next);
-        syncFiltersToUrl({ ...next, dataMode: draftFilters.dataMode });
-    }, [appliedFilters, draftFilters.dataMode]);
+    }, [appliedFilters]);
 
     const value = useMemo(
         () => ({
@@ -122,6 +119,14 @@ export function DashboardFilterProvider({ children }) {
         </DashboardFilterContext.Provider>
     );
 }
+
+DashboardFilterProvider.propTypes = {
+    children: PropTypes.node,
+};
+
+DashboardFilterProvider.defaultProps = {
+    children: null,
+};
 
 /**
  * WHAT: Returns the full dashboard filter context including draft, applied, and action callbacks.

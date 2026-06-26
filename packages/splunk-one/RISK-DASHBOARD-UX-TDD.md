@@ -64,8 +64,8 @@ File: [`risk_dashboard.xml`](src/main/resources/splunk/default/data/ui/views/ris
 | Limitation | React replacement |
 |------------|-------------------|
 | Independent dropdowns only; no cascade | `GlobalFilterBar` + `filterCatalog.js` dependency graph (F1–F6) |
-| No URL-shareable filter state | `filterUrlSync.js` serializes draft/applied filters to query params |
-| No entity drilldown drawer | `EntityDetailDrawer` + `entityFocus` query param |
+| No React-managed filter state | `DashboardFilterProvider` stores draft/applied filters locally |
+| No entity drilldown drawer | `EntityDetailDrawer` + local `entityFocus` state |
 | Only 3 panels in MVP XML | Extended panels P2–P8 in React (KPIs, heatmaps, calendar) |
 | “Search is waiting for input” when tokens unset | Explicit Apply + mock fixtures for dev without indexes |
 
@@ -83,16 +83,16 @@ File: [`risk_dashboard.xml`](src/main/resources/splunk/default/data/ui/views/ris
 
 ### 3.2 Filter fieldset → GlobalFilterBar
 
-| Classic XML input | Token | React filter | URL param |
-|-------------------|-------|--------------|-----------|
-| `<input type="time" token="filter_earliest">` | `$filter_earliest$` | F1 date range `from` | `from` |
-| `<input type="time" token="filter_latest">` | `$filter_latest$` | F1 date range `to` | `to` |
-| `<input type="dropdown" token="filter_bu">` | `$filter_bu$` | F2 business unit | `bu` |
-| `<input type="dropdown" token="filter_domain">` | `$filter_domain$` | F3 domain (multi) | `domain` |
-| — | `$filter_entity_type$` | F4 entity type *(React-only)* | `entityType` |
-| — | `$filter_entity_ids$` | F5 entity (multi) *(React-only)* | `entities` |
-| `<input type="dropdown" token="filter_severity">` | `$filter_severity$` | F6 severity (multi) | `severity` |
-| — | `$filter_entity_id$` | Entity drilldown *(React-only)* | `entityFocus` |
+| Classic XML input | Token | React local state |
+|-------------------|-------|-------------------|
+| `<input type="time" token="filter_earliest">` | `$filter_earliest$` | `dateRange.earliest` |
+| `<input type="time" token="filter_latest">` | `$filter_latest$` | `dateRange.latest` |
+| `<input type="dropdown" token="filter_bu">` | `$filter_bu$` | `businessUnit` |
+| `<input type="dropdown" token="filter_domain">` | `$filter_domain$` | `domains` |
+| — | `$filter_entity_type$` | `entityType` *(React-only)* |
+| — | `$filter_entity_ids$` | `entityIds` *(React-only)* |
+| `<input type="dropdown" token="filter_severity">` | `$filter_severity$` | `severities` |
+| — | `$filter_entity_id$` | `entityFocus` *(React-only)* |
 
 Serializer: [`filtersToSplunkParams.js`](src/main/webapp/pages/risk/filters/filtersToSplunkParams.js) — same token names used in `savedsearches.conf` and Classic panel `<earliest>` / `<latest>` blocks.
 
@@ -360,7 +360,7 @@ yarn test:risk   # from packages/splunk-one
 | Test file | Validates |
 |-----------|-----------|
 | `splunkSearchClient.test.mjs` | Job progress parsing; abort (Classic “new submit cancels old job”) |
-| `filterCatalog.test.mjs` | Token cascade; URL sync (Classic fieldset has no URL state) |
+| `filterCatalog.test.mjs` | Token cascade; runtime mode parsing; local filter behavior |
 
 ### 10.2 Side-by-side acceptance
 

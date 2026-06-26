@@ -33,7 +33,7 @@ stage/appserver/static/pages/risk.js
 | Filter UI | `src/main/webapp/pages/risk/filters/GlobalFilterBar.jsx` |
 | Time range picker and filter controls | `src/main/webapp/pages/risk/filters/FilterControl.jsx` |
 | Filter definitions | `src/main/webapp/pages/risk/filters/filterCatalog.js` |
-| URL sync | `src/main/webapp/pages/risk/filters/filterUrlSync.js` |
+| Runtime mode URL reader | `src/main/webapp/pages/risk/filters/filterUrlSync.js` |
 | Splunk token mapping | `src/main/webapp/pages/risk/filters/filtersToSplunkParams.js` |
 | Data hook | `src/main/webapp/pages/risk/hooks/useRiskData.js` |
 | Splunk REST search client | `src/main/webapp/pages/risk/data/splunkSearchClient.js` |
@@ -100,26 +100,14 @@ Examples:
 - Custom date range
 - Advanced earliest/latest tokens
 
-### URL Persistence
+### Runtime Mode URL Switch
 
-Filter state is written into the URL so the page can be refreshed or shared.
+Filter state stays inside React state and is not written into the URL. Refreshing the page resets filters to the defaults.
 
-Important URL params:
+The only URL param the page reads is:
 
 | Param | Meaning |
 |-------|---------|
-| `from` | Custom start date |
-| `to` | Custom end date |
-| `timeRange` | Preset value |
-| `earliest` | Advanced earliest token |
-| `latest` | Advanced latest token |
-| `bu` | Business unit |
-| `domain` | Domain list |
-| `entityType` | Entity type |
-| `entities` | Entity IDs |
-| `severity` | Severity list |
-| `entityFocus` | Selected entity |
-| `hideEmpty` | `1` means hide empty panels |
 | `data` | `splunk` enables Splunk REST mode |
 
 ### Empty Panel Behavior
@@ -239,9 +227,7 @@ Covered behavior includes:
 - Filter dependency clearing
 - Splunk token mapping
 - Relative time range tokens
-- Real-time time range URL round-trip
-- Advanced time range URL round-trip
-- Hide empty panels URL round-trip
+- URL parsing preserves only the `data=splunk` runtime mode
 - Severity filtering
 - Invalid entity-without-type filter state
 - Splunk job progress parsing
@@ -283,7 +269,7 @@ The React risk page now has:
 - Clean filter UX
 - Inline Splunk-style time picker
 - Submit-based refresh
-- URL-shareable state
+- Local React filter state
 - Loading spinner and progress bar in Splunk mode
 - Tables, line chart, and histogram
 - Compact empty states

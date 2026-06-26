@@ -3,7 +3,7 @@
  *
  * MODULE: Central catalog of filter definitions, time-range presets, and pure
  * helpers that create, mutate, validate, and compare AppliedFilters state
- * shared by the filter bar, URL sync, Splunk param mapping, and mock data layer.
+ * shared by the filter bar, runtime mode parsing, Splunk param mapping, and mock data layer.
  */
 
 /**
@@ -129,7 +129,7 @@ export const TIME_RANGE_OPTIONS = [
 
 /**
  * WHAT: Resolves a preset or custom time-range value into a full dateRange object.
- * WORKS WITH: TIME_RANGE_OPTIONS, createDefaultFilters, parseFiltersFromUrl, TimeRangeSelectorPanel.
+ * WORKS WITH: TIME_RANGE_OPTIONS, createDefaultFilters, TimeRangeSelectorPanel.
  */
 export function resolveTimeRangePreset(value, now = new Date(), currentRange = {}) {
     const option =
@@ -245,7 +245,7 @@ export const FILTER_CATALOG = [
 
 /**
  * WHAT: Builds the initial AppliedFilters object with default time range and severities.
- * WORKS WITH: resolveTimeRangePreset, DashboardFilterProvider, parseFiltersFromUrl.
+ * WORKS WITH: resolveTimeRangePreset, DashboardFilterProvider.
  */
 /** @returns {AppliedFilters} */
 export function createDefaultFilters() {
@@ -321,7 +321,7 @@ export function setFilterValue(filters, filterId, value) {
 
 /**
  * WHAT: Strips navigation-only fields before comparing draft vs applied filter state.
- * WORKS WITH: filtersEqual, DashboardFilterProvider, entityFocus, dataMode URL params.
+ * WORKS WITH: filtersEqual, DashboardFilterProvider, entityFocus, dataMode.
  */
 export function normalizeFiltersForCompare(filters) {
     if (!filters) {

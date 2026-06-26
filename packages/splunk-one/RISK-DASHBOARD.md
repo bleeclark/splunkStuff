@@ -12,17 +12,17 @@ Operational guide for the React risk page, Classic XML dashboard, and Dashboard 
 
 ## Global filter tokens
 
-All saved searches and Classic/Studio panels should use the same token names:
+All saved searches and Classic/Studio panels should use the same token names. In the React page, these values come from local applied filter state, not shareable URL params.
 
-| Token | React URL param | Description |
-|-------|-----------------|-------------|
-| `$filter_earliest$` | `from` | ISO date start |
-| `$filter_latest$` | `to` | ISO date end |
-| `$filter_bu$` | `bu` | Business unit or `*` |
-| `$filter_domain$` | `domain` | Comma-separated domains or `*` |
+| Token | React state field | Description |
+|-------|-------------------|-------------|
+| `$filter_earliest$` | `dateRange.earliest` | Earliest search time |
+| `$filter_latest$` | `dateRange.latest` | Latest search time |
+| `$filter_bu$` | `businessUnit` | Business unit or `*` |
+| `$filter_domain$` | `domains` | Comma-separated domains or `*` |
 | `$filter_entity_type$` | `entityType` | Entity type or `*` |
-| `$filter_entity_ids$` | `entities` | Comma-separated entity IDs or `*` |
-| `$filter_severity$` | `severity` | Comma-separated severities or `*` |
+| `$filter_entity_ids$` | `entityIds` | Comma-separated entity IDs or `*` |
+| `$filter_severity$` | `severities` | Comma-separated severities or `*` |
 | `$filter_entity_id$` | `entityFocus` | Single entity for detail drawer |
 
 Implementation: [`filtersToSplunkParams.js`](src/main/webapp/pages/risk/filters/filtersToSplunkParams.js)
