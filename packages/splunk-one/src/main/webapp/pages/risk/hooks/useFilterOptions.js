@@ -30,7 +30,7 @@ export function useFilterOptions(filterId) {
         entityType: draftFilters.entityType,
         entityIds: [],
         severities: draftFilters.severities,
-        entityFocus: null,
+        hideEmptyPanels: draftFilters.hideEmptyPanels,
     });
 
     const loadOptions = useCallback(async () => {
@@ -80,12 +80,4 @@ export function useFilterOptions(filterId) {
     }, [canLoad, loadOptions]);
 
     return { options, loading, error, canLoad, reload: loadOptions };
-}
-
-/**
- * WHAT: Clears the in-memory filter option cache so dropdowns reload fresh data.
- * WORKS WITH: useFilterOptions, optionCache, DashboardFilterProvider apply/reset.
- */
-export function clearFilterOptionCache() {
-    optionCache.clear();
 }

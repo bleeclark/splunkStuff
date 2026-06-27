@@ -1,5 +1,5 @@
 /**
- * Risk score time-series line chart panel with anomaly point navigation.
+ * Risk score time-series line chart panel with anomaly markers.
  */
 import React, { useMemo } from 'react';
 
@@ -13,13 +13,13 @@ import { panelShellPropsFromRiskData } from './panelShellProps.js';
 const CHART_HEIGHT = 240;
 
 /**
- * WHAT: Renders the risk score over time line chart with clickable anomaly markers and entity focus.
+ * WHAT: Renders the risk score over time line chart with anomaly point markers.
  * WORKS WITH: useRiskData, useContainerSize, useDashboardFilters, LineChart, PanelShell.
  */
 export default function RiskTrendChart() {
     const riskData = useRiskData('timeseries');
     const { data: timeSeries, lastRefreshedAt } = riskData;
-    const { appliedFilters, setEntityFocus } = useDashboardFilters();
+    const { appliedFilters } = useDashboardFilters();
     const { hostRef, width: chartWidth } = useContainerSize({
         minWidth: 320,
         defaultWidth: 800,
@@ -36,17 +36,6 @@ export default function RiskTrendChart() {
             .filter((i) => i >= 0);
         return { values: valuesOut, times: timesOut, anomalyIndices: anomalyIndicesOut };
     }, [timeSeries]);
-
-    /**
-     * WHAT: Sets entity focus in dashboard filters when an anomaly point button is clicked.
-     * WORKS WITH: setEntityFocus, timeSeries entityId, EntityDetailDrawer.
-     */
-    const handleAnomalyClick = (index) => {
-        const point = timeSeries[index];
-        if (point?.entityId) {
-            setEntityFocus(point.entityId);
-        }
-    };
 
     const isEmptyOk = riskData.status === 'ok' && !values.length;
 
@@ -96,21 +85,18 @@ export default function RiskTrendChart() {
                     <div style={{ color: '#fff', fontSize: 12, marginTop: 8 }}>
                         Anomalies at points:{' '}
                         {anomalyIndices.map((i) => (
-                            <button
+                            <span
                                 key={i}
-                                type="button"
                                 style={{
+                                    display: 'inline-block',
                                     marginRight: 8,
-                                    cursor: 'pointer',
                                     background: '#DFA611',
-                                    border: 'none',
                                     borderRadius: 4,
                                     padding: '2px 8px',
                                 }}
-                                onClick={() => handleAnomalyClick(i)}
                             >
                                 {i + 1}
-                            </button>
+                            </span>
                         ))}
                     </div>
                 ) : null}

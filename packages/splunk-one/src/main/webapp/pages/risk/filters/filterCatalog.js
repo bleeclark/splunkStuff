@@ -179,7 +179,6 @@ export function resolveTimeRangePreset(value, now = new Date(), currentRange = {
  * @property {string|null} entityType
  * @property {string[]} entityIds
  * @property {string[]} severities
- * @property {string|null} entityFocus
  * @property {boolean} hideEmptyPanels
  */
 
@@ -258,7 +257,6 @@ export function createDefaultFilters() {
         entityType: null,
         entityIds: [],
         severities: ['critical', 'high'],
-        entityFocus: null,
         hideEmptyPanels: false,
     };
 }
@@ -321,13 +319,13 @@ export function setFilterValue(filters, filterId, value) {
 
 /**
  * WHAT: Strips navigation-only fields before comparing draft vs applied filter state.
- * WORKS WITH: filtersEqual, DashboardFilterProvider, entityFocus, dataMode.
+ * WORKS WITH: filtersEqual, DashboardFilterProvider, dataMode.
  */
 export function normalizeFiltersForCompare(filters) {
     if (!filters) {
         return {};
     }
-    const { entityFocus, dataMode, ...rest } = filters;
+    const { dataMode, ...rest } = filters;
     return rest;
 }
 
@@ -376,14 +374,4 @@ export function filtersAreValid(filters) {
         return false;
     }
     return true;
-}
-
-/**
- * WHAT: Returns child filter IDs that should clear when a parent filter changes.
- * WORKS WITH: FILTER_CATALOG, FILTER_IDS, setFilterValue cascade logic.
- */
-/** @param {AppliedFilters} draft @param {AppliedFilters} applied */
-export function getDescendantIdsToClear(changedFilterId) {
-    const entry = FILTER_CATALOG.find((f) => f.id === changedFilterId);
-    return entry ? [...entry.clears] : [];
 }

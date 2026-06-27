@@ -12,8 +12,7 @@
  */
 /** @param {import('./filterCatalog.js').AppliedFilters} filters */
 export function filtersToSplunkParams(filters) {
-    const { dateRange, businessUnit, domains, entityType, entityIds, severities, entityFocus } =
-        filters;
+    const { dateRange, businessUnit, domains, entityType, entityIds, severities } = filters;
     const earliest = dateRange.earliest || dateRange.from;
     const latest = dateRange.latest || dateRange.to;
 
@@ -25,7 +24,7 @@ export function filtersToSplunkParams(filters) {
         filter_entity_type: entityType || '*',
         filter_entity_ids: entityIds.length ? entityIds.join(',') : '*',
         filter_severity: severities.length ? severities.join(',') : '*',
-        filter_entity_id: entityFocus || '*',
+        filter_entity_id: '*',
         earliest,
         latest,
     };

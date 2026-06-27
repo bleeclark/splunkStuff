@@ -6,7 +6,7 @@ import PropTypes from 'prop-types';
 
 /**
  * WHAT: Standard vertical gap between dashboard panels in pixels.
- * WORKS WITH: PanelStack, ScorecardRow, TwoColumnRow.
+ * WORKS WITH: PanelStack, TwoColumnRow.
  */
 export const PANEL_GAP = 16;
 
@@ -66,36 +66,6 @@ PanelStack.defaultProps = {
 };
 
 /**
- * WHAT: Lays out KPI scorecard tiles in a responsive auto-fit grid row.
- * WORKS WITH: PANEL_GAP, KpiTile, KPI panel components.
- */
-export function ScorecardRow({ children }) {
-    return (
-        <div
-            style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                gap: PANEL_GAP,
-            }}
-        >
-            {React.Children.map(children, (child) => (
-                <div key={child?.key} style={{ minWidth: 0 }}>
-                    {child}
-                </div>
-            ))}
-        </div>
-    );
-}
-
-ScorecardRow.propTypes = {
-    children: PropTypes.node,
-};
-
-ScorecardRow.defaultProps = {
-    children: null,
-};
-
-/**
  * WHAT: Arranges two panels side-by-side in a responsive two-column grid.
  * WORKS WITH: PANEL_GAP, index.jsx, RiskTablePanels.
  */
@@ -120,33 +90,5 @@ TwoColumnRow.propTypes = {
 };
 
 TwoColumnRow.defaultProps = {
-    children: null,
-};
-
-/**
- * WHAT: Provides the dark branded container shell for a single KPI sparkline tile.
- * WORKS WITH: ResponsiveKpiValue, NewSingleValue, KPI panel components.
- */
-export function KpiTile({ children }) {
-    return (
-        <div
-            style={{
-                background: '#0B1F3B',
-                borderRadius: 6,
-                overflow: 'hidden',
-                minHeight: 150,
-                width: '100%',
-            }}
-        >
-            {children}
-        </div>
-    );
-}
-
-KpiTile.propTypes = {
-    children: PropTypes.node,
-};
-
-KpiTile.defaultProps = {
     children: null,
 };

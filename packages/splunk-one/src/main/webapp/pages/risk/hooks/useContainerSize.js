@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * WHAT: Tracks host element width/height via ResizeObserver (or window resize) for responsive charts and KPIs.
- * WORKS WITH: ResizeObserver, hostRef, measure callback (re-reads getBoundingClientRect and updates size state), RiskTrendChart, ResponsiveKpiValue.
+ * WORKS WITH: ResizeObserver, hostRef, measure callback (re-reads getBoundingClientRect and updates size state), RiskTrendChart.
  */
 export function useContainerSize({
     minWidth = 120,

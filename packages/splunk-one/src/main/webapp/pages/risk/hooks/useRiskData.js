@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useDashboardFilters } from '../context/DashboardFilterProvider.jsx';
 import { applyFiltersToFixtures } from '../data/applyFiltersToFixtures.js';
-import { mockEntityDetails } from '../data/riskFixtures.js';
 import { runSavedSearch } from '../data/splunkSearchClient.js';
 
 const PANEL_SEARCH_MAP = {
@@ -15,12 +14,11 @@ const PANEL_SEARCH_MAP = {
     domain: 'risk_breakdown_domain',
     calendar: 'risk_calendar_heatmap',
     anomalies: 'risk_anomalies',
-    entityDetail: 'risk_entity_detail',
 };
 
 /**
  * WHAT: Maps the first Splunk summary search row into dashboard KPI summary shape.
- * WORKS WITH: mapSplunkPanelData, risk_summary saved search, summary panel components.
+ * WORKS WITH: mapSplunkPanelData, risk_summary saved search, RiskScoresTable.
  */
 function mapSplunkSummary(rows) {
     const row = rows[0] || {};
@@ -60,7 +58,7 @@ function mapSplunkTimeSeries(rows) {
 
 /**
  * WHAT: Maps Splunk heatmap rows into entity-by-category cell records.
- * WORKS WITH: mapSplunkPanelData, risk_heatmap_entity_category saved search, EntityCategoryHeatmap.
+ * WORKS WITH: mapSplunkPanelData, risk_heatmap_entity_category saved search, EntityCategoryTable.
  */
 function mapSplunkHeatmapCells(rows) {
     return rows.map((row) => ({
@@ -73,7 +71,7 @@ function mapSplunkHeatmapCells(rows) {
 
 /**
  * WHAT: Maps Splunk domain breakdown rows into domain score pairs.
- * WORKS WITH: mapSplunkPanelData, risk_breakdown_domain saved search, DomainTreemap.
+ * WORKS WITH: mapSplunkPanelData, risk_breakdown_domain saved search, DomainDistributionHistogram.
  */
 function mapSplunkDomainBreakdown(rows) {
     return rows.map((row) => ({
@@ -84,7 +82,7 @@ function mapSplunkDomainBreakdown(rows) {
 
 /**
  * WHAT: Maps Splunk calendar heatmap rows into day-by-hour cell records.
- * WORKS WITH: mapSplunkPanelData, risk_calendar_heatmap saved search, CalendarHeatmap.
+ * WORKS WITH: mapSplunkPanelData, risk_calendar_heatmap saved search, CalendarRiskTable.
  */
 function mapSplunkCalendarCells(rows) {
     return rows.map((row) => ({
@@ -96,7 +94,7 @@ function mapSplunkCalendarCells(rows) {
 
 /**
  * WHAT: Maps Splunk anomaly rows into investigation table records.
- * WORKS WITH: mapSplunkPanelData, risk_anomalies saved search, AnomalyTable.
+ * WORKS WITH: mapSplunkPanelData, risk_anomalies saved search, AnomalyRowsTable.
  */
 function mapSplunkAnomalies(rows) {
     return rows.map((row) => ({
@@ -114,9 +112,9 @@ function mapSplunkAnomalies(rows) {
 
 /**
  * WHAT: Dispatches Splunk search rows to the correct panel-specific mapper by panelId.
- * WORKS WITH: mapSplunkSummary, mapSplunkTimeSeries, mapSplunkHeatmapCells, useRiskData, appliedFilters.entityFocus.
+ * WORKS WITH: mapSplunkSummary, mapSplunkTimeSeries, mapSplunkHeatmapCells, useRiskData.
  */
-function mapSplunkPanelData(panelId, rows, appliedFilters) {
+function mapSplunkPanelData(panelId, rows) {
     switch (panelId) {
         case 'summary':
             return mapSplunkSummary(rows);
@@ -130,21 +128,6 @@ function mapSplunkPanelData(panelId, rows, appliedFilters) {
             return mapSplunkCalendarCells(rows);
         case 'anomalies':
             return mapSplunkAnomalies(rows);
-        case 'entityDetail': {
-            const id = appliedFilters.entityFocus;
-            if (!id) {
-                return null;
-            }
-            const row = rows[0] || {};
-            return {
-                entityId: id,
-                currentRiskScore: Number(row.current_risk_score) || 0,
-                threshold: Number(row.threshold) || 0,
-                owner: row.owner,
-                domain: row.domain,
-                timeline: [],
-            };
-        }
         default:
             return rows;
     }
@@ -188,17 +171,6 @@ export function useRiskData(panelId) {
             return undefined;
         }
 
-        if (panelId === 'entityDetail' && !appliedFilters.entityFocus) {
-            setSplunkState({
-                loading: false,
-                error: null,
-                splunkData: null,
-                progress: 0,
-                dispatchState: null,
-            });
-            return undefined;
-        }
-
         const controller = new AbortController();
 
         setSplunkState({
@@ -223,7 +195,7 @@ export function useRiskData(panelId) {
                 setSplunkState({
                     loading: false,
                     error: null,
-                    splunkData: mapSplunkPanelData(panelId, rows, appliedFilters),
+                    splunkData: mapSplunkPanelData(panelId, rows),
                     progress: 100,
                     dispatchState: 'DONE',
                 });
@@ -259,16 +231,12 @@ export function useRiskData(panelId) {
                     return mockBundle.calendarCells;
                 case 'anomalies':
                     return mockBundle.anomalies;
-                case 'entityDetail': {
-                    const id = appliedFilters.entityFocus;
-                    return id ? mockEntityDetails[id] || null : null;
-                }
                 default:
                     return null;
             }
         }
         return splunkState.splunkData;
-    }, [dataMode, panelId, mockBundle, appliedFilters.entityFocus, splunkState.splunkData]);
+    }, [dataMode, panelId, mockBundle, splunkState.splunkData]);
 
     const loading = dataMode === 'splunk' && splunkState.loading;
     const status = loading ? 'loading' : splunkState.error ? 'error' : 'ok';
@@ -284,17 +252,4 @@ export function useRiskData(panelId) {
         dataMode,
         searchName: PANEL_SEARCH_MAP[panelId],
     };
-}
-
-/**
- * WHAT: Imperatively fetches and maps a single panel's Splunk saved search results.
- * WORKS WITH: runSavedSearch, mapSplunkPanelData, PANEL_SEARCH_MAP, appliedFilters.
- */
-export async function fetchSplunkPanel(panelId, appliedFilters, options = {}) {
-    const searchName = PANEL_SEARCH_MAP[panelId];
-    if (!searchName) {
-        throw new Error(`Unknown panel: ${panelId}`);
-    }
-    const rows = await runSavedSearch(searchName, appliedFilters, options);
-    return mapSplunkPanelData(panelId, rows, appliedFilters);
 }

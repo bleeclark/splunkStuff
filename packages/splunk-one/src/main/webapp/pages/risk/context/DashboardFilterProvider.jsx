@@ -53,12 +53,11 @@ export function DashboardFilterProvider({ children }) {
         if (!filtersAreValid(draftFilters)) {
             return;
         }
-        const nextApplied = { ...draftFilters, entityFocus: appliedFilters.entityFocus };
-        setDraftFilters(nextApplied);
-        setAppliedFilters(nextApplied);
+        setDraftFilters(draftFilters);
+        setAppliedFilters(draftFilters);
         setLastRefreshedAt(new Date().toISOString());
         setRefreshGeneration((g) => g + 1);
-    }, [draftFilters, appliedFilters.entityFocus]);
+    }, [draftFilters]);
 
     const reset = useCallback(() => {
         const defaults = createDefaultFilters();
@@ -69,21 +68,6 @@ export function DashboardFilterProvider({ children }) {
         setRefreshGeneration((g) => g + 1);
     }, [draftFilters.dataMode]);
 
-    const applyDateOnly = useCallback(() => {
-        setAppliedFilters((prev) => {
-            const next = { ...prev, dateRange: { ...draftFilters.dateRange } };
-            setLastRefreshedAt(new Date().toISOString());
-            setRefreshGeneration((g) => g + 1);
-            return next;
-        });
-    }, [draftFilters.dateRange]);
-
-    const setEntityFocus = useCallback((entityId) => {
-        const next = { ...appliedFilters, entityFocus: entityId || null };
-        setDraftFilters((prev) => ({ ...prev, entityFocus: entityId || null }));
-        setAppliedFilters(next);
-    }, [appliedFilters]);
-
     const value = useMemo(
         () => ({
             draftFilters,
@@ -91,12 +75,10 @@ export function DashboardFilterProvider({ children }) {
             setFilter,
             apply,
             reset,
-            applyDateOnly,
             isDirty,
             lastRefreshedAt,
             refreshGeneration,
             filtersValid: filtersAreValid(appliedFilters),
-            setEntityFocus,
             dataMode: draftFilters.dataMode || 'mock',
         }),
         [
@@ -105,11 +87,9 @@ export function DashboardFilterProvider({ children }) {
             setFilter,
             apply,
             reset,
-            applyDateOnly,
             isDirty,
             lastRefreshedAt,
             refreshGeneration,
-            setEntityFocus,
         ]
     );
 
@@ -130,7 +110,7 @@ DashboardFilterProvider.defaultProps = {
 
 /**
  * WHAT: Returns the full dashboard filter context including draft, applied, and action callbacks.
- * WORKS WITH: DashboardFilterProvider, useAppliedFilters, useFilterDraft, panel hooks.
+ * WORKS WITH: DashboardFilterProvider, useFilterDraft, panel hooks.
  */
 export function useDashboardFilters() {
     const ctx = useContext(DashboardFilterContext);
@@ -138,14 +118,6 @@ export function useDashboardFilters() {
         throw new Error('useDashboardFilters must be used within DashboardFilterProvider');
     }
     return ctx;
-}
-
-/**
- * WHAT: Returns only the currently applied (committed) filter values.
- * WORKS WITH: useDashboardFilters, useRiskData, useFilterOptions, filtersToSplunkParams.
- */
-export function useAppliedFilters() {
-    return useDashboardFilters().appliedFilters;
 }
 
 /**
