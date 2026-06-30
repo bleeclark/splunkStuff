@@ -3,6 +3,8 @@
     "includeInToolbar": true,
     "includeInVizSwitcher": true,
     "showDrilldown": false,
+    "canSetTokens": [],
+    "hasEventHandlers": false,
     "config": {
         "name": "SplunkStuff KPI + Sparkline",
         "description": "Dashboard Studio KPI tile with delta, sparkline, optional area fill, annotations, thresholds, and trellis.",
@@ -10,7 +12,8 @@
         "dataContract": {
             "requiredDataSources": [
                 "primary"
-            ]
+            ],
+            "optionalDataSources": []
         },
         "size": {
             "initialWidth": 400,
@@ -19,19 +22,37 @@
         "optionsSchema": {
             "align": {
                 "type": "string",
-                "default": "center"
+                "default": "center",
+                "enum": [
+                    "left",
+                    "center",
+                    "right"
+                ]
             },
             "headlineLayout": {
                 "type": "string",
-                "default": "stacked"
+                "default": "stacked",
+                "enum": [
+                    "stacked",
+                    "inline"
+                ]
             },
             "labelPosition": {
                 "type": "string",
-                "default": "above"
+                "default": "above",
+                "enum": [
+                    "above",
+                    "right"
+                ]
             },
             "subheaderStyle": {
                 "type": "string",
-                "default": "matchTile"
+                "default": "matchTile",
+                "enum": [
+                    "matchTile",
+                    "darkBlue",
+                    "overlay"
+                ]
             },
             "sparkEdgeToEdge": {
                 "type": "boolean",
@@ -39,7 +60,11 @@
             },
             "sparklineDisplay": {
                 "type": "string",
-                "default": "below"
+                "default": "below",
+                "enum": [
+                    "below",
+                    "off"
+                ]
             },
             "sparkMin": {
                 "type": "string",
@@ -87,7 +112,11 @@
             },
             "unitPosition": {
                 "type": "string",
-                "default": "after"
+                "default": "after",
+                "enum": [
+                    "after",
+                    "before"
+                ]
             },
             "precision": {
                 "type": "number",
@@ -103,11 +132,20 @@
             },
             "deltaMode": {
                 "type": "string",
-                "default": "absolute"
+                "default": "absolute",
+                "enum": [
+                    "absolute",
+                    "percent"
+                ]
             },
             "trendDisplay": {
                 "type": "string",
-                "default": "absolute"
+                "default": "absolute",
+                "enum": [
+                    "absolute",
+                    "percent",
+                    "off"
+                ]
             },
             "showSparkline": {
                 "type": "boolean",
@@ -135,7 +173,12 @@
             },
             "sparklineNullValueDisplay": {
                 "type": "string",
-                "default": "gaps"
+                "default": "gaps",
+                "enum": [
+                    "gaps",
+                    "zero",
+                    "connect"
+                ]
             },
             "sparklineHighlightDots": {
                 "type": "number",
@@ -263,7 +306,11 @@
             },
             "splitByLayout": {
                 "type": "string",
-                "default": "off"
+                "default": "off",
+                "enum": [
+                    "off",
+                    "trellis"
+                ]
             },
             "trellisSplitBy": {
                 "type": "string",
@@ -291,11 +338,21 @@
             },
             "trellisSortBy": {
                 "type": "string",
-                "default": "result"
+                "default": "result",
+                "enum": [
+                    "result",
+                    "name",
+                    "value",
+                    "trend"
+                ]
             },
             "trellisSortOrder": {
                 "type": "string",
-                "default": "ascending"
+                "default": "ascending",
+                "enum": [
+                    "ascending",
+                    "descending"
+                ]
             }
         },
         "editorConfig": [
@@ -304,30 +361,78 @@
                 "layout": [
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Content align",
-                            "option": "align"
+                            "option": "align",
+                            "items": [
+                                {
+                                    "label": "Left",
+                                    "value": "left"
+                                },
+                                {
+                                    "label": "Center",
+                                    "value": "center"
+                                },
+                                {
+                                    "label": "Right",
+                                    "value": "right"
+                                }
+                            ]
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Headline layout",
-                            "option": "headlineLayout"
+                            "option": "headlineLayout",
+                            "items": [
+                                {
+                                    "label": "Stacked",
+                                    "value": "stacked"
+                                },
+                                {
+                                    "label": "Side by side",
+                                    "value": "inline"
+                                }
+                            ]
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Label position",
-                            "option": "labelPosition"
+                            "option": "labelPosition",
+                            "items": [
+                                {
+                                    "label": "Above value",
+                                    "value": "above"
+                                },
+                                {
+                                    "label": "Right of value",
+                                    "value": "right"
+                                }
+                            ]
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Subheader style",
-                            "option": "subheaderStyle"
+                            "option": "subheaderStyle",
+                            "items": [
+                                {
+                                    "label": "Match tile color",
+                                    "value": "matchTile"
+                                },
+                                {
+                                    "label": "Dark blue bar",
+                                    "value": "darkBlue"
+                                },
+                                {
+                                    "label": "Dark overlay",
+                                    "value": "overlay"
+                                }
+                            ]
                         }
                     ],
                     [
@@ -339,9 +444,19 @@
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Sparkline display",
-                            "option": "sparklineDisplay"
+                            "option": "sparklineDisplay",
+                            "items": [
+                                {
+                                    "label": "Below headline",
+                                    "value": "below"
+                                },
+                                {
+                                    "label": "Hidden",
+                                    "value": "off"
+                                }
+                            ]
                         }
                     ]
                 ]
@@ -358,7 +473,7 @@
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Major font size (px)",
                             "option": "majorFontSize"
                         }
@@ -372,7 +487,7 @@
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Decimal precision",
                             "option": "numberPrecision"
                         }
@@ -400,9 +515,19 @@
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Unit position",
-                            "option": "unitPosition"
+                            "option": "unitPosition",
+                            "items": [
+                                {
+                                    "label": "After value",
+                                    "value": "after"
+                                },
+                                {
+                                    "label": "Before value",
+                                    "value": "before"
+                                }
+                            ]
                         }
                     ],
                     [
@@ -421,7 +546,7 @@
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Under label font size",
                             "option": "underLabelFontSize"
                         }
@@ -440,16 +565,30 @@
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Trend font size (px)",
                             "option": "trendFontSize"
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Trend display",
-                            "option": "trendDisplay"
+                            "option": "trendDisplay",
+                            "items": [
+                                {
+                                    "label": "Absolute",
+                                    "value": "absolute"
+                                },
+                                {
+                                    "label": "Percent",
+                                    "value": "percent"
+                                },
+                                {
+                                    "label": "Off",
+                                    "value": "off"
+                                }
+                            ]
                         }
                     ],
                     [
@@ -468,9 +607,19 @@
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Delta mode (legacy)",
-                            "option": "deltaMode"
+                            "option": "deltaMode",
+                            "items": [
+                                {
+                                    "label": "Absolute",
+                                    "value": "absolute"
+                                },
+                                {
+                                    "label": "Percent",
+                                    "value": "percent"
+                                }
+                            ]
                         }
                     ]
                 ]
@@ -562,28 +711,42 @@
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Stroke width",
                             "option": "sparkStrokeWidth"
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Null value display",
-                            "option": "sparklineNullValueDisplay"
+                            "option": "sparklineNullValueDisplay",
+                            "items": [
+                                {
+                                    "label": "Gaps",
+                                    "value": "gaps"
+                                },
+                                {
+                                    "label": "Zero",
+                                    "value": "zero"
+                                },
+                                {
+                                    "label": "Connect",
+                                    "value": "connect"
+                                }
+                            ]
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Highlight dots",
                             "option": "sparklineHighlightDots"
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Highlight segments",
                             "option": "sparklineHighlightSegments"
                         }
@@ -649,7 +812,7 @@
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Target value",
                             "option": "target"
                         }
@@ -663,14 +826,14 @@
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Threshold min",
                             "option": "thresholdMin"
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Threshold max",
                             "option": "thresholdMax"
                         }
@@ -748,9 +911,19 @@
                 "layout": [
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Split layout",
-                            "option": "splitByLayout"
+                            "option": "splitByLayout",
+                            "items": [
+                                {
+                                    "label": "Off",
+                                    "value": "off"
+                                },
+                                {
+                                    "label": "Trellis",
+                                    "value": "trellis"
+                                }
+                            ]
                         }
                     ],
                     [
@@ -769,44 +942,72 @@
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Columns",
                             "option": "trellisColumns"
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Min column width",
                             "option": "trellisMinColumnWidth"
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Page size",
                             "option": "trellisPageCount"
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.number",
                             "label": "Row height",
                             "option": "trellisRowHeight"
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Sort by",
-                            "option": "trellisSortBy"
+                            "option": "trellisSortBy",
+                            "items": [
+                                {
+                                    "label": "Result order",
+                                    "value": "result"
+                                },
+                                {
+                                    "label": "Name",
+                                    "value": "name"
+                                },
+                                {
+                                    "label": "Value",
+                                    "value": "value"
+                                },
+                                {
+                                    "label": "Trend",
+                                    "value": "trend"
+                                }
+                            ]
                         }
                     ],
                     [
                         {
-                            "editor": "editor.text",
+                            "editor": "editor.select",
                             "label": "Sort order",
-                            "option": "trellisSortOrder"
+                            "option": "trellisSortOrder",
+                            "items": [
+                                {
+                                    "label": "Ascending",
+                                    "value": "ascending"
+                                },
+                                {
+                                    "label": "Descending",
+                                    "value": "descending"
+                                }
+                            ]
                         }
                     ]
                 ]

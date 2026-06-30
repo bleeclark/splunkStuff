@@ -5,7 +5,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "build": "node generate-config.mjs && node build.mjs",
+    "build": "node generate-config.mjs && python3 generate-preview.py && node build.mjs",
     "verify": "node ../splunk-one/bin/verify-studio-kpi-sparkline.js"
   },
   "dependencies": {

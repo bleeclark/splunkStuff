@@ -35,5 +35,10 @@ fs.copyFileSync(
     path.join(outputDir, 'visualization.css')
 );
 
+const previewSource = path.join(sourceRoot, 'preview.png');
+if (fs.existsSync(previewSource)) {
+    fs.copyFileSync(previewSource, path.join(outputDir, 'preview.png'));
+}
+
 console.log('studio-kpi-sparkline build: ok');
 console.log('  wrote', path.join(outputDir, 'visualization.js'));

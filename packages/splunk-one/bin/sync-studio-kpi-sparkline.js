@@ -16,7 +16,7 @@ const copyTargets = [
 ];
 
 function main() {
-    const requiredFiles = ['visualization.js', 'visualization.css', 'config.json'];
+    const requiredFiles = ['visualization.js', 'visualization.css', 'config.json', 'preview.png'];
     for (let fileIndex = 0; fileIndex < requiredFiles.length; fileIndex += 1) {
         const fileName = requiredFiles[fileIndex];
         const sourcePath = path.join(builtDir, fileName);

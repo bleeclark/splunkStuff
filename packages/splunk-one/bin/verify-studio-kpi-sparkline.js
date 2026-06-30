@@ -110,6 +110,9 @@ function main() {
     assert(fs.existsSync(builtJs), `missing built visualization: ${builtJs}`);
     assert(fs.existsSync(configJson), `missing config.json: ${configJson}`);
 
+    const previewPng = path.join(studioRoot, 'dist', visualizationId, 'preview.png');
+    assert(fs.existsSync(previewPng), `missing preview.png: ${previewPng}`);
+
     const bundleSource = fs.readFileSync(builtJs, 'utf8');
     assert(bundleSource.indexOf('addDataSourcesListener') !== -1, 'bundle must register addDataSourcesListener');
     assert(bundleSource.indexOf('addOptionsListener') !== -1, 'bundle must register addOptionsListener');

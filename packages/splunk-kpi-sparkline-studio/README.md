@@ -28,6 +28,8 @@ After `yarn build`, artifacts land in:
 - `packages/splunk-one/stage/appserver/static/visualizations/splunkstuff_kpi_sparkline_studio/`
 - `packages/splunk-one/deliver/splunkstuff_kpi_sparkline_studio/`
 
+Each folder includes `visualization.js`, `visualization.css`, `config.json`, and **`preview.png`** (116×76 picker icon with **JCPP** branding).
+
 Use `yarn link:app` from `packages/splunk-one` or package via `yarn package:viz`.
 
 ## Dashboard Studio usage
