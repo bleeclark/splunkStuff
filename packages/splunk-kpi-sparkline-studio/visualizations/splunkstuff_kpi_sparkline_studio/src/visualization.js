@@ -102,7 +102,39 @@ VisualizationAPI.addDataSourcesListener(
 );
 
 /** Formatter / visualization options from Studio editor (maps to config.json keys). */
-VisualizationAPI.addOptionsListener(({ options }) => {
-    visualizationState.rawOptions = options || {};
-    renderVisualization();
-});
+VisualizationAPI.addOptionsListener(
+    ({ options }) => {
+        visualizationState.rawOptions = options || {};
+        renderVisualization();
+    },
+    { invokeImmediately: true }
+);
+
+/** Repaint when Studio resizes the visualization host (fullscreen, grid drag, etc.). */
+VisualizationAPI.addDimensionsListener(
+    () => {
+        renderVisualization();
+    },
+    { invokeImmediately: false }
+);
+
+if (mountElement && typeof ResizeObserver === 'function') {
+    let lastObservedWidth = 0;
+    let lastObservedHeight = 0;
+    const resizeObserver = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (!entry) {
+            return;
+        }
+        const { width, height } = entry.contentRect;
+        const widthDelta = Math.abs(width - lastObservedWidth);
+        const heightDelta = Math.abs(height - lastObservedHeight);
+        if (widthDelta < 1 && heightDelta < 1) {
+            return;
+        }
+        lastObservedWidth = width;
+        lastObservedHeight = height;
+        renderVisualization();
+    });
+    resizeObserver.observe(mountElement);
+}

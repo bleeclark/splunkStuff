@@ -46,7 +46,7 @@ import {
 } from './sparkMath.js';
 
 /** Cache-bust token exposed on tile root as data-ss-viz-build for Splunk static asset verification. */
-const VIZ_BUILD = '20260602-kpi-sparkline-studio-comments';
+const VIZ_BUILD = '20260621-kpi-sparkline-studio-harness';
 
 // --- Headline label helpers ---
 
@@ -348,12 +348,16 @@ function paintSparkline(
     const valueSeries = seriesData.valueSeries;
     const pointCount = valueSeries.length;
 
-    function renderSparkSvg(deferredPass) {
+    function renderSparkSvg(retryCount) {
         const measuredSize = measureSparkContainerSize(sparkContainer);
-        if (measuredSize.width < 2 && !deferredPass) {
+        if (measuredSize.width < 2) {
             const animationWindow = ownerDocument.defaultView || window;
-            if (animationWindow && typeof animationWindow.requestAnimationFrame === 'function') {
-                animationWindow.requestAnimationFrame(() => renderSparkSvg(true));
+            if (
+                retryCount < 12 &&
+                animationWindow &&
+                typeof animationWindow.requestAnimationFrame === 'function'
+            ) {
+                animationWindow.requestAnimationFrame(() => renderSparkSvg(retryCount + 1));
             }
             return;
         }
@@ -605,7 +609,7 @@ function paintSparkline(
         }
     }
 
-    renderSparkSvg(false);
+    renderSparkSvg(0);
 }
 
 // --- Single KPI tile (exported) ---

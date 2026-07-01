@@ -262,9 +262,11 @@ export function sparkPointIndexFromPointer(
  */
 export function measureSparkContainerSize(sparkContainer) {
     const containerRect = sparkContainer.getBoundingClientRect();
+    const measuredWidth = Math.round(containerRect.width) || sparkContainer.clientWidth || 0;
+    const measuredHeight = Math.round(containerRect.height) || sparkContainer.clientHeight || 0;
     return {
-        width: Math.max(1, Math.round(containerRect.width) || sparkContainer.clientWidth || 360),
-        height: Math.max(1, Math.round(containerRect.height) || sparkContainer.clientHeight || 46),
+        width: measuredWidth > 0 ? measuredWidth : 0,
+        height: measuredHeight > 0 ? measuredHeight : 46,
     };
 }
 

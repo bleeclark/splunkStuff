@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "build": "node generate-config.mjs && python3 generate-preview.py && node build.mjs",
-    "verify": "node ../splunk-one/bin/verify-studio-kpi-sparkline.js"
+    "verify": "node ../splunk-one/bin/verify-studio-kpi-sparkline.js",
+    "harness:build": "node test/build-harness.mjs",
+    "harness:serve": "python3 -m http.server 4175 --directory test/harness"
   },
   "dependencies": {
     "@splunk/dashboard-studio-extension": "^1.0.0"

@@ -792,9 +792,11 @@ function sparkPointIndexFromPointer(clientX, sparkContainer, paddingLeft, paddin
 }
 function measureSparkContainerSize(sparkContainer) {
   const containerRect = sparkContainer.getBoundingClientRect();
+  const measuredWidth = Math.round(containerRect.width) || sparkContainer.clientWidth || 0;
+  const measuredHeight = Math.round(containerRect.height) || sparkContainer.clientHeight || 0;
   return {
-    width: Math.max(1, Math.round(containerRect.width) || sparkContainer.clientWidth || 360),
-    height: Math.max(1, Math.round(containerRect.height) || sparkContainer.clientHeight || 46)
+    width: measuredWidth > 0 ? measuredWidth : 0,
+    height: measuredHeight > 0 ? measuredHeight : 46
   };
 }
 function sizeSparkSvgElement(svgElement, width, height) {
@@ -809,7 +811,7 @@ function sizeSparkSvgElement(svgElement, width, height) {
 }
 
 // visualizations/splunkstuff_kpi_sparkline_studio/src/lib/renderTile.js
-var VIZ_BUILD = "20260602-kpi-sparkline-studio-comments";
+var VIZ_BUILD = "20260621-kpi-sparkline-studio-harness";
 function applyIndicatorLabelStyles(labelElement, textColor) {
   labelElement.style.display = "block";
   labelElement.style.fontSize = "13px";
@@ -985,12 +987,12 @@ function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineSt
   sparkContainer.innerHTML = "";
   const valueSeries = seriesData.valueSeries;
   const pointCount = valueSeries.length;
-  function renderSparkSvg(deferredPass) {
+  function renderSparkSvg(retryCount) {
     const measuredSize = measureSparkContainerSize(sparkContainer);
-    if (measuredSize.width < 2 && !deferredPass) {
+    if (measuredSize.width < 2) {
       const animationWindow = ownerDocument.defaultView || window;
-      if (animationWindow && typeof animationWindow.requestAnimationFrame === "function") {
-        animationWindow.requestAnimationFrame(() => renderSparkSvg(true));
+      if (retryCount < 12 && animationWindow && typeof animationWindow.requestAnimationFrame === "function") {
+        animationWindow.requestAnimationFrame(() => renderSparkSvg(retryCount + 1));
       }
       return;
     }
@@ -1208,7 +1210,7 @@ function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineSt
       }
     }
   }
-  renderSparkSvg(false);
+  renderSparkSvg(0);
 }
 function renderKpiSparklineTile(mountElement2, seriesData, resolvedOptions, ownerDocument, sharedHover) {
   const valueSeries = Array.isArray(resolvedOptions.sparklineValuesOverride) && resolvedOptions.sparklineValuesOverride.length ? resolvedOptions.sparklineValuesOverride.map((value) => Number(value)) : seriesData.valueSeries;
@@ -1474,7 +1476,36 @@ visualization_exports.addDataSourcesListener(
   },
   { invokeImmediately: true }
 );
-visualization_exports.addOptionsListener(({ options }) => {
-  visualizationState.rawOptions = options || {};
-  renderVisualization();
-});
+visualization_exports.addOptionsListener(
+  ({ options }) => {
+    visualizationState.rawOptions = options || {};
+    renderVisualization();
+  },
+  { invokeImmediately: true }
+);
+visualization_exports.addDimensionsListener(
+  () => {
+    renderVisualization();
+  },
+  { invokeImmediately: false }
+);
+if (mountElement && typeof ResizeObserver === "function") {
+  let lastObservedWidth = 0;
+  let lastObservedHeight = 0;
+  const resizeObserver = new ResizeObserver((entries) => {
+    const entry = entries[0];
+    if (!entry) {
+      return;
+    }
+    const { width, height } = entry.contentRect;
+    const widthDelta = Math.abs(width - lastObservedWidth);
+    const heightDelta = Math.abs(height - lastObservedHeight);
+    if (widthDelta < 1 && heightDelta < 1) {
+      return;
+    }
+    lastObservedWidth = width;
+    lastObservedHeight = height;
+    renderVisualization();
+  });
+  resizeObserver.observe(mountElement);
+}

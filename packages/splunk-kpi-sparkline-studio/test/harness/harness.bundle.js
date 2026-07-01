@@ -1,68 +1,10 @@
-// ../../node_modules/@splunk/dashboard-studio-extension/dist/chunk-CfYAbeIz.mjs
-var __defProp = Object.defineProperty;
-var __exportAll = (all, no_symbols) => {
-  let target = {};
-  for (var name in all) __defProp(target, name, {
-    get: all[name],
-    enumerable: true
-  });
-  if (!no_symbols) __defProp(target, Symbol.toStringTag, { value: "Module" });
-  return target;
-};
-
-// ../../node_modules/@splunk/dashboard-studio-extension/dist/visualization.mjs
-var visualization_exports = /* @__PURE__ */ __exportAll({
-  addDataSourcesListener: () => addDataSourcesListener,
-  addDimensionsListener: () => addDimensionsListener,
-  addDrilldownListener: () => addDrilldownListener,
-  addErrorListener: () => addErrorListener,
-  addModeListener: () => addModeListener,
-  addOptionsListener: () => addOptionsListener,
-  addThemeListener: () => addThemeListener,
-  addTokensListener: () => addTokensListener,
-  clearError: () => clearError,
-  getDataSources: () => getDataSources,
-  getDimensions: () => getDimensions,
-  getError: () => getError,
-  getMode: () => getMode,
-  getOptions: () => getOptions,
-  getTheme: () => getTheme,
-  getTokens: () => getTokens,
-  setError: () => setError,
-  setOptions: () => setOptions,
-  triggerDrilldown: () => triggerDrilldown
-});
-var FallbackProxy = new Proxy({}, { get() {
-  throw new Error("DashboardExtensionAPI is not available. Make sure to run this code inside a Splunk Dashboard Extension iframe.");
-} });
-var API = globalThis.DashboardExtensionAPI ?? FallbackProxy;
-var addDataSourcesListener = API.addDataSourcesListener;
-var getDataSources = API.getDataSources;
-var addOptionsListener = API.addOptionsListener;
-var getOptions = API.getOptions;
-var setOptions = API.setOptions;
-var addDimensionsListener = API.addDimensionsListener;
-var getDimensions = API.getDimensions;
-var addModeListener = API.addModeListener;
-var getMode = API.getMode;
-var addThemeListener = API.addThemeListener;
-var getTheme = API.getTheme;
-var addTokensListener = API.addTokensListener;
-var getTokens = API.getTokens;
-var addDrilldownListener = API.addDrilldownListener;
-var triggerDrilldown = API.triggerDrilldown;
-var addErrorListener = API.addErrorListener;
-var getError = API.getError;
-var setError = API.setError;
-var clearError = API.clearError;
-
 // visualizations/splunkstuff_kpi_sparkline_studio/src/lib/parsePrimaryData.js
-function readFieldsList(searchData) {
-  if (searchData && searchData.fields && searchData.fields.length) {
-    return searchData.fields;
+function readFieldsList(searchData2) {
+  if (searchData2 && searchData2.fields && searchData2.fields.length) {
+    return searchData2.fields;
   }
-  if (searchData && searchData.meta && searchData.meta.fields && searchData.meta.fields.length) {
-    return searchData.meta.fields;
+  if (searchData2 && searchData2.meta && searchData2.meta.fields && searchData2.meta.fields.length) {
+    return searchData2.meta.fields;
   }
   return [];
 }
@@ -92,8 +34,8 @@ function readFieldName(fields, columnIndex) {
   }
   return "";
 }
-function findTimeColumnIndex(searchData) {
-  const fields = readFieldsList(searchData);
+function findTimeColumnIndex(searchData2) {
+  const fields = readFieldsList(searchData2);
   for (let columnIndex = 0; columnIndex < fields.length; columnIndex += 1) {
     if (readFieldName(fields, columnIndex) === "_time") {
       return columnIndex;
@@ -101,8 +43,8 @@ function findTimeColumnIndex(searchData) {
   }
   return -1;
 }
-function readTimeSortKey(searchData, timeColumnIndex, rowIndex) {
-  const cell = readCellValue(searchData.columns[timeColumnIndex][rowIndex]);
+function readTimeSortKey(searchData2, timeColumnIndex, rowIndex) {
+  const cell = readCellValue(searchData2.columns[timeColumnIndex][rowIndex]);
   if (cell == null || cell === "") {
     return 0;
   }
@@ -121,9 +63,9 @@ function readTimeSortKey(searchData, timeColumnIndex, rowIndex) {
   const fallback = parseFloat(text, 10);
   return Number.isFinite(fallback) ? fallback : 0;
 }
-function pickNumericColumnIndex(searchData, preferredFieldName) {
-  const fields = readFieldsList(searchData);
-  if (!searchData || !searchData.columns || !fields.length) {
+function pickNumericColumnIndex(searchData2, preferredFieldName) {
+  const fields = readFieldsList(searchData2);
+  if (!searchData2 || !searchData2.columns || !fields.length) {
     return -1;
   }
   if (preferredFieldName) {
@@ -134,11 +76,11 @@ function pickNumericColumnIndex(searchData, preferredFieldName) {
     }
   }
   let bestColumnIndex = -1;
-  for (let columnIndex = 0; columnIndex < searchData.columns.length; columnIndex += 1) {
+  for (let columnIndex = 0; columnIndex < searchData2.columns.length; columnIndex += 1) {
     if (readFieldName(fields, columnIndex) === "_time") {
       continue;
     }
-    const column = searchData.columns[columnIndex] || [];
+    const column = searchData2.columns[columnIndex] || [];
     for (let rowIndex = 0; rowIndex < column.length; rowIndex += 1) {
       if (Number.isFinite(parseNumericCell(column[rowIndex]))) {
         bestColumnIndex = columnIndex;
@@ -148,15 +90,15 @@ function pickNumericColumnIndex(searchData, preferredFieldName) {
   }
   return bestColumnIndex;
 }
-function buildTimeSortedValuePairs(searchData, valueColumnIndex) {
-  const valueColumn = searchData.columns[valueColumnIndex] || [];
+function buildTimeSortedValuePairs(searchData2, valueColumnIndex) {
+  const valueColumn = searchData2.columns[valueColumnIndex] || [];
   if (!valueColumn.length) {
     return [];
   }
   const rowCount = valueColumn.length;
-  const timeColumnIndex = findTimeColumnIndex(searchData);
+  const timeColumnIndex = findTimeColumnIndex(searchData2);
   const sortedPairs = [];
-  if (timeColumnIndex < 0 || !searchData.columns[timeColumnIndex] || searchData.columns[timeColumnIndex].length !== rowCount) {
+  if (timeColumnIndex < 0 || !searchData2.columns[timeColumnIndex] || searchData2.columns[timeColumnIndex].length !== rowCount) {
     for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
       const numericValue = parseNumericCell(valueColumn[rowIndex]);
       if (Number.isFinite(numericValue)) {
@@ -165,14 +107,14 @@ function buildTimeSortedValuePairs(searchData, valueColumnIndex) {
     }
     return sortedPairs;
   }
-  const timeColumn = searchData.columns[timeColumnIndex];
+  const timeColumn = searchData2.columns[timeColumnIndex];
   for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
     const numericValue = parseNumericCell(valueColumn[rowIndex]);
     if (!Number.isFinite(numericValue)) {
       continue;
     }
     sortedPairs.push({
-      sortKey: readTimeSortKey(searchData, timeColumnIndex, rowIndex),
+      sortKey: readTimeSortKey(searchData2, timeColumnIndex, rowIndex),
       numericValue,
       timeRaw: readCellValue(timeColumn[rowIndex]),
       rowIndex
@@ -186,9 +128,9 @@ function buildTimeSortedValuePairs(searchData, valueColumnIndex) {
   });
   return sortedPairs;
 }
-function reorderStringColumnByTime(searchData, stringColumnIndex, valueColumnIndex) {
-  const sortedPairs = buildTimeSortedValuePairs(searchData, valueColumnIndex);
-  const stringColumn = searchData.columns[stringColumnIndex] || [];
+function reorderStringColumnByTime(searchData2, stringColumnIndex, valueColumnIndex) {
+  const sortedPairs = buildTimeSortedValuePairs(searchData2, valueColumnIndex);
+  const stringColumn = searchData2.columns[stringColumnIndex] || [];
   const orderedStrings = [];
   for (let pairIndex = 0; pairIndex < sortedPairs.length; pairIndex += 1) {
     const cell = stringColumn[sortedPairs[pairIndex].rowIndex];
@@ -197,18 +139,18 @@ function reorderStringColumnByTime(searchData, stringColumnIndex, valueColumnInd
   }
   return orderedStrings;
 }
-function buildStringFieldsByTime(searchData, valueColumnIndex) {
-  const fields = readFieldsList(searchData);
+function buildStringFieldsByTime(searchData2, valueColumnIndex) {
+  const fields = readFieldsList(searchData2);
   const stringFieldsByName = {};
-  if (!searchData || !searchData.columns) {
+  if (!searchData2 || !searchData2.columns) {
     return stringFieldsByName;
   }
-  for (let columnIndex = 0; columnIndex < searchData.columns.length; columnIndex += 1) {
+  for (let columnIndex = 0; columnIndex < searchData2.columns.length; columnIndex += 1) {
     const fieldName = readFieldName(fields, columnIndex);
     if (!fieldName || fieldName === "_time" || columnIndex === valueColumnIndex) {
       continue;
     }
-    stringFieldsByName[fieldName] = reorderStringColumnByTime(searchData, columnIndex, valueColumnIndex);
+    stringFieldsByName[fieldName] = reorderStringColumnByTime(searchData2, columnIndex, valueColumnIndex);
   }
   return stringFieldsByName;
 }
@@ -221,19 +163,19 @@ function buildSeriesFromPairs(sortedPairs) {
   }
   return { valueSeries, timeSeries };
 }
-function parsePrimarySearchData(searchData, resolvedOptions) {
-  if (!searchData || !searchData.columns || searchData.columns.length === 0) {
+function parsePrimarySearchData(searchData2, resolvedOptions) {
+  if (!searchData2 || !searchData2.columns || searchData2.columns.length === 0) {
     return {
       primary: { valueSeries: [], timeSeries: [], valueFieldName: "", stringFieldsByName: {} },
       trellisGroups: []
     };
   }
-  const fields = readFieldsList(searchData);
-  const valueColumnIndex = pickNumericColumnIndex(searchData, resolvedOptions.majorValueFieldName);
+  const fields = readFieldsList(searchData2);
+  const valueColumnIndex = pickNumericColumnIndex(searchData2, resolvedOptions.majorValueFieldName);
   if (valueColumnIndex < 0) {
     throw new Error("KPI sparkline needs a numeric column (e.g. value) beside _time.");
   }
-  const sortedPairs = buildTimeSortedValuePairs(searchData, valueColumnIndex);
+  const sortedPairs = buildTimeSortedValuePairs(searchData2, valueColumnIndex);
   const primarySeries = buildSeriesFromPairs(sortedPairs);
   if (!primarySeries.valueSeries.length) {
     throw new Error("KPI sparkline found a value column but no parseable numbers in results.");
@@ -242,16 +184,16 @@ function parsePrimarySearchData(searchData, resolvedOptions) {
     valueSeries: primarySeries.valueSeries,
     timeSeries: primarySeries.timeSeries,
     valueFieldName: readFieldName(fields, valueColumnIndex),
-    stringFieldsByName: buildStringFieldsByTime(searchData, valueColumnIndex)
+    stringFieldsByName: buildStringFieldsByTime(searchData2, valueColumnIndex)
   };
   let trellisGroups = [];
   if (resolvedOptions.splitByLayout === "trellis" && resolvedOptions.trellisSplitByField) {
-    trellisGroups = buildTrellisGroups(searchData, valueColumnIndex, resolvedOptions.trellisSplitByField);
+    trellisGroups = buildTrellisGroups(searchData2, valueColumnIndex, resolvedOptions.trellisSplitByField);
   }
   return { primary, trellisGroups };
 }
-function buildTrellisGroups(searchData, valueColumnIndex, splitByFieldName) {
-  const fields = readFieldsList(searchData);
+function buildTrellisGroups(searchData2, valueColumnIndex, splitByFieldName) {
+  const fields = readFieldsList(searchData2);
   let categoryColumnIndex = -1;
   for (let columnIndex = 0; columnIndex < fields.length; columnIndex += 1) {
     if (readFieldName(fields, columnIndex) === splitByFieldName) {
@@ -262,10 +204,10 @@ function buildTrellisGroups(searchData, valueColumnIndex, splitByFieldName) {
   if (categoryColumnIndex < 0 || categoryColumnIndex === valueColumnIndex) {
     return [];
   }
-  const rowCount = (searchData.columns[valueColumnIndex] || []).length;
+  const rowCount = (searchData2.columns[valueColumnIndex] || []).length;
   const groupsByCategory = /* @__PURE__ */ new Map();
   for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
-    const categoryLabel = String(readCellValue(searchData.columns[categoryColumnIndex][rowIndex]) || "").trim();
+    const categoryLabel = String(readCellValue(searchData2.columns[categoryColumnIndex][rowIndex]) || "").trim();
     if (!categoryLabel) {
       continue;
     }
@@ -280,8 +222,8 @@ function buildTrellisGroups(searchData, valueColumnIndex, splitByFieldName) {
   const trellisGroups = [];
   groupsByCategory.forEach((group) => {
     const subsetData = {
-      fields: searchData.fields,
-      columns: searchData.columns.map(
+      fields: searchData2.fields,
+      columns: searchData2.columns.map(
         (column) => group.rowIndexes.map((rowIndex) => column[rowIndex])
       )
     };
@@ -983,7 +925,7 @@ function drawSparkPointLabel(svgElement, valueSeries, pointIndex, labelText, svg
   labelElement.textContent = labelText;
   svgElement.appendChild(labelElement);
 }
-function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineStrokeColor, scale, ownerDocument, hoverAnnotationElement, sharedHover) {
+function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineStrokeColor, scale, ownerDocument, hoverAnnotationElement, sharedHover2) {
   sparkContainer.innerHTML = "";
   const valueSeries = seriesData.valueSeries;
   const pointCount = valueSeries.length;
@@ -1125,11 +1067,11 @@ function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineSt
       );
     }
     sparkContainer.appendChild(svgElement);
-    if (!sharedHover.tooltipElement) {
-      sharedHover.tooltipElement = ownerDocument.createElement("div");
-      sharedHover.tooltipElement.className = "splunkstuff-sparkline-value-viz__tooltip";
-      sharedHover.tooltipElement.setAttribute("role", "status");
-      sharedHover.tooltipElement.style.display = "none";
+    if (!sharedHover2.tooltipElement) {
+      sharedHover2.tooltipElement = ownerDocument.createElement("div");
+      sharedHover2.tooltipElement.className = "splunkstuff-sparkline-value-viz__tooltip";
+      sharedHover2.tooltipElement.setAttribute("role", "status");
+      sharedHover2.tooltipElement.style.display = "none";
     }
     if (resolvedOptions.showSparklineTooltip && pointCount >= 2) {
       let pointerIsOverSpark = function(clientX, clientY) {
@@ -1137,7 +1079,7 @@ function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineSt
         return containerRect.width > 0 && containerRect.height > 0 && clientX >= containerRect.left && clientX <= containerRect.right && clientY >= containerRect.top && clientY <= containerRect.bottom;
       }, onDocumentPointerMove = function(event) {
         if (!pointerIsOverSpark(event.clientX, event.clientY)) {
-          clearSparkHoverState(sparkContainer, sharedHover.tooltipElement, hoverAnnotationElement);
+          clearSparkHoverState(sparkContainer, sharedHover2.tooltipElement, hoverAnnotationElement);
           return;
         }
         const hoveredPointIndex = sparkPointIndexFromPointer(
@@ -1149,7 +1091,7 @@ function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineSt
           pointCount
         );
         if (hoveredPointIndex == null) {
-          clearSparkHoverState(sparkContainer, sharedHover.tooltipElement, hoverAnnotationElement);
+          clearSparkHoverState(sparkContainer, sharedHover2.tooltipElement, hoverAnnotationElement);
           return;
         }
         const coordinates = sparkPointCoordinates(
@@ -1165,7 +1107,7 @@ function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineSt
           scale.scaleMaximum
         );
         const hoverAnnotation = resolvedOptions.showAnnotationOnHover && annotationAtPoint[hoveredPointIndex] ? annotationAtPoint[hoveredPointIndex] : "";
-        updateSparkHoverState(sparkContainer, sharedHover.tooltipElement, ownerDocument, {
+        updateSparkHoverState(sparkContainer, sharedHover2.tooltipElement, ownerDocument, {
           hoverPointX: coordinates.x,
           hoverPointY: coordinates.y,
           svgWidth,
@@ -1191,8 +1133,8 @@ function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineSt
       };
       const normalizedTimes = normalizeTimeColumn(seriesData.timeSeries, pointCount);
       const annotationAtPoint = resolvedOptions.annotationFieldName && seriesData.stringFieldsByName[resolvedOptions.annotationFieldName] ? seriesData.stringFieldsByName[resolvedOptions.annotationFieldName] : [];
-      if (!sharedHover.cleanupHandlers) {
-        sharedHover.cleanupHandlers = [];
+      if (!sharedHover2.cleanupHandlers) {
+        sharedHover2.cleanupHandlers = [];
       }
       const cleanup = () => {
         ownerDocument.removeEventListener("pointermove", onDocumentPointerMove, true);
@@ -1200,9 +1142,9 @@ function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineSt
         if (ownerDocument.defaultView) {
           ownerDocument.defaultView.removeEventListener("mousemove", onDocumentPointerMove, true);
         }
-        clearSparkHoverState(sparkContainer, sharedHover.tooltipElement, hoverAnnotationElement);
+        clearSparkHoverState(sparkContainer, sharedHover2.tooltipElement, hoverAnnotationElement);
       };
-      sharedHover.cleanupHandlers.push(cleanup);
+      sharedHover2.cleanupHandlers.push(cleanup);
       ownerDocument.addEventListener("pointermove", onDocumentPointerMove, true);
       ownerDocument.addEventListener("mousemove", onDocumentPointerMove, true);
       if (ownerDocument.defaultView) {
@@ -1212,13 +1154,13 @@ function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineSt
   }
   renderSparkSvg(0);
 }
-function renderKpiSparklineTile(mountElement2, seriesData, resolvedOptions, ownerDocument, sharedHover) {
+function renderKpiSparklineTile(mountElement, seriesData, resolvedOptions, ownerDocument, sharedHover2) {
   const valueSeries = Array.isArray(resolvedOptions.sparklineValuesOverride) && resolvedOptions.sparklineValuesOverride.length ? resolvedOptions.sparklineValuesOverride.map((value) => Number(value)) : seriesData.valueSeries;
   if (!valueSeries.length) {
     const emptyElement = document.createElement("div");
     emptyElement.className = "splunkstuff-sparkline-value-viz__err";
     emptyElement.textContent = resolvedOptions.emptyStateMessage;
-    mountElement2.appendChild(emptyElement);
+    mountElement.appendChild(emptyElement);
     return;
   }
   const trendDeltaValue = resolvedOptions.trendValueOverride != null && Number.isFinite(Number(resolvedOptions.trendValueOverride)) ? Number(resolvedOptions.trendValueOverride) : calculateTrendDelta(valueSeries);
@@ -1348,7 +1290,7 @@ function renderKpiSparklineTile(mountElement2, seriesData, resolvedOptions, owne
     bodyElement.appendChild(sparkContainer);
   }
   rootElement.appendChild(bodyElement);
-  mountElement2.appendChild(rootElement);
+  mountElement.appendChild(rootElement);
   if (showSparkSection && sparkContainer) {
     paintSparkline(
       sparkContainer,
@@ -1358,154 +1300,177 @@ function renderKpiSparklineTile(mountElement2, seriesData, resolvedOptions, owne
       scale,
       ownerDocument,
       hoverAnnotationElement,
-      sharedHover
+      sharedHover2
     );
   }
 }
-function sortTrellisGroups(trellisGroups, resolvedOptions) {
-  const sortedGroups = trellisGroups.slice();
-  const sortDescending = resolvedOptions.trellisSortOrder === "descending";
-  sortedGroups.sort((left, right) => {
-    let comparison = 0;
-    if (resolvedOptions.trellisSortBy === "name") {
-      comparison = left.categoryLabel.localeCompare(right.categoryLabel);
-    } else if (resolvedOptions.trellisSortBy === "value") {
-      comparison = (left.valueSeries[left.valueSeries.length - 1] || 0) - (right.valueSeries[right.valueSeries.length - 1] || 0);
-    } else if (resolvedOptions.trellisSortBy === "trend") {
-      comparison = calculateTrendDelta(left.valueSeries) - calculateTrendDelta(right.valueSeries);
-    }
-    return sortDescending ? -comparison : comparison;
-  });
-  return sortedGroups;
-}
-function renderTrellisGrid(mountElement2, trellisGroups, resolvedOptions, ownerDocument, sharedHover) {
-  const sortedGroups = sortTrellisGroups(trellisGroups, resolvedOptions);
-  const pageSize = Math.max(1, resolvedOptions.trellisPageSize || 20);
-  const visibleGroups = sortedGroups.slice(0, pageSize);
-  const gridElement = document.createElement("div");
-  gridElement.className = "splunkstuff-sparkline-value-viz__trellisGrid";
-  if (resolvedOptions.trellisBackgroundColor) {
-    gridElement.style.background = resolvedOptions.trellisBackgroundColor;
-  }
-  if (resolvedOptions.trellisColumnCount > 0) {
-    gridElement.style.gridTemplateColumns = `repeat(${resolvedOptions.trellisColumnCount}, minmax(${resolvedOptions.trellisMinimumColumnWidth}px, 1fr))`;
-  } else {
-    gridElement.style.gridTemplateColumns = `repeat(auto-fill, minmax(${resolvedOptions.trellisMinimumColumnWidth}px, 1fr))`;
-  }
-  for (let groupIndex = 0; groupIndex < visibleGroups.length; groupIndex += 1) {
-    const group = visibleGroups[groupIndex];
-    const cellElement = document.createElement("div");
-    cellElement.className = "splunkstuff-sparkline-value-viz__trellisCell";
-    cellElement.style.minHeight = `${resolvedOptions.trellisRowHeight}px`;
-    const titleElement = document.createElement("div");
-    titleElement.className = "splunkstuff-sparkline-value-viz__trellisTitle";
-    titleElement.textContent = group.categoryLabel;
-    cellElement.appendChild(titleElement);
-    const tileMount = document.createElement("div");
-    tileMount.className = "splunkstuff-sparkline-value-viz__trellisTileMount";
-    cellElement.appendChild(tileMount);
-    gridElement.appendChild(cellElement);
-    renderKpiSparklineTile(tileMount, group, resolvedOptions, ownerDocument, sharedHover);
-  }
-  mountElement2.appendChild(gridElement);
-}
-function cleanupSharedHover(sharedHover) {
-  if (sharedHover.cleanupHandlers) {
-    for (let handlerIndex = 0; handlerIndex < sharedHover.cleanupHandlers.length; handlerIndex += 1) {
-      sharedHover.cleanupHandlers[handlerIndex]();
-    }
-    sharedHover.cleanupHandlers = [];
-  }
-  if (sharedHover.tooltipElement && sharedHover.tooltipElement.parentNode) {
-    sharedHover.tooltipElement.parentNode.removeChild(sharedHover.tooltipElement);
-    sharedHover.tooltipElement = null;
-  }
-}
 
-// visualizations/splunkstuff_kpi_sparkline_studio/src/visualization.js
-var mountElement = document.getElementById("root");
-var visualizationState = {
-  searchData: null,
-  loading: false,
-  rawOptions: {},
-  sharedHover: { cleanupHandlers: [], tooltipElement: null }
-};
-function renderVisualization() {
-  if (!mountElement) {
-    return;
+// test/harness/harness-entry.js
+function buildSampleSearchData() {
+  const times = [];
+  const values = [];
+  const now = Date.now() / 1e3;
+  for (let index = 0; index < 20; index += 1) {
+    times.push(now - (19 - index) * 60);
+    values.push(40 + index + Math.sin(index / 2) * 1.5);
   }
-  cleanupSharedHover(visualizationState.sharedHover);
-  mountElement.innerHTML = "";
-  if (visualizationState.loading) {
-    mountElement.textContent = "Loading...";
-    return;
-  }
-  const resolvedOptions = resolveOptions(visualizationState.rawOptions);
-  try {
-    const parsedData = parsePrimarySearchData(visualizationState.searchData, resolvedOptions);
-    if (resolvedOptions.splitByLayout === "trellis" && parsedData.trellisGroups.length) {
-      renderTrellisGrid(
-        mountElement,
-        parsedData.trellisGroups,
-        resolvedOptions,
-        document,
-        visualizationState.sharedHover
-      );
-    } else if (parsedData.primary.valueSeries.length) {
-      renderKpiSparklineTile(
-        mountElement,
-        parsedData.primary,
-        resolvedOptions,
-        document,
-        visualizationState.sharedHover
-      );
-    } else {
-      mountElement.textContent = resolvedOptions.emptyStateMessage;
-    }
-    visualization_exports.clearError();
-  } catch (error) {
-    mountElement.textContent = error && error.message ? error.message : String(error);
-    visualization_exports.setError(error && error.message ? error.message : String(error));
-  }
+  return {
+    fields: ["_time", "value"],
+    columns: [times, values]
+  };
 }
-visualization_exports.addDataSourcesListener(
-  ({ dataSources, loading }) => {
-    visualizationState.loading = loading;
-    visualizationState.searchData = dataSources?.primary?.data ?? null;
-    renderVisualization();
+var scenarios = [
+  {
+    id: "stacked-center",
+    title: "Stacked / Center (default)",
+    width: 360,
+    height: 200,
+    options: {
+      backgroundColor: "#DFA611",
+      goodColor: "#DFA611",
+      badColor: "#01417F",
+      textColor: "#FFFFFF",
+      trendDisplay: "percent"
+    }
   },
-  { invokeImmediately: true }
-);
-visualization_exports.addOptionsListener(
-  ({ options }) => {
-    visualizationState.rawOptions = options || {};
-    renderVisualization();
+  {
+    id: "inline-left",
+    title: "Inline / Left + subheader",
+    width: 520,
+    height: 200,
+    options: {
+      headlineLayout: "inline",
+      align: "left",
+      subheader: "Total Risk Score",
+      subheaderStyle: "matchTile",
+      backgroundColor: "#DFA611",
+      goodColor: "#DFA611",
+      badColor: "#01417F",
+      textColor: "#FFFFFF",
+      trendDisplay: "percent",
+      underLabel: "Score",
+      labelPosition: "above"
+    }
   },
-  { invokeImmediately: true }
-);
-visualization_exports.addDimensionsListener(
-  () => {
-    renderVisualization();
+  {
+    id: "inline-wide",
+    title: "Inline / wide panel (sparkline should span full width)",
+    width: 900,
+    height: 220,
+    options: {
+      headlineLayout: "inline",
+      align: "center",
+      sparkEdgeToEdge: true,
+      backgroundColor: "#DFA611",
+      goodColor: "#DFA611",
+      badColor: "#01417F",
+      textColor: "#FFFFFF",
+      trendDisplay: "percent"
+    }
   },
-  { invokeImmediately: false }
-);
-if (mountElement && typeof ResizeObserver === "function") {
-  let lastObservedWidth = 0;
-  let lastObservedHeight = 0;
-  const resizeObserver = new ResizeObserver((entries) => {
-    const entry = entries[0];
-    if (!entry) {
+  {
+    id: "label-right",
+    title: "Label position: right of value",
+    width: 420,
+    height: 200,
+    options: {
+      headlineLayout: "inline",
+      labelPosition: "right",
+      underLabel: "Score",
+      backgroundColor: "#0B1F3B",
+      goodColor: "#01417F",
+      badColor: "#DFA611",
+      textColor: "#FFFFFF",
+      trendDisplay: "absolute"
+    }
+  }
+];
+var searchData = buildSampleSearchData();
+var mountRoot = document.getElementById("harness-root");
+var diagnosticsRoot = document.getElementById("harness-diagnostics");
+if (!mountRoot) {
+  throw new Error("Missing #harness-root");
+}
+var sharedHover = { cleanupHandlers: [], tooltipElement: null };
+var diagnosticRows = [];
+scenarios.forEach((scenario) => {
+  const panel = document.createElement("section");
+  panel.className = "harness-panel";
+  panel.dataset.scenarioId = scenario.id;
+  const heading = document.createElement("h2");
+  heading.textContent = `${scenario.title} (${scenario.width}\xD7${scenario.height}px)`;
+  panel.appendChild(heading);
+  const tileHost = document.createElement("div");
+  tileHost.className = "harness-tile-host";
+  tileHost.style.width = `${scenario.width}px`;
+  tileHost.style.height = `${scenario.height}px`;
+  panel.appendChild(tileHost);
+  const resolvedOptions = resolveOptions(scenario.options);
+  const parsedData = parsePrimarySearchData(searchData, resolvedOptions);
+  renderKpiSparklineTile(tileHost, parsedData.primary, resolvedOptions, document, sharedHover);
+  const tileRoot = tileHost.querySelector(".splunkstuff-sparkline-value-viz");
+  mountRoot.appendChild(panel);
+});
+function collectDiagnostics() {
+  scenarios.forEach((scenario) => {
+    const panel = mountRoot.querySelector(`[data-scenario-id="${scenario.id}"]`);
+    if (!panel) {
       return;
     }
-    const { width, height } = entry.contentRect;
-    const widthDelta = Math.abs(width - lastObservedWidth);
-    const heightDelta = Math.abs(height - lastObservedHeight);
-    if (widthDelta < 1 && heightDelta < 1) {
-      return;
-    }
-    lastObservedWidth = width;
-    lastObservedHeight = height;
-    renderVisualization();
+    const tileHost = panel.querySelector(".harness-tile-host");
+    const tileRoot = tileHost ? tileHost.querySelector(".splunkstuff-sparkline-value-viz") : null;
+    const headlineRow = tileHost ? tileHost.querySelector(".splunkstuff-sparkline-value-viz__headlineRow") : null;
+    const sparkContainer = tileHost ? tileHost.querySelector(".splunkstuff-sparkline-value-viz__spark") : null;
+    const sparkSvg = sparkContainer ? sparkContainer.querySelector("svg") : null;
+    const headlineClass = headlineRow ? headlineRow.className : "(missing)";
+    const containerWidth = sparkContainer ? Math.round(sparkContainer.getBoundingClientRect().width) : 0;
+    const svgWidth = sparkSvg ? Number(sparkSvg.getAttribute("width") || 0) : 0;
+    const widthMatch = containerWidth > 0 && Math.abs(containerWidth - svgWidth) <= 2;
+    diagnosticRows.push({
+      scenario: scenario.title,
+      headlineClass,
+      containerWidth,
+      svgWidth,
+      widthMatch,
+      build: tileRoot ? tileRoot.getAttribute("data-ss-viz-build") : ""
+    });
   });
-  resizeObserver.observe(mountElement);
 }
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      collectDiagnostics();
+      if (diagnosticsRoot) {
+        const table = document.createElement("table");
+        table.innerHTML = `
+        <thead>
+            <tr>
+                <th>Scenario</th>
+                <th>Headline classes</th>
+                <th>Spark container px</th>
+                <th>SVG width px</th>
+                <th>Width match</th>
+                <th>Build</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    `;
+        const tbody = table.querySelector("tbody");
+        diagnosticRows.forEach((row) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${row.scenario}</td>
+            <td><code>${row.headlineClass}</code></td>
+            <td>${row.containerWidth}</td>
+            <td>${row.svgWidth}</td>
+            <td class="${row.widthMatch ? "ok" : "warn"}">${row.widthMatch ? "yes" : "NO"}</td>
+            <td><code>${row.build || "n/a"}</code></td>
+        `;
+          tbody.appendChild(tr);
+        });
+        diagnosticsRoot.appendChild(table);
+      }
+      document.body.dataset.harnessReady = "true";
+    }, 120);
+  });
+});
