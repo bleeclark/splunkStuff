@@ -2,22 +2,43 @@
     box-sizing: border-box;
     width: 100%;
     height: 100%;
+    min-height: 180px;
     display: flex;
     flex-direction: column;
+    position: relative;
+    overflow: hidden;
     font-family: 'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.splunkstuff-pie-chart-viz *,
+.splunkstuff-pie-chart-viz *::before,
+.splunkstuff-pie-chart-viz *::after {
+    box-sizing: border-box;
 }
 
 .splunkstuff-pie-chart-viz__title {
     flex: 0 0 auto;
     padding: 8px 12px 4px;
     font-size: 12px;
-    font-weight: 600;
-    opacity: 0.9;
+    font-weight: 700;
+    line-height: 1.3;
+    opacity: 0.95;
+}
+
+.splunkstuff-pie-chart-viz__quality {
+    flex: 0 0 auto;
+    margin: 6px 12px 0;
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-size: 11px;
+    line-height: 1.35;
 }
 
 .splunkstuff-pie-chart-viz__main {
     flex: 1 1 auto;
-    min-height: 180px;
+    min-height: 0;
     display: flex;
     flex-direction: row;
     align-items: stretch;
@@ -25,13 +46,63 @@
     padding: 8px 12px 12px;
 }
 
+.splunkstuff-pie-chart-viz--legend-left .splunkstuff-pie-chart-viz__main {
+    flex-direction: row-reverse;
+}
+
+.splunkstuff-pie-chart-viz--legend-top .splunkstuff-pie-chart-viz__main,
+.splunkstuff-pie-chart-viz--legend-bottom .splunkstuff-pie-chart-viz__main {
+    flex-direction: column;
+}
+
+.splunkstuff-pie-chart-viz--legend-top .splunkstuff-pie-chart-viz__side {
+    order: -1;
+}
+
+.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__side {
+    display: none;
+}
+
+.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__main {
+    align-items: center;
+    justify-content: center;
+}
+
 .splunkstuff-pie-chart-viz__pie {
     flex: 0 0 auto;
-    width: min(48%, 220px);
+    width: min(48%, 230px);
     min-width: 140px;
     min-height: 140px;
     aspect-ratio: 1;
     align-self: center;
+    position: relative;
+}
+
+.splunkstuff-pie-chart-viz__pie--slice-labels {
+    width: min(62%, 430px);
+    min-width: 300px;
+    aspect-ratio: 13 / 7;
+}
+
+.splunkstuff-pie-chart-viz--legend-top .splunkstuff-pie-chart-viz__pie,
+.splunkstuff-pie-chart-viz--legend-bottom .splunkstuff-pie-chart-viz__pie,
+.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__pie {
+    width: min(100%, 260px);
+}
+
+.splunkstuff-pie-chart-viz--slice-labels.splunkstuff-pie-chart-viz--legend-top .splunkstuff-pie-chart-viz__pie,
+.splunkstuff-pie-chart-viz--slice-labels.splunkstuff-pie-chart-viz--legend-bottom .splunkstuff-pie-chart-viz__pie,
+.splunkstuff-pie-chart-viz--slice-labels.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__pie {
+    width: min(100%, 460px);
+}
+
+.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__pie {
+    width: min(70%, 280px);
+    max-height: 100%;
+}
+
+.splunkstuff-pie-chart-viz--slice-labels.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__pie {
+    width: min(92%, 460px);
 }
 
 .splunkstuff-pie-chart-viz__pie svg {
@@ -41,8 +112,94 @@
     min-height: 140px;
 }
 
+.splunkstuff-pie-chart-viz__slice {
+    cursor: pointer;
+    outline: none;
+    transition: opacity 120ms ease, filter 120ms ease, stroke-width 120ms ease;
+}
+
+.splunkstuff-pie-chart-viz__slice--dim {
+    opacity: 0.42;
+}
+
+.splunkstuff-pie-chart-viz__slice:hover,
+.splunkstuff-pie-chart-viz__slice--active,
+.splunkstuff-pie-chart-viz__slice:focus {
+    opacity: 1;
+    filter: brightness(1.14);
+    stroke-width: 3;
+}
+
+.splunkstuff-pie-chart-viz__callout {
+    cursor: pointer;
+    outline: none;
+    transition: opacity 120ms ease, filter 120ms ease;
+}
+
+.splunkstuff-pie-chart-viz__callout-line {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1;
+    opacity: 0.34;
+}
+
+.splunkstuff-pie-chart-viz__callout-text {
+    fill: currentColor;
+    font-size: 9.5px;
+    font-weight: 650;
+    dominant-baseline: middle;
+    paint-order: stroke;
+    stroke-width: 3px;
+    stroke-linejoin: round;
+}
+
+.splunkstuff-pie-chart-viz__callout--dim {
+    opacity: 0.38;
+}
+
+.splunkstuff-pie-chart-viz__callout:hover,
+.splunkstuff-pie-chart-viz__callout:focus,
+.splunkstuff-pie-chart-viz__callout--active {
+    opacity: 1;
+    filter: brightness(1.16);
+}
+
+.splunkstuff-pie-chart-viz__side {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.splunkstuff-pie-chart-viz--legend-top .splunkstuff-pie-chart-viz__side,
+.splunkstuff-pie-chart-viz--legend-bottom .splunkstuff-pie-chart-viz__side {
+    flex: 0 0 auto;
+    max-height: 45%;
+}
+
+.splunkstuff-pie-chart-viz__inspector {
+    flex: 0 0 auto;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.16);
+    border-radius: 4px;
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.splunkstuff-pie-chart-viz__inspector-label {
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.splunkstuff-pie-chart-viz__inspector-hint {
+    opacity: 0.82;
+}
+
 .splunkstuff-pie-chart-viz__legend {
     flex: 1 1 auto;
+    min-height: 0;
     min-width: 0;
     overflow: auto;
     font-size: 11px;
@@ -50,10 +207,32 @@
 }
 
 .splunkstuff-pie-chart-viz__legend-row {
+    width: 100%;
+    min-height: 24px;
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    margin-bottom: 6px;
+    margin: 0 0 5px;
+    padding: 3px 4px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 120ms ease, opacity 120ms ease;
+}
+
+.splunkstuff-pie-chart-viz__legend-row:hover,
+.splunkstuff-pie-chart-viz__legend-row:focus,
+.splunkstuff-pie-chart-viz__legend-row--active {
+    background: rgba(255, 255, 255, 0.13);
+    outline: none;
+}
+
+.splunkstuff-pie-chart-viz__legend-row--dim {
+    opacity: 0.54;
 }
 
 .splunkstuff-pie-chart-viz__swatch {
@@ -66,11 +245,86 @@
 
 .splunkstuff-pie-chart-viz__legend-text {
     flex: 1 1 auto;
-    word-break: break-word;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.splunkstuff-pie-chart-viz__metric {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.splunkstuff-pie-chart-viz__metric span {
+    opacity: 0.78;
+}
+
+.splunkstuff-pie-chart-viz__metric strong {
+    font-weight: 700;
+    text-align: right;
+}
+
+.splunkstuff-pie-chart-viz__tooltip {
+    position: absolute;
+    z-index: 20;
+    min-width: 170px;
+    max-width: 260px;
+    padding: 9px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(14, 20, 31, 0.95);
+    color: #ffffff;
+    border-radius: 4px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    pointer-events: none;
+    font-size: 11px;
+    line-height: 1.35;
+    will-change: left, top;
+}
+
+.splunkstuff-pie-chart-viz__tooltip-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.splunkstuff-pie-chart-viz__breakdown {
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.splunkstuff-pie-chart-viz__breakdown-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.splunkstuff-pie-chart-viz__breakdown-row {
+    opacity: 0.86;
+    overflow-wrap: anywhere;
 }
 
 .splunkstuff-pie-chart-viz__err {
     padding: 12px;
     font-size: 12px;
-    opacity: 0.9;
+    line-height: 1.4;
+    opacity: 0.92;
+}
+
+@media (max-width: 520px) {
+    .splunkstuff-pie-chart-viz__main {
+        flex-direction: column;
+    }
+
+    .splunkstuff-pie-chart-viz__pie {
+        width: min(100%, 220px);
+    }
+
+    .splunkstuff-pie-chart-viz__pie--slice-labels {
+        width: min(100%, 360px);
+        min-width: 0;
+    }
+
+    .splunkstuff-pie-chart-viz__side {
+        max-height: 48%;
+    }
 }

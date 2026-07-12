@@ -169,22 +169,41 @@
             <title>Data pie - JavaScript</title>
             <search id="gallery_pie_js">
                 <query>
-| makeresults count=14
+| makeresults count=18
 | streamstats count as row
-| eval category=substr("ABCDEFGHIJKLMN", row, 1)
-| eval value=row * 10
-| stats sum(value) as value by category
-| sort category
+| eval category=case(row&lt;=14,substr("ABCDEFGHIJKLMN", row, 1),row=15,"",row=16,"Bad numeric",row=17,"Negative",true(),"Zero")
+| eval value=case(row&lt;=14,row * 10,row=15,25,row=16,"not-a-number",row=17,-5,true(),0)
+| eval previous=case(row&lt;=14,row * 8,row=15,10,true(),null())
+| eval color=case(category="N","#01417F",category="M","#DFA611",true(),null())
+| fields category value previous color
                 </query>
                 <earliest>-1s</earliest>
                 <latest>now</latest>
             </search>
             <viz type="so_BUI_pickulationts.splunkstuff_pie_chart">
                 <search base="gallery_pie_js" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.labelField">category</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.valueField">value</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.compareField">previous</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.colorField">color</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.topN">5</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.otherEnabled">true</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.otherLabel">Other</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.minSlicePercent">2</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.palettePreset">splunk</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showPercent">true</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.title">Top 5 + Other</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showDataQuality">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showInspector">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showTooltip">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showOtherBreakdown">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showSliceLabels">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.sliceLabelMinPercent">1</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.innerRadius">44</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.legendPosition">none</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.drilldown">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.drilldownAction">tokens</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.tokenPrefix">pie</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.title">Top contributors + callouts</option>
             </viz>
             <table>
                 <title>Data</title>

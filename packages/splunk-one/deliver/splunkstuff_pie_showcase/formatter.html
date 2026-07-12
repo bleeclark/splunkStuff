@@ -1,38 +1,181 @@
 <!--
-  SplunkStuff — Data pie chart (Top N + Other)
+  SplunkStuff Data pie inspector
 
-  {{VIZ_NAMESPACE}} → display.visualizations.custom.<app_id>.splunkstuff_pie_showcase
+  {{VIZ_NAMESPACE}} -> display.visualizations.custom.<app_id>.splunkstuff_pie_showcase
 
-  Implemented props:
-    topN, otherLabel, showPercent, title, background, textColor
-
-  Future / data-team ideas (not in v1):
-    donut inner radius, legend position, min slice %, drilldown per slice,
-    per-slice colors from field, empty-state message
-
-  Test SPL:
-    | makeresults count=14
-    | streamstats count as row
-    | eval category=substr("ABCDEFGHIJKLMN", row, 1)
-    | eval value=row * 10
-    | stats sum(value) as value by category
-    | sort category
-
-  Panel type: <app_id>.splunkstuff_pie_showcase
-
-  Avoid parentheses in section-label — Splunk builds DOM ids from labels.
+  Splunk 9.x vanilla custom visualization assets:
+    visualization.js, visualization.css, formatter.html
 -->
+<form class="splunk-formatter-section" section-label="Data fields">
+    <splunk-control-group label="Label field">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.labelField" value="auto">
+            <option value="auto">Auto</option>
+            <option value="category">category</option>
+            <option value="label">label</option>
+            <option value="name">name</option>
+            <option value="status">status</option>
+            <option value="host">host</option>
+            <option value="source">source</option>
+            <option value="sourcetype">sourcetype</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Value field">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.valueField" value="auto">
+            <option value="auto">Auto</option>
+            <option value="value">value</option>
+            <option value="count">count</option>
+            <option value="total">total</option>
+            <option value="amount">amount</option>
+            <option value="sum">sum</option>
+            <option value="avg">avg</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Compare field">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.compareField" value="none">
+            <option value="none">None</option>
+            <option value="previous">previous</option>
+            <option value="prior">prior</option>
+            <option value="baseline">baseline</option>
+            <option value="compare">compare</option>
+            <option value="target">target</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Color field">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.colorField" value="none">
+            <option value="none">None</option>
+            <option value="color">color</option>
+            <option value="colour">colour</option>
+            <option value="hex">hex</option>
+            <option value="fill">fill</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+</form>
+
 <form class="splunk-formatter-section" section-label="Data shaping">
-    <splunk-control-group label="Top N slices (0 = all)">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.topN" value="5"></splunk-text-input>
+    <splunk-control-group label="Top N slices 0 all">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.topN" value="5">
+            <option value="0">All</option>
+            <option value="3">3</option>
+            <option value="5">5</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="25">25</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Enable Other bucket">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.otherEnabled" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Other bucket label">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.otherLabel" value="Other"></splunk-text-input>
     </splunk-control-group>
-    <splunk-control-group label="Show percent in legend">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.showPercent" value="true"></splunk-text-input>
+    <splunk-control-group label="Minimum slice percent">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.minSlicePercent" value="0">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Minimum slice value">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.minSliceValue" value="0">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="10">10</option>
+            <option value="100">100</option>
+            <option value="1000">1000</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Sort mode">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.sortMode" value="value-desc">
+            <option value="value-desc">Value high first</option>
+            <option value="value-asc">Value low first</option>
+            <option value="label-asc">Label A to Z</option>
+            <option value="label-desc">Label Z to A</option>
+            <option value="input">Search order</option>
+        </splunk-radio-input>
     </splunk-control-group>
 </form>
+
+<form class="splunk-formatter-section" section-label="Inspector">
+    <splunk-control-group label="Show tooltip">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showTooltip" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show slice inspector">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showInspector" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show data quality banner">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showDataQuality" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show Other breakdown">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showOtherBreakdown" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+</form>
+
+<form class="splunk-formatter-section" section-label="Labels">
+    <splunk-control-group label="Title optional">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.title" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Empty message">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.emptyMessage" value="No data to display."></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show values">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showValue" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show percents">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showPercent" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show row counts">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showRowCount" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show compare delta">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showCompare" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show outside slice labels">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showSliceLabels" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Outside label minimum percent">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.sliceLabelMinPercent" value="0">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+</form>
+
 <form class="splunk-formatter-section" section-label="Appearance">
     <splunk-control-group label="Background">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#1B2A41"></splunk-color-picker>
@@ -40,9 +183,62 @@
     <splunk-control-group label="Text color">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
     </splunk-control-group>
+    <splunk-control-group label="Palette preset">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.palettePreset" value="splunk">
+            <option value="splunk">SplunkStuff</option>
+            <option value="calm">Calm</option>
+            <option value="bright">Bright</option>
+            <option value="accessible">Accessible</option>
+            <option value="risk">Risk</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Palette hex list">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.palette" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Color map label equals hex">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.colorMap" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Other color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.otherColor" value="#8B9BB4"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Donut inner radius">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.innerRadius" value="0">
+            <option value="0">Pie</option>
+            <option value="28">Small hole</option>
+            <option value="44">Donut</option>
+            <option value="62">Thin ring</option>
+            <option value="76">Gauge ring</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Legend position">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.legendPosition" value="right">
+            <option value="right">Right</option>
+            <option value="left">Left</option>
+            <option value="top">Top</option>
+            <option value="bottom">Bottom</option>
+            <option value="none">Hidden</option>
+        </splunk-radio-input>
+    </splunk-control-group>
 </form>
-<form class="splunk-formatter-section" section-label="Labels">
-    <splunk-control-group label="Title (optional)">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.title" value=""></splunk-text-input>
+
+<form class="splunk-formatter-section" section-label="Drilldown">
+    <splunk-control-group label="Enable slice click">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.drilldown" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Click action">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.drilldownAction" value="tokens">
+            <option value="tokens">Set tokens</option>
+            <option value="search">Open search</option>
+            <option value="both">Both</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Token prefix">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.tokenPrefix" value="pie"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Search query">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.drilldownQuery" value="search $pie_filter_clause$ | stats count by $pie_label_field$"></splunk-text-input>
     </splunk-control-group>
 </form>

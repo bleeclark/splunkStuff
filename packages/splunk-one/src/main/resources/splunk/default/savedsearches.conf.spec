@@ -75,11 +75,39 @@ display.visualizations.custom.so_BUI_pickulationts.fixed_single_value.unit = <st
 # Declares format-menu properties for viz splunkstuff_pie_chart (so_BUI_pickulationts app).
 
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.topN = <integer>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.labelField = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.valueField = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.compareField = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.colorField = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.otherEnabled = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.otherLabel = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.minSlicePercent = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.minSliceValue = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.sortMode = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showTooltip = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showInspector = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showDataQuality = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showOtherBreakdown = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showPercent = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showValue = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showRowCount = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showCompare = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showSliceLabels = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.sliceLabelMinPercent = <float>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.title = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.emptyMessage = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.background = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.textColor = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.palettePreset = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.palette = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.colorMap = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.otherColor = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.innerRadius = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.legendPosition = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.drilldown = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.drilldownAction = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.drilldownQuery = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.tokenPrefix = <string>
 
 # Declares format-menu properties for viz splunkstuff_sparkline_value (so_BUI_pickulationts app).
 
@@ -172,11 +200,39 @@ display.visualizations.custom.so_BUI_pickulationts.radial_meter.backgroundColor 
 # Showcase viz copies (gallery row 5) — same properties as base vizs with _showcase id.
 
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.topN = <integer>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.labelField = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.valueField = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.compareField = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.colorField = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.otherEnabled = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.otherLabel = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.minSlicePercent = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.minSliceValue = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.sortMode = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.showTooltip = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.showInspector = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.showDataQuality = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.showOtherBreakdown = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.showPercent = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.showValue = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.showRowCount = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.showCompare = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.showSliceLabels = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.sliceLabelMinPercent = <float>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.title = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.emptyMessage = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.background = <string>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.textColor = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.palettePreset = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.palette = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.colorMap = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.otherColor = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.innerRadius = <float>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.legendPosition = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.drilldown = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.drilldownAction = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.drilldownQuery = <string>
+display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_showcase.tokenPrefix = <string>
 
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_showcase.sparkMin = <float>
 display.visualizations.custom.so_BUI_pickulationts.splunkstuff_sparkline_showcase.sparkMax = <float>

@@ -1,4 +1,4 @@
-# splunkstuff_pie_chart — handoff
+# splunkstuff_pie_chart - handoff
 
 **Viz id:** `splunkstuff_pie_chart`  
 **NS:** `display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.*`
@@ -24,6 +24,11 @@ Merge `visualizations.conf.snippet` into `default/visualizations.conf`, then res
 
 ## Formatter highlights
 
-- **topN** + **otherLabel** — collapse long tails into Other
-- **showPercent** — show % in legend
-- **title**, **background**, **textColor**
+- Most formatter choices use Splunk radio selectors so users can pick common parameters instead of typing raw option values.
+- **labelField**, **valueField**, **compareField**, **colorField** - explicit data mapping for analyst-owned SPL.
+- **topN**, **minSlicePercent**, **minSliceValue**, **otherEnabled**, **otherLabel** - long-tail grouping with an inspectable Other bucket.
+- **showDataQuality** - banner for ignored non-numeric rows, negative rows, blanks, zero-value rows, missing compare values, invalid colors, and grouped rows.
+- **showTooltip**, **showInspector**, **showOtherBreakdown** - hover/click contribution inspector with rank, rows, percent, compare delta, and Other members.
+- **showSliceLabels**, **sliceLabelMinPercent** - outside slice labels with leader lines, using label plus percent/value text.
+- **drilldown**, **drilldownAction**, **tokenPrefix**, **drilldownQuery** - slice click sets tokens such as `pie_label`, `pie_value`, `pie_percent`, and `pie_filter_clause`; optionally opens Search.
+- **innerRadius**, **legendPosition**, **palettePreset**, **palette**, **colorMap**, **otherColor**, **background**, **textColor** - donut and presentation controls.
