@@ -17,7 +17,7 @@
  */
 define([
     'api/SplunkVisualizationBase',
-    './splunkstuffTrendColors',
+    './bgdhampTrendColors',
 ], function (SplunkVisualizationBase, trendColors) {
     /** When true, logs to console (dev only; set false before heavy dashboard use). */
     var DEBUG = false;

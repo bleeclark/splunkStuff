@@ -1,4 +1,4 @@
-.splunkstuff-simple-small-viz {
+.bgdhamp-simple-small-viz {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -10,7 +10,7 @@
     overflow: hidden;
 }
 
-.splunkstuff-simple-small-viz__label {
+.bgdhamp-simple-small-viz__label {
     font-size: 12px;
     font-weight: 600;
     line-height: 1.2;
@@ -20,7 +20,7 @@
     white-space: nowrap;
 }
 
-.splunkstuff-simple-small-viz__value {
+.bgdhamp-simple-small-viz__value {
     margin-top: 6px;
     font-size: 34px;
     font-weight: 700;
@@ -30,7 +30,7 @@
     white-space: nowrap;
 }
 
-.splunkstuff-simple-small-viz__meta {
+.bgdhamp-simple-small-viz__meta {
     margin-top: 8px;
     font-size: 11px;
     line-height: 1.2;

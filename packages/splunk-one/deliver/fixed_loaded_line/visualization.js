@@ -542,9 +542,9 @@ __webpack_require__.d(__webpack_exports__, {
 // EXTERNAL MODULE: external "api/SplunkVisualizationBase"
 var SplunkVisualizationBase_ = __webpack_require__(879);
 var SplunkVisualizationBase_default = /*#__PURE__*/__webpack_require__.n(SplunkVisualizationBase_);
-;// ./src/main/webapp/lib/splunkstuffTrendColors.js
+;// ./src/main/webapp/lib/bgdhampTrendColors.js
 /**
- * Keith/ITSI trend background contract for SplunkStuff visualizations.
+ * Keith/ITSI trend background contract for BGDHamp visualizations.
  * delta >= 0 → up color (blue); delta < 0 → down color (gold).
  */
 
@@ -620,10 +620,10 @@ var client = __webpack_require__(873);
 var react = __webpack_require__(41);
 // EXTERNAL MODULE: ../../node_modules/react-dom/index.js
 var react_dom = __webpack_require__(144);
-;// ./src/main/webapp/lib/splunkstuffVizHoverMath.mjs
+;// ./src/main/webapp/lib/bgdhampVizHoverMath.mjs
 /**
- * Pure hover hit-test + series index math for SplunkStuff line visualizations.
- * Source of truth — AMD copy: appserver/static/visualizations/_shared/splunkstuffVizHoverMath.js
+ * Pure hover hit-test + series index math for BGDHamp line visualizations.
+ * Source of truth — AMD copy: appserver/static/visualizations/_shared/bgdhampVizHoverMath.js
  */
 
 function clamp(v, lo, hi) {
@@ -722,6 +722,86 @@ function seriesIndexFromPointerMeet(
     const innerW = Math.max(1, userW - padLeft - padRight);
     const xStep = pointCount > 1 ? innerW / (pointCount - 1) : innerW;
     return clamp(Math.round((mapped.x - padLeft) / xStep), 0, pointCount - 1);
+}
+
+/**
+ * Viewport → SVG user space for `preserveAspectRatio="none"` (non-uniform stretch).
+ *
+ * @param {number} clientX
+ * @param {number} clientY
+ * @param {Element | { left: number, top: number, width: number, height: number }} rectSource
+ * @param {number} userW
+ * @param {number} userH
+ * @returns {{ x: number, y: number } | null}
+ */
+function viewportToSvgUserXYNone(clientX, clientY, rectSource, userW, userH) {
+    const rect =
+        rectSource && typeof rectSource.getBoundingClientRect === 'function'
+            ? rectSource.getBoundingClientRect()
+            : rectSource;
+    if (
+        !rect ||
+        !rect.width ||
+        !rect.height ||
+        !Number.isFinite(userW) ||
+        !Number.isFinite(userH) ||
+        userW <= 0 ||
+        userH <= 0
+    ) {
+        return null;
+    }
+    return {
+        x: ((clientX - rect.left) / rect.width) * userW,
+        y: ((clientY - rect.top) / rect.height) * userH,
+    };
+}
+
+/**
+ * Series index from pointer when SVG uses `preserveAspectRatio="none"` (fillContainer).
+ */
+function seriesIndexFromPointerNone(
+    clientX,
+    clientY,
+    rectSource,
+    userW,
+    userH,
+    padLeft,
+    padRight,
+    pointCount
+) {
+    const mapped = viewportToSvgUserXYNone(clientX, clientY, rectSource, userW, userH);
+    if (!mapped || pointCount < 2) return null;
+    const innerW = Math.max(1, userW - padLeft - padRight);
+    const xStep = pointCount > 1 ? innerW / (pointCount - 1) : innerW;
+    return clamp(Math.round((mapped.x - padLeft) / xStep), 0, pointCount - 1);
+}
+
+/**
+ * Clamp a fixed-position tooltip so it stays inside the viewport.
+ * Assumes transform translate(-50%, calc(-100% - 8px)) (centered above cursor).
+ *
+ * @param {number} clientX
+ * @param {number} clientY
+ * @param {{ innerWidth?: number, innerHeight?: number }} [viewport]
+ * @param {{ width?: number, height?: number, pad?: number }} [opts]
+ * @returns {{ x: number, y: number }}
+ */
+function clampTooltipViewport(clientX, clientY, viewport, opts) {
+    const vw =
+        (viewport && viewport.innerWidth) ||
+        (typeof window !== 'undefined' ? window.innerWidth : 1024);
+    const vh =
+        (viewport && viewport.innerHeight) ||
+        (typeof window !== 'undefined' ? window.innerHeight : 768);
+    const tipW = (opts && opts.width) || 180;
+    const tipH = (opts && opts.height) || 52;
+    const pad = (opts && opts.pad) != null ? opts.pad : 8;
+    const halfW = tipW / 2;
+    const x = clamp(clientX, pad + halfW, Math.max(pad + halfW, vw - pad - halfW));
+    // Keep room above cursor for the tip; if near top, still clamp into view.
+    const minY = pad + tipH + 8;
+    const y = clamp(clientY, minY, Math.max(minY, vh - pad));
+    return { x, y };
 }
 
 ;// ./src/main/webapp/components/visualizations/LineChart.jsx
@@ -1232,17 +1312,18 @@ function LineChart(_ref3) {
         setTooltipViewport(null);
         return;
       }
-      var idx = seriesIndexFromPointerMeet(e.clientX, e.clientY, el, width, chartH, effPadLeft, effPadRight, n);
+      var idx = (fillContainer ? seriesIndexFromPointerNone : seriesIndexFromPointerMeet)(e.clientX, e.clientY, el, width, chartH, effPadLeft, effPadRight, n);
       if (idx === null) {
         setHoverIdx(null);
         setTooltipViewport(null);
         return;
       }
       setHoverIdx(idx);
-      setTooltipViewport({
-        x: e.clientX,
-        y: e.clientY
-      });
+      var win = el.ownerDocument && el.ownerDocument.defaultView;
+      setTooltipViewport(clampTooltipViewport(e.clientX, e.clientY, {
+        innerWidth: win ? win.innerWidth : undefined,
+        innerHeight: win ? win.innerHeight : undefined
+      }));
     }
     var win = vizDocument.defaultView;
     vizDocument.addEventListener('pointermove', onDocPointerMove, true);
@@ -1257,7 +1338,7 @@ function LineChart(_ref3) {
       setHoverIdx(null);
       setTooltipViewport(null);
     };
-  }, [vizDocument, showHover, n, width, chartH, effPadLeft, effPadRight]);
+  }, [vizDocument, showHover, n, width, chartH, effPadLeft, effPadRight, fillContainer]);
   (0,react.useLayoutEffect)(function () {
     if (!drilldown || !processed.timeLike || n < 2 || !vizDocument || !vizDocument.defaultView) {
       return undefined;
@@ -1269,7 +1350,7 @@ function LineChart(_ref3) {
       if (!rect.width || e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
         return;
       }
-      var idx = seriesIndexFromPointerMeet(e.clientX, e.clientY, el, width, chartH, effPadLeft, effPadRight, n);
+      var idx = (fillContainer ? seriesIndexFromPointerNone : seriesIndexFromPointerMeet)(e.clientX, e.clientY, el, width, chartH, effPadLeft, effPadRight, n);
       if (idx === null) return;
       var ms = processed.ms[idx];
       if (!Number.isFinite(ms)) return;
@@ -1290,7 +1371,7 @@ function LineChart(_ref3) {
     return function () {
       return vizDocument.removeEventListener('click', onDocClick, true);
     };
-  }, [vizDocument, drilldown, drilldownQuery, processed.timeLike, processed.ms, n, width, chartH, effPadLeft, effPadRight]);
+  }, [vizDocument, drilldown, drilldownQuery, processed.timeLike, processed.ms, n, width, chartH, effPadLeft, effPadRight, fillContainer]);
   var goodCount = processed.series.reduce(function (acc, s) {
     return acc + s.values.length;
   }, 0);
@@ -1436,7 +1517,7 @@ function LineChart(_ref3) {
     }
   }, formatDelta(delta))) : null) : null, /*#__PURE__*/react.createElement("div", {
     ref: setChartAreaEl,
-    "data-testid": "splunkstuff-line-chart-area",
+    "data-testid": "bgdhamp-line-chart-area",
     style: {
       position: 'relative',
       width: '100%',
@@ -1565,7 +1646,7 @@ function LineChart(_ref3) {
       opacity: 0.9
     }
   }, " \u2014 ", hoverTime) : null) : null, showHover && hoverIdx != null && tooltipViewport && vizDocument && vizDocument.body ? /*#__PURE__*/(0,react_dom.createPortal)(/*#__PURE__*/react.createElement("div", {
-    "data-testid": "splunkstuff-line-hover-tooltip",
+    "data-testid": "bgdhamp-line-hover-tooltip",
     role: "status",
     "aria-live": "polite",
     "aria-atomic": "true",

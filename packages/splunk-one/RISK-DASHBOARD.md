@@ -8,7 +8,7 @@ Operational guide for the React risk page, Classic XML dashboard, and Dashboard 
 |---------|------|----------------|
 | React page (primary) | `/app/so_BUI_pickulationts/risk` | 9.4+ |
 | Classic dashboard | `/app/so_BUI_pickulationts/risk_dashboard` | 9.4+ |
-| Studio KPI charts | Dashboard Studio UI → Add chart → **SplunkStuff KPI + Sparkline (Dashboard Studio)** | **10.4+** |
+| Studio KPI charts | Dashboard Studio UI → Add chart → **BGDHamp KPI + Sparkline (Dashboard Studio)** | **10.4+** |
 
 ## Global filter tokens
 
@@ -68,12 +68,12 @@ After UI changes:
 1. `yarn build` from repo root
 2. Confirm `stage/appserver/static/pages/risk.js` updated
 3. Restart Splunk or hard refresh (Cmd+Shift+R)
-4. Studio: restart Splunk after extension changes; check `data-ss-viz-build` on tile root
+4. Studio: restart Splunk after extension changes; check `data-bgdhamp-viz-build` on tile root
 
 ## Studio dashboard setup (10.4)
 
 1. Open **Dashboard Studio** → create dashboard
-2. **Add chart** → Custom → **SplunkStuff KPI + Sparkline (Dashboard Studio)**
+2. **Add chart** → Custom → **BGDHamp KPI + Sparkline (Dashboard Studio)**
 3. Data source: saved search `risk_summary` or inline SPL with `$filter_earliest$` / `$filter_latest$`
 4. Repeat for trend panels using `risk_timeseries`
 

@@ -1,7 +1,7 @@
 /* eslint-disable */
 /**
  * Splunk custom visualization: fixed-domain single value + SVG sparkline.
- * Vanilla AMD — only SplunkVisualizationBase (no sibling ./splunkstuffTrendColors.js).
+ * Vanilla AMD — only SplunkVisualizationBase (no sibling ./bgdhampTrendColors.js).
  *
  * Data: COLUMN_MAJOR results with _time + at least one numeric column (e.g. value).
  * Picks the last non-_time column that has any numeric cells; sorts by _time when present.

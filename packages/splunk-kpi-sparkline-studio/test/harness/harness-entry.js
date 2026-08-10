@@ -117,7 +117,7 @@ scenarios.forEach((scenario) => {
     const parsedData = parsePrimarySearchData(searchData, resolvedOptions);
     renderKpiSparklineTile(tileHost, parsedData.primary, resolvedOptions, document, sharedHover);
 
-    const tileRoot = tileHost.querySelector('.splunkstuff-sparkline-value-viz');
+    const tileRoot = tileHost.querySelector('.bgdhamp-sparkline-value-viz');
     mountRoot.appendChild(panel);
 });
 
@@ -128,9 +128,9 @@ function collectDiagnostics() {
             return;
         }
         const tileHost = panel.querySelector('.harness-tile-host');
-        const tileRoot = tileHost ? tileHost.querySelector('.splunkstuff-sparkline-value-viz') : null;
-        const headlineRow = tileHost ? tileHost.querySelector('.splunkstuff-sparkline-value-viz__headlineRow') : null;
-        const sparkContainer = tileHost ? tileHost.querySelector('.splunkstuff-sparkline-value-viz__spark') : null;
+        const tileRoot = tileHost ? tileHost.querySelector('.bgdhamp-sparkline-value-viz') : null;
+        const headlineRow = tileHost ? tileHost.querySelector('.bgdhamp-sparkline-value-viz__headlineRow') : null;
+        const sparkContainer = tileHost ? tileHost.querySelector('.bgdhamp-sparkline-value-viz__spark') : null;
         const sparkSvg = sparkContainer ? sparkContainer.querySelector('svg') : null;
         const headlineClass = headlineRow ? headlineRow.className : '(missing)';
         const containerWidth = sparkContainer ? Math.round(sparkContainer.getBoundingClientRect().width) : 0;
@@ -142,7 +142,7 @@ function collectDiagnostics() {
             containerWidth,
             svgWidth,
             widthMatch,
-            build: tileRoot ? tileRoot.getAttribute('data-ss-viz-build') : '',
+            build: tileRoot ? tileRoot.getAttribute('data-bgdhamp-viz-build') : '',
         });
     });
 }

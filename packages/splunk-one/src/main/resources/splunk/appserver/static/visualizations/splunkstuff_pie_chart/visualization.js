@@ -786,7 +786,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         path.setAttribute('fill', fill);
         path.setAttribute('stroke', stroke);
         path.setAttribute('stroke-width', '1.5');
-        path.setAttribute('class', 'splunkstuff-pie-chart-viz__slice');
+        path.setAttribute('class', 'bgdhamp-pie-chart-viz__slice');
         svg.appendChild(path);
         if (hole) {
             svg.appendChild(hole);
@@ -894,11 +894,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 var line = createSvgEl('polyline');
                 var text = createSvgEl('text');
 
-                group.setAttribute('class', 'splunkstuff-pie-chart-viz__callout');
+                group.setAttribute('class', 'bgdhamp-pie-chart-viz__callout');
                 group.setAttribute('tabindex', '0');
                 group.setAttribute('data-slice-index', String(item.idx));
 
-                line.setAttribute('class', 'splunkstuff-pie-chart-viz__callout-line');
+                line.setAttribute('class', 'bgdhamp-pie-chart-viz__callout-line');
                 line.setAttribute(
                     'points',
                     edgeX.toFixed(2) +
@@ -914,7 +914,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                         item.y.toFixed(2)
                 );
 
-                text.setAttribute('class', 'splunkstuff-pie-chart-viz__callout-text');
+                text.setAttribute('class', 'bgdhamp-pie-chart-viz__callout-text');
                 text.setAttribute('x', String(labelX));
                 text.setAttribute('y', String(item.y));
                 text.setAttribute('text-anchor', isRight ? 'start' : 'end');
@@ -972,7 +972,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         tooltip.style.visibility = 'hidden';
 
         var title = document.createElement('div');
-        title.className = 'splunkstuff-pie-chart-viz__tooltip-title';
+        title.className = 'bgdhamp-pie-chart-viz__tooltip-title';
         title.textContent = slice.label;
         tooltip.appendChild(title);
         addMetric(tooltip, 'Value', valueText(slice.value));
@@ -994,7 +994,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
     function addMetric(parent, label, value) {
         var row = document.createElement('div');
-        row.className = 'splunkstuff-pie-chart-viz__metric';
+        row.className = 'bgdhamp-pie-chart-viz__metric';
         var key = document.createElement('span');
         key.textContent = label;
         var val = document.createElement('strong');
@@ -1008,13 +1008,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         var wrap = document.createElement('div');
         var title = document.createElement('div');
         var i;
-        wrap.className = 'splunkstuff-pie-chart-viz__breakdown';
-        title.className = 'splunkstuff-pie-chart-viz__breakdown-title';
+        wrap.className = 'bgdhamp-pie-chart-viz__breakdown';
+        title.className = 'bgdhamp-pie-chart-viz__breakdown-title';
         title.textContent = 'Other breakdown';
         wrap.appendChild(title);
         for (i = 0; i < Math.min(6, members.length); i += 1) {
             var row = document.createElement('div');
-            row.className = 'splunkstuff-pie-chart-viz__breakdown-row';
+            row.className = 'bgdhamp-pie-chart-viz__breakdown-row';
             row.textContent =
                 members[i].label +
                 ': ' +
@@ -1026,7 +1026,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
         if (members.length > 6) {
             var more = document.createElement('div');
-            more.className = 'splunkstuff-pie-chart-viz__breakdown-row';
+            more.className = 'bgdhamp-pie-chart-viz__breakdown-row';
             more.textContent = '+' + (members.length - 6) + ' more';
             wrap.appendChild(more);
         }
@@ -1039,12 +1039,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
         inspector.innerHTML = '';
         var label = document.createElement('div');
-        label.className = 'splunkstuff-pie-chart-viz__inspector-label';
+        label.className = 'bgdhamp-pie-chart-viz__inspector-label';
         label.textContent = slice ? slice.label : 'Slice inspector';
         inspector.appendChild(label);
         if (!slice) {
             var hint = document.createElement('div');
-            hint.className = 'splunkstuff-pie-chart-viz__inspector-hint';
+            hint.className = 'bgdhamp-pie-chart-viz__inspector-hint';
             hint.textContent = 'Hover or select a slice to inspect contribution, rank, row count, and compare delta.';
             inspector.appendChild(hint);
             return;
@@ -1198,7 +1198,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             if (model.error || !slices.length || total <= 0) {
                 var empty = document.createElement('div');
-                empty.className = 'splunkstuff-pie-chart-viz__err';
+                empty.className = 'bgdhamp-pie-chart-viz__err';
                 empty.textContent = model.error || opts.emptyMessage;
                 this.el.appendChild(empty);
                 return;
@@ -1206,15 +1206,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             var root = document.createElement('div');
             root.className =
-                'splunkstuff-pie-chart-viz splunkstuff-pie-chart-viz--legend-' +
+                'bgdhamp-pie-chart-viz bgdhamp-pie-chart-viz--legend-' +
                 String(opts.legendPosition || 'right').toLowerCase();
             if (opts.showSliceLabels) {
-                root.className += ' splunkstuff-pie-chart-viz--slice-labels';
+                root.className += ' bgdhamp-pie-chart-viz--slice-labels';
             }
 
             if (opts.title) {
                 var head = document.createElement('div');
-                head.className = 'splunkstuff-pie-chart-viz__title';
+                head.className = 'bgdhamp-pie-chart-viz__title';
                 head.textContent = opts.title;
                 root.appendChild(head);
             }
@@ -1223,19 +1223,19 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 var qMessages = qualityMessages(model);
                 if (qMessages.length) {
                     var banner = document.createElement('div');
-                    banner.className = 'splunkstuff-pie-chart-viz__quality';
+                    banner.className = 'bgdhamp-pie-chart-viz__quality';
                     banner.textContent = qMessages.join('; ');
                     root.appendChild(banner);
                 }
             }
 
             var main = document.createElement('div');
-            main.className = 'splunkstuff-pie-chart-viz__main';
+            main.className = 'bgdhamp-pie-chart-viz__main';
 
             var pieBox = document.createElement('div');
-            pieBox.className = 'splunkstuff-pie-chart-viz__pie';
+            pieBox.className = 'bgdhamp-pie-chart-viz__pie';
             if (opts.showSliceLabels) {
-                pieBox.className += ' splunkstuff-pie-chart-viz__pie--slice-labels';
+                pieBox.className += ' bgdhamp-pie-chart-viz__pie--slice-labels';
             }
             var svg = createSvgEl('svg');
             var geometry = opts.showSliceLabels
@@ -1250,22 +1250,22 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             svg.style.color = opts.textColor;
 
             var tooltip = document.createElement('div');
-            tooltip.className = 'splunkstuff-pie-chart-viz__tooltip';
+            tooltip.className = 'bgdhamp-pie-chart-viz__tooltip';
             tooltip.style.display = 'none';
 
             var side = document.createElement('div');
-            side.className = 'splunkstuff-pie-chart-viz__side';
+            side.className = 'bgdhamp-pie-chart-viz__side';
 
             var inspector = null;
             if (opts.showInspector) {
                 inspector = document.createElement('div');
-                inspector.className = 'splunkstuff-pie-chart-viz__inspector';
+                inspector.className = 'bgdhamp-pie-chart-viz__inspector';
                 updateInspector(inspector, slices[0], opts, model);
                 side.appendChild(inspector);
             }
 
             var legend = document.createElement('div');
-            legend.className = 'splunkstuff-pie-chart-viz__legend';
+            legend.className = 'bgdhamp-pie-chart-viz__legend';
 
             var cx = geometry.cx;
             var cy = geometry.cy;
@@ -1279,40 +1279,40 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             function clearActive() {
                 paths.forEach(function (p) {
-                    p.classList.remove('splunkstuff-pie-chart-viz__slice--active');
-                    p.classList.remove('splunkstuff-pie-chart-viz__slice--dim');
+                    p.classList.remove('bgdhamp-pie-chart-viz__slice--active');
+                    p.classList.remove('bgdhamp-pie-chart-viz__slice--dim');
                 });
                 callouts.forEach(function (callout) {
                     if (!callout) {
                         return;
                     }
-                    callout.classList.remove('splunkstuff-pie-chart-viz__callout--active');
-                    callout.classList.remove('splunkstuff-pie-chart-viz__callout--dim');
+                    callout.classList.remove('bgdhamp-pie-chart-viz__callout--active');
+                    callout.classList.remove('bgdhamp-pie-chart-viz__callout--dim');
                 });
                 rows.forEach(function (row) {
-                    row.classList.remove('splunkstuff-pie-chart-viz__legend-row--active');
-                    row.classList.remove('splunkstuff-pie-chart-viz__legend-row--dim');
+                    row.classList.remove('bgdhamp-pie-chart-viz__legend-row--active');
+                    row.classList.remove('bgdhamp-pie-chart-viz__legend-row--dim');
                 });
             }
 
             function setActive(idx, e) {
                 clearActive();
                 paths.forEach(function (p, pi) {
-                    p.classList.toggle('splunkstuff-pie-chart-viz__slice--dim', pi !== idx);
+                    p.classList.toggle('bgdhamp-pie-chart-viz__slice--dim', pi !== idx);
                 });
                 callouts.forEach(function (callout, ci) {
                     if (callout) {
-                        callout.classList.toggle('splunkstuff-pie-chart-viz__callout--dim', ci !== idx);
+                        callout.classList.toggle('bgdhamp-pie-chart-viz__callout--dim', ci !== idx);
                     }
                 });
                 rows.forEach(function (row, ri) {
-                    row.classList.toggle('splunkstuff-pie-chart-viz__legend-row--dim', ri !== idx);
+                    row.classList.toggle('bgdhamp-pie-chart-viz__legend-row--dim', ri !== idx);
                 });
-                paths[idx].classList.add('splunkstuff-pie-chart-viz__slice--active');
+                paths[idx].classList.add('bgdhamp-pie-chart-viz__slice--active');
                 if (callouts[idx]) {
-                    callouts[idx].classList.add('splunkstuff-pie-chart-viz__callout--active');
+                    callouts[idx].classList.add('bgdhamp-pie-chart-viz__callout--active');
                 }
-                rows[idx].classList.add('splunkstuff-pie-chart-viz__legend-row--active');
+                rows[idx].classList.add('bgdhamp-pie-chart-viz__legend-row--active');
                 updateInspector(inspector, slices[idx], opts, model);
                 if (e) {
                     setTooltip(tooltip, slices[idx], model, opts, root, e, paths[idx]);
@@ -1484,12 +1484,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             for (i = 0; i < slices.length; i += 1) {
                 var row = document.createElement('button');
                 row.type = 'button';
-                row.className = 'splunkstuff-pie-chart-viz__legend-row';
+                row.className = 'bgdhamp-pie-chart-viz__legend-row';
                 var swatch = document.createElement('span');
-                swatch.className = 'splunkstuff-pie-chart-viz__swatch';
+                swatch.className = 'bgdhamp-pie-chart-viz__swatch';
                 swatch.style.backgroundColor = slices[i].color;
                 var text = document.createElement('span');
-                text.className = 'splunkstuff-pie-chart-viz__legend-text';
+                text.className = 'bgdhamp-pie-chart-viz__legend-text';
                 appendText(text, slices[i].label);
                 if (opts.showValue) {
                     appendText(text, ' - ' + valueText(slices[i].value));

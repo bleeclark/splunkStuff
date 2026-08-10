@@ -6,7 +6,7 @@
  *   parsePrimarySearchData and options from resolveOptions.
  *
  * DOM tree (single tile):
- *   .splunkstuff-sparkline-value-viz [data-ss-viz-build]
+ *   .bgdhamp-sparkline-value-viz [data-bgdhamp-viz-build]
  *     ├── .__badge (optional static status)
  *     ├── .__header (optional subheader bar)
  *     └── .__body
@@ -45,7 +45,7 @@ import {
     valueToVerticalPosition,
 } from './sparkMath.js';
 
-/** Cache-bust token exposed on tile root as data-ss-viz-build for Splunk static asset verification. */
+/** Cache-bust token exposed on tile root as data-bgdhamp-viz-build for Splunk static asset verification. */
 const VIZ_BUILD = '20260621-kpi-sparkline-studio-harness';
 
 // --- Headline label helpers ---
@@ -82,11 +82,11 @@ function applyIndicatorLabelStyles(labelElement, textColor) {
 function appendLabelValuePair(containerElement, valueElement, labelText, textColor, labelPosition) {
     const position = labelPosition === 'right' ? 'right' : 'above';
     const pairElement = document.createElement('div');
-    pairElement.className = `splunkstuff-sparkline-value-viz__indicatorPair splunkstuff-sparkline-value-viz__indicatorPair--${position}`;
+    pairElement.className = `bgdhamp-sparkline-value-viz__indicatorPair bgdhamp-sparkline-value-viz__indicatorPair--${position}`;
 
     function createLabelElement() {
         const labelElement = document.createElement('div');
-        labelElement.className = 'splunkstuff-sparkline-value-viz__indicatorLabel';
+        labelElement.className = 'bgdhamp-sparkline-value-viz__indicatorLabel';
         labelElement.textContent = labelText;
         applyIndicatorLabelStyles(labelElement, textColor);
         if (position === 'right') {
@@ -124,12 +124,12 @@ function applySubheaderBarStyles(headerElement, subheaderStyle, tileBackgroundCo
     let headerBackgroundColor = 'rgba(0,0,0,0.52)';
     if (styleName === 'matchtile') {
         headerBackgroundColor = tileBackgroundColor;
-        headerElement.className += ' splunkstuff-sparkline-value-viz__header--matchTile';
+        headerElement.className += ' bgdhamp-sparkline-value-viz__header--matchTile';
     } else if (styleName === 'darkblue') {
         headerBackgroundColor = upTrendColor;
-        headerElement.className += ' splunkstuff-sparkline-value-viz__header--darkBlue';
+        headerElement.className += ' bgdhamp-sparkline-value-viz__header--darkBlue';
     } else {
-        headerElement.className += ' splunkstuff-sparkline-value-viz__header--overlay';
+        headerElement.className += ' bgdhamp-sparkline-value-viz__header--overlay';
     }
     headerElement.style.setProperty('background', headerBackgroundColor, 'important');
     headerElement.style.setProperty('color', textColor, 'important');
@@ -146,7 +146,7 @@ function applySubheaderBarStyles(headerElement, subheaderStyle, tileBackgroundCo
  */
 function clearSparkHoverState(sparkContainer, tooltipElement, hoverAnnotationElement) {
     if (sparkContainer) {
-        const existingOverlay = sparkContainer.querySelector('.splunkstuff-sparkline-value-viz__hoverOverlay');
+        const existingOverlay = sparkContainer.querySelector('.bgdhamp-sparkline-value-viz__hoverOverlay');
         if (existingOverlay && existingOverlay.parentNode) {
             existingOverlay.parentNode.removeChild(existingOverlay);
         }
@@ -181,18 +181,18 @@ function updateSparkHoverState(sparkContainer, tooltipElement, ownerDocument, ho
     const bottomPixel = drawHeight - (hoverState.paddingBottom / hoverState.svgHeight) * drawHeight;
 
     const overlayElement = ownerDocument.createElement('div');
-    overlayElement.className = 'splunkstuff-sparkline-value-viz__hoverOverlay';
+    overlayElement.className = 'bgdhamp-sparkline-value-viz__hoverOverlay';
     overlayElement.setAttribute('aria-hidden', 'true');
 
     const lineElement = ownerDocument.createElement('div');
-    lineElement.className = 'splunkstuff-sparkline-value-viz__hoverLine';
+    lineElement.className = 'bgdhamp-sparkline-value-viz__hoverLine';
     lineElement.style.left = `${pixelX.toFixed(1)}px`;
     lineElement.style.top = `${topPixel.toFixed(1)}px`;
     lineElement.style.height = `${Math.max(0, bottomPixel - topPixel).toFixed(1)}px`;
     overlayElement.appendChild(lineElement);
 
     const dotElement = ownerDocument.createElement('div');
-    dotElement.className = 'splunkstuff-sparkline-value-viz__hoverDot';
+    dotElement.className = 'bgdhamp-sparkline-value-viz__hoverDot';
     dotElement.style.left = `${(pixelX - 4).toFixed(1)}px`;
     dotElement.style.top = `${(pixelY - 4).toFixed(1)}px`;
     dotElement.style.background = hoverState.sparklineStrokeColor;
@@ -222,10 +222,10 @@ function updateSparkHoverState(sparkContainer, tooltipElement, ownerDocument, ho
         const rowElement = ownerDocument.createElement('div');
         rowElement.className =
             lineIndex < valueLineIndex
-                ? 'splunkstuff-sparkline-value-viz__tooltipPoint'
+                ? 'bgdhamp-sparkline-value-viz__tooltipPoint'
                 : lineIndex === valueLineIndex
-                  ? 'splunkstuff-sparkline-value-viz__tooltipValue'
-                  : 'splunkstuff-sparkline-value-viz__tooltipTime';
+                  ? 'bgdhamp-sparkline-value-viz__tooltipValue'
+                  : 'bgdhamp-sparkline-value-viz__tooltipTime';
         rowElement.textContent = tooltipLines[lineIndex];
         tooltipElement.appendChild(rowElement);
     }
@@ -506,7 +506,7 @@ function paintSparkline(
 
         if (!sharedHover.tooltipElement) {
             sharedHover.tooltipElement = ownerDocument.createElement('div');
-            sharedHover.tooltipElement.className = 'splunkstuff-sparkline-value-viz__tooltip';
+            sharedHover.tooltipElement.className = 'bgdhamp-sparkline-value-viz__tooltip';
             sharedHover.tooltipElement.setAttribute('role', 'status');
             sharedHover.tooltipElement.style.display = 'none';
         }
@@ -639,7 +639,7 @@ export function renderKpiSparklineTile(
 
     if (!valueSeries.length) {
         const emptyElement = document.createElement('div');
-        emptyElement.className = 'splunkstuff-sparkline-value-viz__err';
+        emptyElement.className = 'bgdhamp-sparkline-value-viz__err';
         emptyElement.textContent = resolvedOptions.emptyStateMessage;
         mountElement.appendChild(emptyElement);
         return;
@@ -673,21 +673,21 @@ export function renderKpiSparklineTile(
     );
 
     const rootElement = document.createElement('div');
-    rootElement.className = 'splunkstuff-sparkline-value-viz';
-    rootElement.setAttribute('data-ss-viz-build', VIZ_BUILD);
+    rootElement.className = 'bgdhamp-sparkline-value-viz';
+    rootElement.setAttribute('data-bgdhamp-viz-build', VIZ_BUILD);
     rootElement.style.position = 'relative';
     rootElement.style.backgroundColor = tileBackgroundColor;
     rootElement.style.color = defaultTextColor;
     rootElement.style.width = '100%';
     rootElement.style.height = '100%';
-    rootElement.style.minHeight = '200px';
+    rootElement.style.minHeight = '0';
     rootElement.style.boxSizing = 'border-box';
     rootElement.style.display = 'flex';
     rootElement.style.flexDirection = 'column';
 
     if (resolvedOptions.badgeStatusText) {
         const badgeElement = document.createElement('div');
-        badgeElement.className = 'splunkstuff-sparkline-value-viz__badge';
+        badgeElement.className = 'bgdhamp-sparkline-value-viz__badge';
         badgeElement.textContent = resolvedOptions.badgeStatusText;
         badgeElement.setAttribute('title', resolvedOptions.badgeStatusText);
         rootElement.appendChild(badgeElement);
@@ -695,7 +695,7 @@ export function renderKpiSparklineTile(
 
     if (resolvedOptions.subheaderText) {
         const headerElement = document.createElement('div');
-        headerElement.className = 'splunkstuff-sparkline-value-viz__header';
+        headerElement.className = 'bgdhamp-sparkline-value-viz__header';
         applySubheaderBarStyles(
             headerElement,
             resolvedOptions.subheaderStyle,
@@ -708,7 +708,7 @@ export function renderKpiSparklineTile(
     }
 
     const bodyElement = document.createElement('div');
-    bodyElement.className = 'splunkstuff-sparkline-value-viz__body';
+    bodyElement.className = 'bgdhamp-sparkline-value-viz__body';
     bodyElement.style.flex = '1 1 auto';
     bodyElement.style.position = 'relative';
     bodyElement.style.display = 'flex';
@@ -720,12 +720,12 @@ export function renderKpiSparklineTile(
 
     const alignClass =
         resolvedOptions.align === 'left'
-            ? 'splunkstuff-sparkline-value-viz__headlineRow--alignLeft'
+            ? 'bgdhamp-sparkline-value-viz__headlineRow--alignLeft'
             : resolvedOptions.align === 'right'
-              ? 'splunkstuff-sparkline-value-viz__headlineRow--alignRight'
+              ? 'bgdhamp-sparkline-value-viz__headlineRow--alignRight'
               : '';
     const headlineRowElement = document.createElement('div');
-    headlineRowElement.className = `splunkstuff-sparkline-value-viz__headlineRow splunkstuff-sparkline-value-viz__headlineRow--${
+    headlineRowElement.className = `bgdhamp-sparkline-value-viz__headlineRow bgdhamp-sparkline-value-viz__headlineRow--${
         resolvedOptions.headlineLayout === 'inline' ? 'inline' : 'stacked'
     } ${alignClass}`.trim();
 
@@ -740,9 +740,9 @@ export function renderKpiSparklineTile(
             : formatMajorValue(majorValueNumeric, resolvedOptions);
 
     const majorBlock = document.createElement('div');
-    majorBlock.className = 'splunkstuff-sparkline-value-viz__major';
+    majorBlock.className = 'bgdhamp-sparkline-value-viz__major';
     const majorValueElement = document.createElement('div');
-    majorValueElement.className = 'splunkstuff-sparkline-value-viz__majorValue';
+    majorValueElement.className = 'bgdhamp-sparkline-value-viz__majorValue';
     majorValueElement.textContent = majorDisplayText;
     majorValueElement.style.fontSize = resolvedOptions.majorFontSize
         ? `${resolvedOptions.majorFontSize}px`
@@ -762,9 +762,9 @@ export function renderKpiSparklineTile(
 
     if (resolvedOptions.showTrendDelta) {
         const trendBlock = document.createElement('div');
-        trendBlock.className = 'splunkstuff-sparkline-value-viz__trend';
+        trendBlock.className = 'bgdhamp-sparkline-value-viz__trend';
         const trendValueElement = document.createElement('div');
-        trendValueElement.className = 'splunkstuff-sparkline-value-viz__trendValue';
+        trendValueElement.className = 'bgdhamp-sparkline-value-viz__trendValue';
         trendValueElement.textContent = formatTrendDeltaValue(trendDeltaValue, lastValue, resolvedOptions);
         trendValueElement.style.fontSize = resolvedOptions.trendFontSize
             ? `${resolvedOptions.trendFontSize}px`
@@ -786,7 +786,7 @@ export function renderKpiSparklineTile(
     let hoverAnnotationElement = null;
     if (resolvedOptions.showInChartHoverAnnotation) {
         hoverAnnotationElement = ownerDocument.createElement('div');
-        hoverAnnotationElement.className = 'splunkstuff-sparkline-value-viz__hoverAnn';
+        hoverAnnotationElement.className = 'bgdhamp-sparkline-value-viz__hoverAnn';
         hoverAnnotationElement.setAttribute('aria-hidden', 'true');
         bodyElement.appendChild(hoverAnnotationElement);
     }
@@ -796,9 +796,9 @@ export function renderKpiSparklineTile(
     let sparkContainer = null;
     if (showSparkSection) {
         sparkContainer = document.createElement('div');
-        sparkContainer.className = 'splunkstuff-sparkline-value-viz__spark';
+        sparkContainer.className = 'bgdhamp-sparkline-value-viz__spark';
         if (resolvedOptions.sparkEdgeToEdge) {
-            sparkContainer.className += ' splunkstuff-sparkline-value-viz__spark--edgeToEdge';
+            sparkContainer.className += ' bgdhamp-sparkline-value-viz__spark--edgeToEdge';
         }
         sparkContainer.style.position = 'absolute';
         sparkContainer.style.left = resolvedOptions.sparkEdgeToEdge ? '0' : '10px';
@@ -869,7 +869,7 @@ export function renderTrellisGrid(mountElement, trellisGroups, resolvedOptions, 
     const visibleGroups = sortedGroups.slice(0, pageSize);
 
     const gridElement = document.createElement('div');
-    gridElement.className = 'splunkstuff-sparkline-value-viz__trellisGrid';
+    gridElement.className = 'bgdhamp-sparkline-value-viz__trellisGrid';
     if (resolvedOptions.trellisBackgroundColor) {
         gridElement.style.background = resolvedOptions.trellisBackgroundColor;
     }
@@ -882,16 +882,16 @@ export function renderTrellisGrid(mountElement, trellisGroups, resolvedOptions, 
     for (let groupIndex = 0; groupIndex < visibleGroups.length; groupIndex += 1) {
         const group = visibleGroups[groupIndex];
         const cellElement = document.createElement('div');
-        cellElement.className = 'splunkstuff-sparkline-value-viz__trellisCell';
+        cellElement.className = 'bgdhamp-sparkline-value-viz__trellisCell';
         cellElement.style.minHeight = `${resolvedOptions.trellisRowHeight}px`;
 
         const titleElement = document.createElement('div');
-        titleElement.className = 'splunkstuff-sparkline-value-viz__trellisTitle';
+        titleElement.className = 'bgdhamp-sparkline-value-viz__trellisTitle';
         titleElement.textContent = group.categoryLabel;
         cellElement.appendChild(titleElement);
 
         const tileMount = document.createElement('div');
-        tileMount.className = 'splunkstuff-sparkline-value-viz__trellisTileMount';
+        tileMount.className = 'bgdhamp-sparkline-value-viz__trellisTileMount';
         cellElement.appendChild(tileMount);
         gridElement.appendChild(cellElement);
 

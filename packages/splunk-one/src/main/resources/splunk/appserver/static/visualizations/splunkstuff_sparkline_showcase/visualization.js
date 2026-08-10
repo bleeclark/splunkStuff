@@ -482,7 +482,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
     function clearSparkHover(svg, tooltip, hoverAnnEl) {
         if (svg) {
-            var old = svg.querySelector('.splunkstuff-sparkline-value-viz__hover');
+            var old = svg.querySelector('.bgdhamp-sparkline-value-viz__hover');
             if (old && old.parentNode) {
                 old.parentNode.removeChild(old);
             }
@@ -499,7 +499,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     function updateSparkHover(svg, tooltip, ownerDoc, opts) {
         clearSparkHover(svg, tooltip, opts.hoverAnnEl);
         var g = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('class', 'splunkstuff-sparkline-value-viz__hover');
+        g.setAttribute('class', 'bgdhamp-sparkline-value-viz__hover');
         g.setAttribute('pointer-events', 'none');
 
         var line = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -539,10 +539,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var row = ownerDoc.createElement('div');
             row.className =
                 i === 0 && pointLabel
-                    ? 'splunkstuff-sparkline-value-viz__tooltipPoint'
+                    ? 'bgdhamp-sparkline-value-viz__tooltipPoint'
                     : i === (pointLabel ? 1 : 0)
-                      ? 'splunkstuff-sparkline-value-viz__tooltipValue'
-                      : 'splunkstuff-sparkline-value-viz__tooltipTime';
+                      ? 'bgdhamp-sparkline-value-viz__tooltipValue'
+                      : 'bgdhamp-sparkline-value-viz__tooltipTime';
             row.textContent = lines[i];
             tooltip.appendChild(row);
         }
@@ -640,7 +640,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             if (values.length === 0) {
                 var empty = document.createElement('div');
-                empty.className = 'splunkstuff-sparkline-value-viz__err';
+                empty.className = 'bgdhamp-sparkline-value-viz__err';
                 empty.textContent = emptyText;
                 this.el.appendChild(empty);
                 return;
@@ -690,14 +690,14 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var norm = normalizeTimes(times, values.length);
 
             var root = document.createElement('div');
-            root.className = 'splunkstuff-sparkline-value-viz';
+            root.className = 'bgdhamp-sparkline-value-viz';
             root.style.position = 'relative';
             root.style.backgroundColor = bg;
             root.style.color = textColor;
 
             if (badgeText) {
                 var badge = document.createElement('div');
-                badge.className = 'splunkstuff-sparkline-value-viz__badge';
+                badge.className = 'bgdhamp-sparkline-value-viz__badge';
                 badge.textContent = badgeText;
                 badge.setAttribute('title', badgeText);
                 root.appendChild(badge);
@@ -705,39 +705,39 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             if (subheader) {
                 var head = document.createElement('div');
-                head.className = 'splunkstuff-sparkline-value-viz__header';
+                head.className = 'bgdhamp-sparkline-value-viz__header';
                 head.textContent = subheader;
                 root.appendChild(head);
             }
 
             var body = document.createElement('div');
-            body.className = 'splunkstuff-sparkline-value-viz__body';
+            body.className = 'bgdhamp-sparkline-value-viz__body';
 
             var major = document.createElement('div');
-            major.className = 'splunkstuff-sparkline-value-viz__major';
+            major.className = 'bgdhamp-sparkline-value-viz__major';
             if (majorLabel) {
                 var majorLbl = document.createElement('div');
-                majorLbl.className = 'splunkstuff-sparkline-value-viz__indicatorLabel';
+                majorLbl.className = 'bgdhamp-sparkline-value-viz__indicatorLabel';
                 majorLbl.textContent = majorLabel;
                 major.appendChild(majorLbl);
             }
             var majorVal = document.createElement('div');
-            majorVal.className = 'splunkstuff-sparkline-value-viz__majorValue';
+            majorVal.className = 'bgdhamp-sparkline-value-viz__majorValue';
             majorVal.textContent = formatMajor(last, precision, unit);
             major.appendChild(majorVal);
             body.appendChild(major);
 
             if (showDelta) {
                 var trend = document.createElement('div');
-                trend.className = 'splunkstuff-sparkline-value-viz__trend';
+                trend.className = 'bgdhamp-sparkline-value-viz__trend';
                 if (deltaLabel) {
                     var deltaLbl = document.createElement('div');
-                    deltaLbl.className = 'splunkstuff-sparkline-value-viz__indicatorLabel';
+                    deltaLbl.className = 'bgdhamp-sparkline-value-viz__indicatorLabel';
                     deltaLbl.textContent = deltaLabel;
                     trend.appendChild(deltaLbl);
                 }
                 var deltaVal = document.createElement('div');
-                deltaVal.className = 'splunkstuff-sparkline-value-viz__trendValue';
+                deltaVal.className = 'bgdhamp-sparkline-value-viz__trendValue';
                 deltaVal.textContent = formatDelta(delta, last, deltaMode, precision);
                 trend.appendChild(deltaVal);
                 body.appendChild(trend);
@@ -746,7 +746,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var hoverAnnEl = null;
             if (showHoverAnnotation) {
                 hoverAnnEl = ownerDoc.createElement('div');
-                hoverAnnEl.className = 'splunkstuff-sparkline-value-viz__hoverAnn';
+                hoverAnnEl.className = 'bgdhamp-sparkline-value-viz__hoverAnn';
                 hoverAnnEl.setAttribute('aria-hidden', 'true');
                 body.appendChild(hoverAnnEl);
             }
@@ -761,7 +761,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             if (showSparkline) {
                 var sparkWrap = document.createElement('div');
-                sparkWrap.className = 'splunkstuff-sparkline-value-viz__spark';
+                sparkWrap.className = 'bgdhamp-sparkline-value-viz__spark';
                 var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 svg.setAttribute('preserveAspectRatio', 'none');
                 svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
@@ -830,7 +830,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 body.appendChild(sparkWrap);
 
                 var tooltip = ownerDoc.createElement('div');
-                tooltip.className = 'splunkstuff-sparkline-value-viz__tooltip';
+                tooltip.className = 'bgdhamp-sparkline-value-viz__tooltip';
                 tooltip.setAttribute('role', 'status');
                 tooltip.style.display = 'none';
                 this._hoverTooltipEl = tooltip;

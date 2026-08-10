@@ -1,7 +1,7 @@
 # Paste into: $SPLUNK_HOME/etc/apps/<APP_ID>/default/visualizations.conf
 
 [splunkstuff_sparkline_value]
-label = SplunkStuff — Value + sparkline (extended)
+label = BGDHamp — Value + sparkline (extended)
 description = Single value with delta and footer sparkline; extended formatter for scale, trend, targets, and thresholds. Expects _time and a numeric column.
 default_height = 200
 search_fragment = | timechart span=1h avg(my_metric) as value

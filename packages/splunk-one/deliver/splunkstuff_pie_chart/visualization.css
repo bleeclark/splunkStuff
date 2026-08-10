@@ -1,4 +1,4 @@
-.splunkstuff-pie-chart-viz {
+.bgdhamp-pie-chart-viz {
     box-sizing: border-box;
     width: 100%;
     height: 100%;
@@ -10,13 +10,13 @@
     font-family: 'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-.splunkstuff-pie-chart-viz *,
-.splunkstuff-pie-chart-viz *::before,
-.splunkstuff-pie-chart-viz *::after {
+.bgdhamp-pie-chart-viz *,
+.bgdhamp-pie-chart-viz *::before,
+.bgdhamp-pie-chart-viz *::after {
     box-sizing: border-box;
 }
 
-.splunkstuff-pie-chart-viz__title {
+.bgdhamp-pie-chart-viz__title {
     flex: 0 0 auto;
     padding: 8px 12px 4px;
     font-size: 12px;
@@ -25,7 +25,7 @@
     opacity: 0.95;
 }
 
-.splunkstuff-pie-chart-viz__quality {
+.bgdhamp-pie-chart-viz__quality {
     flex: 0 0 auto;
     margin: 6px 12px 0;
     padding: 6px 8px;
@@ -36,7 +36,7 @@
     line-height: 1.35;
 }
 
-.splunkstuff-pie-chart-viz__main {
+.bgdhamp-pie-chart-viz__main {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
@@ -46,29 +46,29 @@
     padding: 8px 12px 12px;
 }
 
-.splunkstuff-pie-chart-viz--legend-left .splunkstuff-pie-chart-viz__main {
+.bgdhamp-pie-chart-viz--legend-left .bgdhamp-pie-chart-viz__main {
     flex-direction: row-reverse;
 }
 
-.splunkstuff-pie-chart-viz--legend-top .splunkstuff-pie-chart-viz__main,
-.splunkstuff-pie-chart-viz--legend-bottom .splunkstuff-pie-chart-viz__main {
+.bgdhamp-pie-chart-viz--legend-top .bgdhamp-pie-chart-viz__main,
+.bgdhamp-pie-chart-viz--legend-bottom .bgdhamp-pie-chart-viz__main {
     flex-direction: column;
 }
 
-.splunkstuff-pie-chart-viz--legend-top .splunkstuff-pie-chart-viz__side {
+.bgdhamp-pie-chart-viz--legend-top .bgdhamp-pie-chart-viz__side {
     order: -1;
 }
 
-.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__side {
+.bgdhamp-pie-chart-viz--legend-none .bgdhamp-pie-chart-viz__side {
     display: none;
 }
 
-.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__main {
+.bgdhamp-pie-chart-viz--legend-none .bgdhamp-pie-chart-viz__main {
     align-items: center;
     justify-content: center;
 }
 
-.splunkstuff-pie-chart-viz__pie {
+.bgdhamp-pie-chart-viz__pie {
     flex: 0 0 auto;
     width: min(48%, 230px);
     min-width: 140px;
@@ -78,72 +78,72 @@
     position: relative;
 }
 
-.splunkstuff-pie-chart-viz__pie--slice-labels {
+.bgdhamp-pie-chart-viz__pie--slice-labels {
     width: min(62%, 430px);
     min-width: 300px;
     aspect-ratio: 13 / 7;
 }
 
-.splunkstuff-pie-chart-viz--legend-top .splunkstuff-pie-chart-viz__pie,
-.splunkstuff-pie-chart-viz--legend-bottom .splunkstuff-pie-chart-viz__pie,
-.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__pie {
+.bgdhamp-pie-chart-viz--legend-top .bgdhamp-pie-chart-viz__pie,
+.bgdhamp-pie-chart-viz--legend-bottom .bgdhamp-pie-chart-viz__pie,
+.bgdhamp-pie-chart-viz--legend-none .bgdhamp-pie-chart-viz__pie {
     width: min(100%, 260px);
 }
 
-.splunkstuff-pie-chart-viz--slice-labels.splunkstuff-pie-chart-viz--legend-top .splunkstuff-pie-chart-viz__pie,
-.splunkstuff-pie-chart-viz--slice-labels.splunkstuff-pie-chart-viz--legend-bottom .splunkstuff-pie-chart-viz__pie,
-.splunkstuff-pie-chart-viz--slice-labels.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__pie {
+.bgdhamp-pie-chart-viz--slice-labels.bgdhamp-pie-chart-viz--legend-top .bgdhamp-pie-chart-viz__pie,
+.bgdhamp-pie-chart-viz--slice-labels.bgdhamp-pie-chart-viz--legend-bottom .bgdhamp-pie-chart-viz__pie,
+.bgdhamp-pie-chart-viz--slice-labels.bgdhamp-pie-chart-viz--legend-none .bgdhamp-pie-chart-viz__pie {
     width: min(100%, 460px);
 }
 
-.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__pie {
+.bgdhamp-pie-chart-viz--legend-none .bgdhamp-pie-chart-viz__pie {
     width: min(70%, 280px);
     max-height: 100%;
 }
 
-.splunkstuff-pie-chart-viz--slice-labels.splunkstuff-pie-chart-viz--legend-none .splunkstuff-pie-chart-viz__pie {
+.bgdhamp-pie-chart-viz--slice-labels.bgdhamp-pie-chart-viz--legend-none .bgdhamp-pie-chart-viz__pie {
     width: min(92%, 460px);
 }
 
-.splunkstuff-pie-chart-viz__pie svg {
+.bgdhamp-pie-chart-viz__pie svg {
     display: block;
     width: 100%;
     height: 100%;
     min-height: 140px;
 }
 
-.splunkstuff-pie-chart-viz__slice {
+.bgdhamp-pie-chart-viz__slice {
     cursor: pointer;
     outline: none;
     transition: opacity 120ms ease, filter 120ms ease, stroke-width 120ms ease;
 }
 
-.splunkstuff-pie-chart-viz__slice--dim {
+.bgdhamp-pie-chart-viz__slice--dim {
     opacity: 0.42;
 }
 
-.splunkstuff-pie-chart-viz__slice:hover,
-.splunkstuff-pie-chart-viz__slice--active,
-.splunkstuff-pie-chart-viz__slice:focus {
+.bgdhamp-pie-chart-viz__slice:hover,
+.bgdhamp-pie-chart-viz__slice--active,
+.bgdhamp-pie-chart-viz__slice:focus {
     opacity: 1;
     filter: brightness(1.14);
     stroke-width: 3;
 }
 
-.splunkstuff-pie-chart-viz__callout {
+.bgdhamp-pie-chart-viz__callout {
     cursor: pointer;
     outline: none;
     transition: opacity 120ms ease, filter 120ms ease;
 }
 
-.splunkstuff-pie-chart-viz__callout-line {
+.bgdhamp-pie-chart-viz__callout-line {
     fill: none;
     stroke: currentColor;
     stroke-width: 1;
     opacity: 0.34;
 }
 
-.splunkstuff-pie-chart-viz__callout-text {
+.bgdhamp-pie-chart-viz__callout-text {
     fill: currentColor;
     font-size: 9.5px;
     font-weight: 650;
@@ -153,18 +153,18 @@
     stroke-linejoin: round;
 }
 
-.splunkstuff-pie-chart-viz__callout--dim {
+.bgdhamp-pie-chart-viz__callout--dim {
     opacity: 0.38;
 }
 
-.splunkstuff-pie-chart-viz__callout:hover,
-.splunkstuff-pie-chart-viz__callout:focus,
-.splunkstuff-pie-chart-viz__callout--active {
+.bgdhamp-pie-chart-viz__callout:hover,
+.bgdhamp-pie-chart-viz__callout:focus,
+.bgdhamp-pie-chart-viz__callout--active {
     opacity: 1;
     filter: brightness(1.16);
 }
 
-.splunkstuff-pie-chart-viz__side {
+.bgdhamp-pie-chart-viz__side {
     flex: 1 1 auto;
     min-width: 0;
     display: flex;
@@ -172,13 +172,13 @@
     gap: 8px;
 }
 
-.splunkstuff-pie-chart-viz--legend-top .splunkstuff-pie-chart-viz__side,
-.splunkstuff-pie-chart-viz--legend-bottom .splunkstuff-pie-chart-viz__side {
+.bgdhamp-pie-chart-viz--legend-top .bgdhamp-pie-chart-viz__side,
+.bgdhamp-pie-chart-viz--legend-bottom .bgdhamp-pie-chart-viz__side {
     flex: 0 0 auto;
     max-height: 45%;
 }
 
-.splunkstuff-pie-chart-viz__inspector {
+.bgdhamp-pie-chart-viz__inspector {
     flex: 0 0 auto;
     padding: 8px;
     border: 1px solid rgba(255, 255, 255, 0.22);
@@ -188,16 +188,16 @@
     line-height: 1.35;
 }
 
-.splunkstuff-pie-chart-viz__inspector-label {
+.bgdhamp-pie-chart-viz__inspector-label {
     font-weight: 700;
     margin-bottom: 6px;
 }
 
-.splunkstuff-pie-chart-viz__inspector-hint {
+.bgdhamp-pie-chart-viz__inspector-hint {
     opacity: 0.82;
 }
 
-.splunkstuff-pie-chart-viz__legend {
+.bgdhamp-pie-chart-viz__legend {
     flex: 1 1 auto;
     min-height: 0;
     min-width: 0;
@@ -206,7 +206,7 @@
     line-height: 1.45;
 }
 
-.splunkstuff-pie-chart-viz__legend-row {
+.bgdhamp-pie-chart-viz__legend-row {
     width: 100%;
     min-height: 24px;
     display: flex;
@@ -224,18 +224,18 @@
     transition: background 120ms ease, opacity 120ms ease;
 }
 
-.splunkstuff-pie-chart-viz__legend-row:hover,
-.splunkstuff-pie-chart-viz__legend-row:focus,
-.splunkstuff-pie-chart-viz__legend-row--active {
+.bgdhamp-pie-chart-viz__legend-row:hover,
+.bgdhamp-pie-chart-viz__legend-row:focus,
+.bgdhamp-pie-chart-viz__legend-row--active {
     background: rgba(255, 255, 255, 0.13);
     outline: none;
 }
 
-.splunkstuff-pie-chart-viz__legend-row--dim {
+.bgdhamp-pie-chart-viz__legend-row--dim {
     opacity: 0.54;
 }
 
-.splunkstuff-pie-chart-viz__swatch {
+.bgdhamp-pie-chart-viz__swatch {
     flex: 0 0 10px;
     width: 10px;
     height: 10px;
@@ -243,29 +243,29 @@
     border-radius: 2px;
 }
 
-.splunkstuff-pie-chart-viz__legend-text {
+.bgdhamp-pie-chart-viz__legend-text {
     flex: 1 1 auto;
     min-width: 0;
     overflow-wrap: anywhere;
 }
 
-.splunkstuff-pie-chart-viz__metric {
+.bgdhamp-pie-chart-viz__metric {
     display: flex;
     justify-content: space-between;
     gap: 8px;
     margin-top: 2px;
 }
 
-.splunkstuff-pie-chart-viz__metric span {
+.bgdhamp-pie-chart-viz__metric span {
     opacity: 0.78;
 }
 
-.splunkstuff-pie-chart-viz__metric strong {
+.bgdhamp-pie-chart-viz__metric strong {
     font-weight: 700;
     text-align: right;
 }
 
-.splunkstuff-pie-chart-viz__tooltip {
+.bgdhamp-pie-chart-viz__tooltip {
     position: absolute;
     z-index: 20;
     min-width: 170px;
@@ -282,28 +282,28 @@
     will-change: left, top;
 }
 
-.splunkstuff-pie-chart-viz__tooltip-title {
+.bgdhamp-pie-chart-viz__tooltip-title {
     font-weight: 700;
     margin-bottom: 6px;
 }
 
-.splunkstuff-pie-chart-viz__breakdown {
+.bgdhamp-pie-chart-viz__breakdown {
     margin-top: 8px;
     padding-top: 7px;
     border-top: 1px solid rgba(255, 255, 255, 0.22);
 }
 
-.splunkstuff-pie-chart-viz__breakdown-title {
+.bgdhamp-pie-chart-viz__breakdown-title {
     font-weight: 700;
     margin-bottom: 4px;
 }
 
-.splunkstuff-pie-chart-viz__breakdown-row {
+.bgdhamp-pie-chart-viz__breakdown-row {
     opacity: 0.86;
     overflow-wrap: anywhere;
 }
 
-.splunkstuff-pie-chart-viz__err {
+.bgdhamp-pie-chart-viz__err {
     padding: 12px;
     font-size: 12px;
     line-height: 1.4;
@@ -311,20 +311,20 @@
 }
 
 @media (max-width: 520px) {
-    .splunkstuff-pie-chart-viz__main {
+    .bgdhamp-pie-chart-viz__main {
         flex-direction: column;
     }
 
-    .splunkstuff-pie-chart-viz__pie {
+    .bgdhamp-pie-chart-viz__pie {
         width: min(100%, 220px);
     }
 
-    .splunkstuff-pie-chart-viz__pie--slice-labels {
+    .bgdhamp-pie-chart-viz__pie--slice-labels {
         width: min(100%, 360px);
         min-width: 0;
     }
 
-    .splunkstuff-pie-chart-viz__side {
+    .bgdhamp-pie-chart-viz__side {
         max-height: 48%;
     }
 }

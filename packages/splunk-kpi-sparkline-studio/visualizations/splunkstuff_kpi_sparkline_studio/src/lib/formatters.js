@@ -25,7 +25,11 @@ import { parseTruthyOption } from './booleanParsing.js';
  * @returns {{ scaleMinimum: number, scaleMaximum: number }}
  */
 export function deriveSparkScale(valueSeries, sparkScaleMinimum, sparkScaleMaximum, autoScaleSparkline) {
-    if (parseTruthyOption(autoScaleSparkline)) {
+    let scaleMinimum = parseFloat(sparkScaleMinimum, 10);
+    let scaleMaximum = parseFloat(sparkScaleMaximum, 10);
+    const hasManual = Number.isFinite(scaleMinimum) || Number.isFinite(scaleMaximum);
+    // Auto when sparkAuto is on, or when min/max are blank (blank + Auto Off used to force 0–100).
+    if (parseTruthyOption(autoScaleSparkline) || !hasManual) {
         let dataMinimum = Infinity;
         let dataMaximum = -Infinity;
         for (let pointIndex = 0; pointIndex < valueSeries.length; pointIndex += 1) {
@@ -49,8 +53,6 @@ export function deriveSparkScale(valueSeries, sparkScaleMinimum, sparkScaleMaxim
         return { scaleMinimum: dataMinimum, scaleMaximum: dataMaximum };
     }
 
-    let scaleMinimum = parseFloat(sparkScaleMinimum, 10);
-    let scaleMaximum = parseFloat(sparkScaleMaximum, 10);
     if (!Number.isFinite(scaleMinimum)) {
         scaleMinimum = 0;
     }

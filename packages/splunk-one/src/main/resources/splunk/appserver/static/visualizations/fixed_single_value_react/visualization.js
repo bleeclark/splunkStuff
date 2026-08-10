@@ -546,9 +546,9 @@ var SplunkVisualizationBase_default = /*#__PURE__*/__webpack_require__.n(SplunkV
 var client = __webpack_require__(873);
 // EXTERNAL MODULE: ../../node_modules/react/index.js
 var react = __webpack_require__(41);
-;// ./src/main/webapp/lib/splunkstuffTrendColors.js
+;// ./src/main/webapp/lib/bgdhampTrendColors.js
 /**
- * Keith/ITSI trend background contract for SplunkStuff visualizations.
+ * Keith/ITSI trend background contract for BGDHamp visualizations.
  * delta >= 0 → up color (blue); delta < 0 → down color (gold).
  */
 

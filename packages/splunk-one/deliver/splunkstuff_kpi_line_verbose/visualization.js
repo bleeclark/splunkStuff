@@ -1,7 +1,7 @@
 /* eslint-disable */
 /**
  * =============================================================================
- * SplunkStuff — KPI loaded line VERBOSE (vanilla AMD)
+ * BGDHamp — KPI loaded line VERBOSE (vanilla AMD)
  * =============================================================================
  *
  * Fork of splunkstuff_kpi_line with identical runtime behavior, expanded inline
@@ -24,11 +24,11 @@
  * --- Hover / hit-testing ---
  * Pointer listeners run on document CAPTURE because Splunk dashboard chrome sits
  * above the viz and swallows bubble-phase hits. Index mapping uses SVG xMidYMid
- * meet letterboxing math inlined below (same behavior as the splunkstuffVizHoverMath AMD module).
+ * meet letterboxing math inlined below (same behavior as the bgdhampVizHoverMath AMD module).
  *
  * --- Inlined helpers (single-file deliver) ---
- * Trend surfaces + repaint: same contract as splunkstuffTrendColors AMD module.
- * Hover mapping: same contract as splunkstuffVizHoverMath AMD module.
+ * Trend surfaces + repaint: same contract as bgdhampTrendColors AMD module.
+ * Hover mapping: same contract as bgdhampVizHoverMath AMD module.
  * With SPLUNKSTUFF_KPI_LINE_VERBOSE_DEBUG, argument-shape warnings and API verification log once at load.
  *
  * --- Formatter options (prop key → purpose, default) ---
@@ -152,7 +152,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return Math.max(lo, Math.min(hi, v));
     }
 
-    /* Inlined: splunkstuffTrendColors (Keith/ITSI-style trend surfaces) */
+    /* Inlined: bgdhampTrendColors (Keith/ITSI-style trend surfaces) */
     var DEFAULT_UP_COLOR = '#01417F';
     var DEFAULT_DOWN_COLOR = '#DFA611';
 
@@ -241,7 +241,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         repaintTrendTile: repaintTrendTile,
     };
 
-    /* Inlined: splunkstuffVizHoverMath (pointer → series index) */
+    /* Inlined: bgdhampVizHoverMath (pointer → series index) */
     function viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH) {
         if (debugEnabled()) {
             if (typeof clientX !== 'number' || typeof clientY !== 'number' || !isFinite(clientX) || !isFinite(clientY)) {
@@ -629,7 +629,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
     function clearHoverOverlay(svg, tooltip, hoverAnnEl) {
         if (!svg) return;
-        var old = svg.querySelector('.splunkstuff-kpi-line-viz__hover');
+        var old = svg.querySelector('.bgdhamp-kpi-line-viz__hover');
         if (old) {
             old.parentNode.removeChild(old);
         }
@@ -661,7 +661,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         clearHoverOverlay(svg, tooltip, opts.hoverAnnEl);
 
         var g = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('class', 'splunkstuff-kpi-line-viz__hover');
+        g.setAttribute('class', 'bgdhamp-kpi-line-viz__hover');
         g.setAttribute('pointer-events', 'none');
 
         var line = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -690,12 +690,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
         tooltip.innerHTML = '';
         var valEl = ownerDoc.createElement('div');
-        valEl.className = 'splunkstuff-kpi-line-viz__tooltipValue';
+        valEl.className = 'bgdhamp-kpi-line-viz__tooltipValue';
         valEl.textContent = valueLabel;
         tooltip.appendChild(valEl);
         if (timeLabel) {
             var timeEl = ownerDoc.createElement('div');
-            timeEl.className = 'splunkstuff-kpi-line-viz__tooltipTime';
+            timeEl.className = 'bgdhamp-kpi-line-viz__tooltipTime';
             timeEl.textContent = timeLabel;
             tooltip.appendChild(timeEl);
         }
@@ -782,7 +782,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (idx < 0) {
                 log('formatData: no numeric column — VisualizationError');
                 throw new SplunkVisualizationBase.VisualizationError(
-                    'KPI loaded line verbose (SplunkStuff) requires at least one all-numeric column (excluding _time).'
+                    'KPI loaded line verbose (BGDHamp) requires at least one all-numeric column (excluding _time).'
                 );
             }
             var tIdx = findTimeColumnIndex(rawData);
@@ -831,7 +831,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 log('updateView: empty branch len=', values.length);
                 trendColors.applyTrendHostStyle(this.el, background, textColor);
                 var empty = ownerDoc.createElement('div');
-                empty.className = 'splunkstuff-kpi-line-viz__err';
+                empty.className = 'bgdhamp-kpi-line-viz__err';
                 var defaultEmptyMsg =
                     values.length === 0
                         ? 'No numeric results to display.'
@@ -1009,7 +1009,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             // --- Root flex column: header → major row → chart strip ---
             var root = ownerDoc.createElement('div');
-            root.className = 'splunkstuff-kpi-line-viz';
+            root.className = 'bgdhamp-kpi-line-viz';
             trendColors.applyTrendSurfaceStyle(root, containerBg);
             root.style.color = textColor;
             root.style.width = '100%';
@@ -1019,7 +1019,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             if (subheader) {
                 var head = ownerDoc.createElement('div');
-                head.className = 'splunkstuff-kpi-line-viz__header';
+                head.className = 'bgdhamp-kpi-line-viz__header';
                 head.textContent = subheader;
                 root.appendChild(head);
             }
@@ -1027,24 +1027,24 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var majorRow = null;
             if (showMajor) {
                 majorRow = ownerDoc.createElement('div');
-                majorRow.className = 'splunkstuff-kpi-line-viz__major';
+                majorRow.className = 'bgdhamp-kpi-line-viz__major';
                 majorRow.style.justifyContent = centerMajor ? 'center' : 'space-between';
                 majorRow.style.textAlign = centerMajor ? 'center' : '';
                 var major = ownerDoc.createElement('div');
-                major.className = 'splunkstuff-kpi-line-viz__majorVal';
+                major.className = 'bgdhamp-kpi-line-viz__majorVal';
                 major.textContent = isFinite(last)
                     ? last.toLocaleString(undefined, { maximumFractionDigits: 2 })
                     : '—';
                 if (unit) {
                     var unitSpan = ownerDoc.createElement('span');
-                    unitSpan.className = 'splunkstuff-kpi-line-viz__unit';
+                    unitSpan.className = 'bgdhamp-kpi-line-viz__unit';
                     unitSpan.style.fontSize = unitScale + 'em';
                     unitSpan.textContent = unit;
                     major.appendChild(unitSpan);
                 }
 
                 var trend = ownerDoc.createElement('div');
-                trend.className = 'splunkstuff-kpi-line-viz__trend';
+                trend.className = 'bgdhamp-kpi-line-viz__trend';
                 trend.style.marginLeft = centerMajor ? '6px' : '';
                 trend.textContent = formatDelta(delta);
 
@@ -1056,14 +1056,14 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
 
             var chartWrap = ownerDoc.createElement('div');
-            chartWrap.className = 'splunkstuff-kpi-line-viz__chart';
+            chartWrap.className = 'bgdhamp-kpi-line-viz__chart';
             chartWrap.style.flex = '1 1 auto';
             chartWrap.style.minHeight = chartH + 'px';
             chartWrap.style.width = '100%';
             trendColors.applyTrendSurfaceStyle(chartWrap, chartStripBg);
             chartWrap.style.pointerEvents = 'auto';
 
-            // --- SVG model space; screen size uses meet letterboxing in splunkstuffVizHoverMath ---
+            // --- SVG model space; screen size uses meet letterboxing in bgdhampVizHoverMath ---
             var svg = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', String(width));
             svg.setAttribute('height', String(chartH));
@@ -1079,7 +1079,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
 
             var chartBg = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            chartBg.setAttribute('class', 'splunkstuff-kpi-line-viz__chartBg');
+            chartBg.setAttribute('class', 'bgdhamp-kpi-line-viz__chartBg');
             chartBg.setAttribute('x', '0');
             chartBg.setAttribute('y', '0');
             chartBg.setAttribute('width', String(width));
@@ -1206,12 +1206,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var hoverAnnEl = null;
             if (showHoverAnnotation) {
                 hoverAnnEl = ownerDoc.createElement('div');
-                hoverAnnEl.className = 'splunkstuff-kpi-line-viz__hoverAnn';
+                hoverAnnEl.className = 'bgdhamp-kpi-line-viz__hoverAnn';
                 hoverAnnEl.setAttribute('aria-hidden', 'true');
             }
 
             var tooltip = ownerDoc.createElement('div');
-            tooltip.className = 'splunkstuff-kpi-line-viz__tooltip';
+            tooltip.className = 'bgdhamp-kpi-line-viz__tooltip';
             tooltip.setAttribute('role', 'status');
             tooltip.setAttribute('aria-live', 'polite');
             tooltip.setAttribute('aria-atomic', 'true');

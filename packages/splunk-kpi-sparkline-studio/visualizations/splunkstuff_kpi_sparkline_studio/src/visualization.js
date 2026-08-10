@@ -1,6 +1,6 @@
 /**
  * @file visualization.js
- * @description Dashboard Studio extension entry point for SplunkStuff KPI + Sparkline.
+ * @description Dashboard Studio extension entry point for BGDHamp KPI + Sparkline.
  *   Splunk 10.4+ loads this ESM bundle into a host page with `<div id="root">` and wires
  *   search data + formatter options through VisualizationAPI listeners.
  *

@@ -1,5 +1,5 @@
-/* Shared layout with splunkstuff_kpi_line (BEM: splunkstuff-kpi-line-viz). Verbose viz = same pixel appearance. */
-.splunkstuff-kpi-line-viz {
+/* Shared layout with splunkstuff_kpi_line (BEM: bgdhamp-kpi-line-viz). Verbose viz = same pixel appearance. */
+.bgdhamp-kpi-line-viz {
     box-sizing: border-box;
     position: absolute;
     inset: 0;
@@ -12,7 +12,7 @@
     overflow: hidden;
 }
 
-.splunkstuff-kpi-line-viz__header {
+.bgdhamp-kpi-line-viz__header {
     flex: 0 0 auto;
     height: 28px;
     display: flex;
@@ -24,7 +24,7 @@
     font-weight: 500;
 }
 
-.splunkstuff-kpi-line-viz__major {
+.bgdhamp-kpi-line-viz__major {
     flex: 0 0 auto;
     height: 44px;
     display: flex;
@@ -36,7 +36,7 @@
     text-align: center;
 }
 
-.splunkstuff-kpi-line-viz__majorVal {
+.bgdhamp-kpi-line-viz__majorVal {
     font-size: 28px;
     font-weight: 600;
     line-height: 1.1;
@@ -44,13 +44,13 @@
     align-items: baseline;
 }
 
-.splunkstuff-kpi-line-viz__unit {
+.bgdhamp-kpi-line-viz__unit {
     font-size: 0.6em;
     font-weight: 600;
     margin-left: 2px;
 }
 
-.splunkstuff-kpi-line-viz__trend {
+.bgdhamp-kpi-line-viz__trend {
     font-size: 11px;
     font-weight: 500;
     line-height: 1.2;
@@ -58,7 +58,7 @@
     margin-left: 6px;
 }
 
-.splunkstuff-kpi-line-viz__chart {
+.bgdhamp-kpi-line-viz__chart {
     flex: 1 1 auto;
     min-height: 0;
     position: relative;
@@ -67,12 +67,12 @@
     touch-action: manipulation;
 }
 
-.splunkstuff-kpi-line-viz__chart svg {
+.bgdhamp-kpi-line-viz__chart svg {
     display: block;
     width: 100%;
 }
 
-.splunkstuff-kpi-line-viz__hoverAnn {
+.bgdhamp-kpi-line-viz__hoverAnn {
     position: absolute;
     left: 10px;
     bottom: 6px;
@@ -89,7 +89,7 @@
     white-space: nowrap;
 }
 
-.splunkstuff-kpi-line-viz__tooltip {
+.bgdhamp-kpi-line-viz__tooltip {
     position: absolute;
     display: none;
     padding: 6px 8px;
@@ -104,7 +104,7 @@
     z-index: 2147483646;
 }
 
-.splunkstuff-kpi-line-viz__hit {
+.bgdhamp-kpi-line-viz__hit {
     position: absolute;
     inset: 0;
     z-index: 3;
@@ -112,16 +112,16 @@
     cursor: default;
 }
 
-.splunkstuff-kpi-line-viz__tooltipValue {
+.bgdhamp-kpi-line-viz__tooltipValue {
     font-weight: 600;
 }
 
-.splunkstuff-kpi-line-viz__tooltipTime {
+.bgdhamp-kpi-line-viz__tooltipTime {
     opacity: 0.88;
     margin-top: 2px;
 }
 
-.splunkstuff-kpi-line-viz__err {
+.bgdhamp-kpi-line-viz__err {
     padding: 12px;
     font-size: 12px;
     opacity: 0.9;

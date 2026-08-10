@@ -1,14 +1,33 @@
 <!--
-  SplunkStuff — KPI + sparkline (extended formatter)
+  BGDHamp — KPI + sparkline (extended formatter)
 
   {{VIZ_NAMESPACE}} → display.visualizations.custom.<app_id>.splunkstuff_kpi_sparkline
 -->
+<form class="splunk-formatter-section" section-label="Data fields">
+    <splunk-control-group label="Value field">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.valueField" value="auto">
+            <option value="auto">Auto</option>
+            <option value="value">value</option>
+            <option value="total_count">total_count</option>
+            <option value="count">count</option>
+            <option value="total">total</option>
+            <option value="amount">amount</option>
+            <option value="sum">sum</option>
+            <option value="avg">avg</option>
+            <option value="metric">metric</option>
+            <option value="score">score</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+</form>
 <form class="splunk-formatter-section" section-label="Layout">
     <splunk-control-group label="Headline layout">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.headlineLayout" value="stacked">
             <option value="stacked">Stacked</option>
             <option value="inline">Side by side</option>
         </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Major value font size (px)">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.majorFontSize" value="26"></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="Indicator label position">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.labelPosition" value="above">
@@ -38,7 +57,7 @@
         <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkMax" value=""></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="Auto scale from data">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.sparkAuto" value="false">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.sparkAuto" value="true">
             <option value="true">On</option>
             <option value="false">Off</option>
         </splunk-radio-input>

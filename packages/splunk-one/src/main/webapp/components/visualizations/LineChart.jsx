@@ -1,7 +1,12 @@
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { trendBackground } from '../../lib/splunkstuffTrendColors';
-import { clamp, seriesIndexFromPointerMeet } from '../../lib/splunkstuffVizHoverMath.mjs';
+import { trendBackground } from '../../lib/bgdhampTrendColors';
+import {
+    clamp,
+    clampTooltipViewport,
+    seriesIndexFromPointerMeet,
+    seriesIndexFromPointerNone,
+} from '../../lib/bgdhampVizHoverMath.mjs';
 
 function toFiniteNumbers(values) {
     return (Array.isArray(values) ? values : []).map(Number).filter(Number.isFinite);
@@ -437,7 +442,7 @@ export default function LineChart({
                 setTooltipViewport(null);
                 return;
             }
-            const idx = seriesIndexFromPointerMeet(
+            const idx = (fillContainer ? seriesIndexFromPointerNone : seriesIndexFromPointerMeet)(
                 e.clientX,
                 e.clientY,
                 el,
@@ -453,7 +458,13 @@ export default function LineChart({
                 return;
             }
             setHoverIdx(idx);
-            setTooltipViewport({ x: e.clientX, y: e.clientY });
+            const win = el.ownerDocument && el.ownerDocument.defaultView;
+            setTooltipViewport(
+                clampTooltipViewport(e.clientX, e.clientY, {
+                    innerWidth: win ? win.innerWidth : undefined,
+                    innerHeight: win ? win.innerHeight : undefined,
+                })
+            );
         }
 
         const win = vizDocument.defaultView;
@@ -469,7 +480,7 @@ export default function LineChart({
             setHoverIdx(null);
             setTooltipViewport(null);
         };
-    }, [vizDocument, showHover, n, width, chartH, effPadLeft, effPadRight]);
+    }, [vizDocument, showHover, n, width, chartH, effPadLeft, effPadRight, fillContainer]);
 
     useLayoutEffect(() => {
         if (!drilldown || !processed.timeLike || n < 2 || !vizDocument || !vizDocument.defaultView) {
@@ -489,7 +500,7 @@ export default function LineChart({
             ) {
                 return;
             }
-            const idx = seriesIndexFromPointerMeet(
+            const idx = (fillContainer ? seriesIndexFromPointerNone : seriesIndexFromPointerMeet)(
                 e.clientX,
                 e.clientY,
                 el,
@@ -518,7 +529,7 @@ export default function LineChart({
 
         vizDocument.addEventListener('click', onDocClick, true);
         return () => vizDocument.removeEventListener('click', onDocClick, true);
-    }, [vizDocument, drilldown, drilldownQuery, processed.timeLike, processed.ms, n, width, chartH, effPadLeft, effPadRight]);
+    }, [vizDocument, drilldown, drilldownQuery, processed.timeLike, processed.ms, n, width, chartH, effPadLeft, effPadRight, fillContainer]);
 
     const goodCount = processed.series.reduce((acc, s) => acc + s.values.length, 0);
     if (n < 2) {
@@ -700,7 +711,7 @@ export default function LineChart({
 
                 <div
                     ref={setChartAreaEl}
-                    data-testid="splunkstuff-line-chart-area"
+                    data-testid="bgdhamp-line-chart-area"
                     style={{ position: 'relative', width: '100%', height: chartH }}
                 >
                 <svg
@@ -875,7 +886,7 @@ export default function LineChart({
             vizDocument.body
                 ? createPortal(
                       <div
-                          data-testid="splunkstuff-line-hover-tooltip"
+                          data-testid="bgdhamp-line-hover-tooltip"
                           role="status"
                           aria-live="polite"
                           aria-atomic="true"

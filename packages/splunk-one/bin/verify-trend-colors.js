@@ -11,7 +11,7 @@ function assert(cond, msg) {
 
 async function main() {
     const mod = await import(
-        path.join(__dirname, '../src/main/webapp/lib/splunkstuffTrendColors.js')
+        path.join(__dirname, '../src/main/webapp/lib/bgdhampTrendColors.js')
     );
     const {
         DEFAULT_UP_COLOR,

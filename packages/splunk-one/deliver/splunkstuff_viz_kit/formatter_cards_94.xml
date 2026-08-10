@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<!--
+    Portable Splunk 9.4 Simple XML example using real custom visualizations.
+
+    Copy this file to:
+      $SPLUNK_HOME/etc/apps/so_BUI_pickulationts/default/data/ui/views/formatter_cards_94.xml
+
+    Also copy the complete simple_small_viz visualization directory to:
+      $SPLUNK_HOME/etc/apps/so_BUI_pickulationts/appserver/static/visualizations/simple_small_viz/
+
+    The app id, visualization folder, visualizations.conf stanza, <viz type>, and
+    display.visualizations.custom namespace must remain consistent.
+-->
+<dashboard version="1.1">
+    <label>Formatter cards - Splunk 9.4</label>
+    <description>Three real custom-visualization cards. Open a panel's Format menu to exercise formatter.html.</description>
+
+    <row>
+        <panel>
+            <title>Compatibility</title>
+            <viz type="so_BUI_pickulationts.simple_small_viz">
+                <search>
+                    <query>| makeresults | eval value=94 | fields value</query>
+                    <earliest>-1m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="height">160</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.label">Splunk 9.4 compatibility</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.unit">% ready</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.background">#2E6B3F</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.textColor">#FFFFFF</option>
+            </viz>
+        </panel>
+
+        <panel>
+            <title>Runtime package</title>
+            <viz type="so_BUI_pickulationts.simple_small_viz">
+                <search>
+                    <query>| makeresults | eval value=4 | fields value</query>
+                    <earliest>-1m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="height">160</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.label">Required visualization files</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.unit"> files</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.background">#8A5A16</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.textColor">#FFFFFF</option>
+            </viz>
+        </panel>
+
+        <panel>
+            <title>Formatter controls</title>
+            <viz type="so_BUI_pickulationts.simple_small_viz">
+                <search>
+                    <query>| makeresults | eval value=4 | fields value</query>
+                    <earliest>-1m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="height">160</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.label">Editable card properties</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.unit"> controls</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.background">#315D86</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.textColor">#FFFFFF</option>
+            </viz>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <title>Formatter readiness status</title>
+            <table>
+                <search>
+                    <query>
+| makeresults
+| eval Status="Ready", Number=94
+| append [| makeresults | eval Status="Review", Number=4]
+| append [| makeresults | eval Status="Blocked", Number=1]
+| table Status Number
+                    </query>
+                    <earliest>-1m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="count">10</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">none</option>
+                <option name="rowNumbers">false</option>
+                <option name="wrap">true</option>
+                <format type="color" field="Status">
+                    <colorPalette type="map">{"Ready":#2E6B3F,"Review":#B97617,"Blocked":#B33A3A}</colorPalette>
+                </format>
+                <format type="number" field="Number">
+                    <option name="precision">0</option>
+                </format>
+            </table>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <html>
+                <h2>How this example is wired</h2>
+                <p><code>formatter.html</code> supplies Label, Unit suffix, Background, and Text controls.</p>
+                <p>The option namespace is <code>display.visualizations.custom.so_BUI_pickulationts.simple_small_viz.*</code>.</p>
+                <p>On the other computer, copy the XML and the complete visualization directory, merge its <code>visualizations.conf</code> stanza, restart Splunk, and hard-refresh.</p>
+            </html>
+        </panel>
+    </row>
+</dashboard>

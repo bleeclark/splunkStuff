@@ -119,7 +119,7 @@ function main() {
     assert(bundleSource.indexOf('showSparklineAreaGraph') !== -1, 'bundle must support area graph option');
     assert(bundleSource.indexOf('splitByLayout') !== -1, 'bundle must support trellis splitByLayout');
     assert(bundleSource.indexOf('buildSparklineAreaPath') !== -1, 'bundle must build sparkline area path');
-    assert(bundleSource.indexOf('splunkstuff-sparkline-value-viz__hoverOverlay') !== -1, 'bundle must use HTML hover overlay');
+    assert(bundleSource.indexOf('bgdhamp-sparkline-value-viz__hoverOverlay') !== -1, 'bundle must use HTML hover overlay');
 
     const config = JSON.parse(fs.readFileSync(configJson, 'utf8'));
     const schema = config.config && config.config.optionsSchema;
