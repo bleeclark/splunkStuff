@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>KPI sparkline area fill preview</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 28px 32px;
+      background: #1a1d24;
+      color: #f4f6f8;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .sub {
+      margin: 0 0 22px;
+      color: #b8c0cc;
+      font-size: 13px;
+    }
+    .row {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .col {
+      width: 360px;
+    }
+    .label {
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #c9d3de;
+    }
+    .tile {
+      width: 360px;
+      height: 172px;
+      background: #01417F;
+      color: #fff;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .tile.down { background: #DFA611; }
+    .head {
+      flex: 0 0 35px;
+      height: 35px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 500;
+      box-sizing: border-box;
+    }
+    .body {
+      flex: 1;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px 42px;
+      box-sizing: border-box;
+    }
+    .major {
+      font-size: 26px;
+      font-weight: 600;
+      line-height: 1.05;
+    }
+    .delta {
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .spark {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: 4px;
+      height: 36px;
+    }
+    .spark svg { display: block; overflow: visible; }
+  </style>
+</head>
+<body>
+  <h1>splunkstuff KPI sparkline — area fill</h1>
+  <p class="sub">Same sample series as the gallery SPL. Left is the previous stroke-only spark; right is the new shaded fill under the trend line.</p>
+  <div class="row">
+    <div class="col">
+      <div class="label">Before — stroke only</div>
+      <div class="tile" id="before"></div>
+    </div>
+    <div class="col">
+      <div class="label">After — shaded under the line</div>
+      <div class="tile" id="after"></div>
+    </div>
+    <div class="col">
+      <div class="label">Down trend (yellow tile)</div>
+      <div class="tile down" id="down"></div>
+    </div>
+  </div>
+  <script>
+    function sparkPath(values, w, h, padL, padR, padT, padB, vmin, vmax) {
+      var iw = Math.max(1, w - padL - padR);
+      var ih = Math.max(1, h - padT - padB);
+      var len = values.length;
+      if (len < 2) return "";
+      var xStep = iw / (len - 1);
+      var parts = [];
+      for (var i = 0; i < len; i += 1) {
+        var ratio = Math.max(0, Math.min(1, (values[i] - vmin) / (vmax - vmin)));
+        var x = padL + i * xStep;
+        var y = padT + ih - ratio * ih;
+        parts.push((i === 0 ? "M" : "L") + x.toFixed(1) + " " + y.toFixed(1));
+      }
+      return parts.join(" ");
+    }
+    function sparkAreaPath(values, w, h, padL, padR, padT, padB, vmin, vmax) {
+      var line = sparkPath(values, w, h, padL, padR, padT, padB, vmin, vmax);
+      if (!line) return "";
+      var iw = Math.max(1, w - padL - padR);
+      var lastX = padL + (values.length - 1) * (iw / (values.length - 1));
+      var baselineY = h - padB;
+      return line + " L" + lastX.toFixed(1) + " " + baselineY.toFixed(1) + " L" + padL.toFixed(1) + " " + baselineY.toFixed(1) + " Z";
+    }
+    function paintTile(el, values, opts) {
+      var last = values[values.length - 1];
+      var prev = values[values.length - 2];
+      var delta = last - prev;
+      var arrow = delta >= 0 ? "▲ " : "▼ ";
+      el.innerHTML =
+        '<div class="head">' + opts.subheader + '</div>' +
+        '<div class="body">' +
+          '<div class="major">' + last + '</div>' +
+          '<div class="delta">' + arrow + Math.abs(delta) + '</div>' +
+          '<div class="spark"></div>' +
+        '</div>';
+      var spark = el.querySelector(".spark");
+      var w = spark.clientWidth || 344;
+      var h = 36;
+      var padL = 28, padR = 28, padT = 8, padB = 4;
+      var vmin = Math.min.apply(null, values);
+      var vmax = Math.max.apply(null, values);
+      var d = sparkPath(values, w, h, padL, padR, padT, padB, vmin, vmax);
+      var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+      svg.setAttribute("width", String(w));
+      svg.setAttribute("height", String(h));
+      if (opts.fill) {
+        var defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        var grad = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+        grad.setAttribute("id", opts.gid);
+        grad.setAttribute("x1", "0");
+        grad.setAttribute("y1", "0");
+        grad.setAttribute("x2", "0");
+        grad.setAttribute("y2", "1");
+        var s0 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+        s0.setAttribute("offset", "0%");
+        s0.setAttribute("stop-color", "#FFFFFF");
+        s0.setAttribute("stop-opacity", "0.38");
+        var s1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+        s1.setAttribute("offset", "100%");
+        s1.setAttribute("stop-color", "#FFFFFF");
+        s1.setAttribute("stop-opacity", "0");
+        grad.appendChild(s0);
+        grad.appendChild(s1);
+        defs.appendChild(grad);
+        svg.appendChild(defs);
+        var area = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        area.setAttribute("d", sparkAreaPath(values, w, h, padL, padR, padT, padB, vmin, vmax));
+        area.setAttribute("fill", "url(#" + opts.gid + ")");
+        area.setAttribute("stroke", "none");
+        svg.appendChild(area);
+      }
+      var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", d);
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", "#FFFFFF");
+      path.setAttribute("stroke-width", "2");
+      path.setAttribute("vector-effect", "non-scaling-stroke");
+      svg.appendChild(path);
+      spark.appendChild(svg);
+    }
+    var up = [];
+    var down = [];
+    for (var n = 1; n <= 20; n += 1) {
+      up.push(40 + Math.round(18 * Math.sin(n / 3.2) + n * 1.4));
+      down.push(28 + ((n * 13) % 52));
+    }
+    paintTile(document.getElementById("before"), up, { subheader: "Events / hour", fill: false });
+    paintTile(document.getElementById("after"), up, { subheader: "Events / hour", fill: true, gid: "g-up" });
+    paintTile(document.getElementById("down"), down, { subheader: "Events / hour", fill: true, gid: "g-down" });
+  </script>
+</body>
+</html>

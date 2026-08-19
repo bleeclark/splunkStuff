@@ -1,5 +1,6 @@
 <!--
   BGDHamp — KPI + sparkline (extended formatter)
+  formatter-build: 20260817-kpi-spark-panel-h
 
   {{VIZ_NAMESPACE}} → display.visualizations.custom.<app_id>.splunkstuff_kpi_sparkline
 -->
@@ -17,6 +18,26 @@
             <option value="metric">metric</option>
             <option value="score">score</option>
         </splunk-radio-input>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Size and spark">
+    <splunk-control-group label="Visualization height (px)">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.vizHeight" value="172"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Height of this KPI tile (not the table under it). Default 172. Apply after changing.
+    </div>
+    <splunk-control-group label="Sparkline height (px)">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkHeight" value="36"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Area graph (shade under line)">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showSparkArea" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Area color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.sparkAreaColor" value="#FFFFFF"></splunk-color-picker>
     </splunk-control-group>
 </form>
 <form class="splunk-formatter-section" section-label="Layout">
@@ -47,6 +68,20 @@
             <option value="true">On</option>
             <option value="false">Off</option>
         </splunk-radio-input>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Spark line">
+    <splunk-control-group label="Show sparkline">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showSparkline" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Spark stroke color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.sparkStroke" value="#FFFFFF"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Spark stroke width">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkStrokeWidth" value="2"></splunk-text-input>
     </splunk-control-group>
 </form>
 <form class="splunk-formatter-section" section-label="Spark scale">
@@ -104,20 +139,6 @@
             <option value="absolute">Absolute</option>
             <option value="percent">Percent</option>
         </splunk-radio-input>
-    </splunk-control-group>
-</form>
-<form class="splunk-formatter-section" section-label="Spark line">
-    <splunk-control-group label="Show sparkline">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showSparkline" value="true">
-            <option value="true">On</option>
-            <option value="false">Off</option>
-        </splunk-radio-input>
-    </splunk-control-group>
-    <splunk-control-group label="Spark stroke color">
-        <splunk-color-picker name="{{VIZ_NAMESPACE}}.sparkStroke" value="#FFFFFF"></splunk-color-picker>
-    </splunk-control-group>
-    <splunk-control-group label="Spark stroke width">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkStrokeWidth" value="2"></splunk-text-input>
     </splunk-control-group>
 </form>
 <form class="splunk-formatter-section" section-label="Annotations from search">

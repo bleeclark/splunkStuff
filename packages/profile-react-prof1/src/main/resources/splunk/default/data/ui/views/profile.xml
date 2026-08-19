@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<view template="so_profile_prof1:/templates/profile.html" type="html">
+    <label>Profile</label>
+</view>

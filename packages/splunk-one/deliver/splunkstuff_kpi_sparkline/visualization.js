@@ -5,7 +5,7 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20260806-kpi-sparkline-major-font';
+    var VIZ_BUILD = '20260817-kpi-spark-light-wash';
     /** Layout budget: 35px subheader + 137px body = 172px panel default_height. */
     var SUBHEADER_HEIGHT_PX = 35;
     var BODY_FRAME_HEIGHT_PX = 137;
@@ -737,6 +737,70 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return parts.join(' ');
     }
 
+    function sparkAreaPath(values, w, h, padL, padR, padT, padB, vmin, vmax) {
+        var line = sparkPath(values, w, h, padL, padR, padT, padB, vmin, vmax);
+        if (!line) {
+            return '';
+        }
+        var len = values.length;
+        var iw = Math.max(1, w - padL - padR);
+        var xStep = iw / (len - 1);
+        var lastX = padL + (len - 1) * xStep;
+        var baselineY = h - padB;
+        return (
+            line +
+            ' L' +
+            lastX.toFixed(1) +
+            ' ' +
+            baselineY.toFixed(1) +
+            ' L' +
+            padL.toFixed(1) +
+            ' ' +
+            baselineY.toFixed(1) +
+            ' Z'
+        );
+    }
+
+    /** Single Value–style area: flat wash of area color (default spark stroke white) at 20%. */
+    function resolveAreaFill(areaColor) {
+        return { color: areaColor || '#FFFFFF', opacity: '0.2' };
+    }
+
+    function applyVizHeight(el, heightPx) {
+        if (!el || !isFinite(heightPx)) {
+            return;
+        }
+        var h = Math.max(80, Math.min(800, Math.round(heightPx)));
+        var px = h + 'px';
+        var node = el;
+        var hops = 0;
+        while (node && hops < 14) {
+            node.style.height = px;
+            node.style.minHeight = px;
+            var cls = String(node.className || '');
+            if (cls.indexOf('dashboard-element') !== -1) {
+                break;
+            }
+            node = node.parentElement;
+            hops += 1;
+        }
+    }
+
+    function appendSparkAreaFill(svg, areaD, fillColor, fillOpacity) {
+        if (!areaD) {
+            return;
+        }
+        var area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        area.setAttribute('class', 'bgdhamp-sparkline-value-viz__sparkArea');
+        area.setAttribute('d', areaD);
+        area.setAttribute('fill', fillColor);
+        area.setAttribute('fill-opacity', String(fillOpacity));
+        area.setAttribute('stroke', 'none');
+        area.style.fill = fillColor;
+        area.style.fillOpacity = String(fillOpacity);
+        svg.appendChild(area);
+    }
+
     function sparkXY(values, idx, w, h, padL, padR, padT, padB, vmin, vmax) {
         var len = values.length;
         var iw = Math.max(1, w - padL - padR);
@@ -1004,12 +1068,24 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (!isFinite(sparkStrokeWidth) || sparkStrokeWidth <= 0) {
                 sparkStrokeWidth = 2;
             }
+            var sparkAreaColor = sanitizeHexColor(optOr('sparkAreaColor', sparkStroke), sparkStroke);
+            var sparkHeightPx = parseFloat(optOr('sparkHeight', String(SPARK_STRIP_HEIGHT_PX)), 10);
+            if (!isFinite(sparkHeightPx) || sparkHeightPx <= 0) {
+                sparkHeightPx = SPARK_STRIP_HEIGHT_PX;
+            }
+            sparkHeightPx = Math.max(12, Math.min(240, sparkHeightPx));
+            var vizHeightPx = parseFloat(optOr('vizHeight', String(PANEL_DEFAULT_HEIGHT_PX)), 10);
+            if (!isFinite(vizHeightPx) || vizHeightPx <= 0) {
+                vizHeightPx = PANEL_DEFAULT_HEIGHT_PX;
+            }
+            vizHeightPx = Math.max(80, Math.min(800, vizHeightPx));
             var unit = String(opt('unit', '') || '');
             var subheader = String(opt('subheader', '') || '');
             var precision = opt('precision', '2');
             var showDelta = truthy(opt('showDelta', 'true')) && values.length >= 2;
             var deltaMode = String(opt('deltaMode', 'absolute') || 'absolute');
             var showSparkline = truthy(opt('showSparkline', 'true')) && values.length >= 2;
+            var showSparkArea = truthy(optOr('showSparkArea', 'true'));
             var showTarget = truthy(opt('showTarget', 'false'));
             var target = parseFloat(opt('target', '50'), 10);
             var showThresholdBand = truthy(opt('showThresholdBand', 'false'));
@@ -1049,6 +1125,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var last = values[values.length - 1];
             var bg = trendBackground(delta, goodColor, badColor, invertTrend);
             applyTrendHostStyle(this.el, bg, textColor);
+            applyVizHeight(this.el, vizHeightPx);
+            var areaFill = resolveAreaFill(sparkAreaColor);
 
             var ownerDoc = (this.el && this.el.ownerDocument) || document;
             var norm = normalizeTimes(times, values.length);
@@ -1056,6 +1134,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var root = document.createElement('div');
             root.className = 'bgdhamp-sparkline-value-viz';
             root.setAttribute('data-bgdhamp-viz-build', VIZ_BUILD);
+            root.setAttribute('data-bgdhamp-spark-area', showSparkArea ? 'on' : 'off');
             root.setAttribute('data-bgdhamp-frame-subheader', String(SUBHEADER_HEIGHT_PX));
             root.setAttribute('data-ss-frame-body', String(BODY_FRAME_HEIGHT_PX));
             root.setAttribute('data-ss-frame-panel', String(PANEL_DEFAULT_HEIGHT_PX));
@@ -1095,7 +1174,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             body.style.alignItems = 'center';
             body.style.justifyContent = 'center';
             // Reserve bottom strip for spark so KPI + delta fit in the 137px body frame.
-            body.style.padding = showSparkline ? '6px 10px 42px' : '6px 10px 8px';
+            body.style.padding = showSparkline
+                ? '6px 10px ' + (sparkHeightPx + 6) + 'px'
+                : '6px 10px 8px';
             body.style.boxSizing = 'border-box';
             body.style.minHeight = '0';
             body.style.overflow = 'hidden';
@@ -1137,6 +1218,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 hoverAnnEl = ownerDoc.createElement('div');
                 hoverAnnEl.className = 'bgdhamp-sparkline-value-viz__hoverAnn';
                 hoverAnnEl.setAttribute('aria-hidden', 'true');
+                hoverAnnEl.style.bottom = showSparkline ? sparkHeightPx + 16 + 'px' : '8px';
                 body.appendChild(hoverAnnEl);
             }
 
@@ -1145,7 +1227,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var padT = 8;
             var padB = 4;
             var w = 360;
-            var h = SPARK_STRIP_HEIGHT_PX;
+            var h = sparkHeightPx;
             var n = values.length;
             var sparkWrap = null;
 
@@ -1159,7 +1241,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 sparkWrap.style.left = sparkEdgeToEdge ? '0' : '8px';
                 sparkWrap.style.right = sparkEdgeToEdge ? '0' : '8px';
                 sparkWrap.style.bottom = '4px';
-                sparkWrap.style.height = SPARK_STRIP_HEIGHT_PX + 'px';
+                sparkWrap.style.height = sparkHeightPx + 'px';
                 sparkWrap.style.overflow = 'visible';
                 body.appendChild(sparkWrap);
             }
@@ -1220,6 +1302,14 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
                 var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 var d = sparkPath(values, w, h, padL, padR, padT, padB, scale.min, scale.max);
+                if (d && showSparkArea) {
+                    appendSparkAreaFill(
+                        svg,
+                        sparkAreaPath(values, w, h, padL, padR, padT, padB, scale.min, scale.max),
+                        areaFill.color,
+                        areaFill.opacity
+                    );
+                }
                 if (d) {
                     path.setAttribute('d', d);
                     path.setAttribute('fill', 'none');

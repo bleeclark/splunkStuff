@@ -74,6 +74,12 @@ function loadKpiSparklineViz() {
     assert(src.indexOf('subheaderStyle') !== -1, 'kpi sparkline must support subheaderStyle');
     assert(src.indexOf('applySubheaderStyle') !== -1, 'kpi sparkline must apply subheader styles');
     assert(src.indexOf('getBoundingClientRect') !== -1, 'kpi sparkline must measure spark via layout rect');
+    assert(src.indexOf('sparkAreaPath') !== -1, 'kpi sparkline must draw area fill under the spark line');
+    assert(src.indexOf('showSparkArea') !== -1, 'kpi sparkline must support showSparkArea');
+    assert(src.indexOf('sparkHeight') !== -1, 'kpi sparkline must support sparkHeight');
+    assert(src.indexOf('sparkAreaColor') !== -1, 'kpi sparkline must support sparkAreaColor');
+    assert(src.indexOf('vizHeight') !== -1, 'kpi sparkline must support vizHeight');
+    assert(src.indexOf('applyVizHeight') !== -1, 'kpi sparkline must apply vizHeight to the host panel');
     assert(
         src.indexOf('bgdhamp-sparkline-value-viz__hoverOverlay') !== -1,
         'kpi sparkline must use HTML hover overlay'
