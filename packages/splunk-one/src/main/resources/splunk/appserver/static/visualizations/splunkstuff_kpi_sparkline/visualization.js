@@ -5,7 +5,7 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20260817-kpi-spark-light-wash';
+    var VIZ_BUILD = '20260819-kpi-svg-hover';
     /** Layout budget: 35px subheader + 137px body = 172px panel default_height. */
     var SUBHEADER_HEIGHT_PX = 35;
     var BODY_FRAME_HEIGHT_PX = 137;
@@ -61,6 +61,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         pair.className =
             'bgdhamp-sparkline-value-viz__indicatorPair bgdhamp-sparkline-value-viz__indicatorPair--' +
             pos;
+        pair.style.display = 'flex';
+        pair.style.flexDirection = pos === 'right' ? 'row' : 'column';
+        pair.style.alignItems = pos === 'right' ? 'baseline' : 'center';
+        pair.style.justifyContent = 'center';
+        pair.style.gap = pos === 'right' ? '8px' : '2px';
 
         function makeLabel() {
             var lbl = document.createElement('div');
@@ -84,8 +89,39 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
             pair.appendChild(valueEl);
         }
+        pair.style.setProperty('width', 'auto', 'important');
+        pair.style.setProperty('max-width', 'none', 'important');
+        pair.style.setProperty('flex', '0 0 auto', 'important');
         container.appendChild(pair);
         return pair;
+    }
+
+    function shrinkToContent(el) {
+        if (!el) {
+            return;
+        }
+        el.style.setProperty('display', 'inline-flex', 'important');
+        el.style.setProperty('width', 'auto', 'important');
+        el.style.setProperty('max-width', 'none', 'important');
+        el.style.setProperty('min-width', '0', 'important');
+        el.style.setProperty('flex', '0 0 auto', 'important');
+        el.style.setProperty('box-sizing', 'border-box', 'important');
+    }
+
+    function applyHeadlineRowLayout(row, isInline) {
+        if (!row) {
+            return;
+        }
+        row.style.setProperty('display', 'flex', 'important');
+        row.style.setProperty('flex-direction', isInline ? 'row' : 'column', 'important');
+        row.style.setProperty('flex-wrap', isInline ? 'nowrap' : 'nowrap', 'important');
+        row.style.setProperty('align-items', isInline ? 'baseline' : 'center', 'important');
+        row.style.setProperty('justify-content', 'center', 'important');
+        row.style.setProperty('gap', isInline ? '16px' : '8px', 'important');
+        row.style.setProperty('width', isInline ? 'auto' : '100%', 'important');
+        row.style.setProperty('max-width', '100%', 'important');
+        row.style.setProperty('white-space', isInline ? 'nowrap' : 'normal', 'important');
+        row.style.setProperty('text-align', 'center', 'important');
     }
 
     function inlineBadgeStyle(el) {
@@ -239,6 +275,32 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return s === '1' || s === 'true' || s === 'yes' || s === 'on';
     }
 
+    function compactToken(raw) {
+        return String(raw == null ? '' : raw)
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '');
+    }
+
+    function isPercentDelta(mode) {
+        var t = compactToken(mode);
+        return t === 'percent' || t === 'percentage';
+    }
+
+    function normalizeSubheaderStyleName(raw) {
+        var t = compactToken(raw);
+        if (!t || t === 'matchtile' || t.indexOf('match') === 0) {
+            return 'matchtile';
+        }
+        if (t === 'darkblue' || t.indexOf('darkblue') === 0) {
+            return 'darkblue';
+        }
+        if (t === 'overlay' || t.indexOf('overlay') === 0) {
+            return 'overlay';
+        }
+        return 'matchtile';
+    }
+
     function sanitizeHexColor(raw, fallback) {
         var s = String(raw == null ? '' : raw).trim();
         return /^#[0-9A-Fa-f]{6}$/.test(s) ? s : fallback;
@@ -345,7 +407,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     function resolveSubheaderStyle(config, viz) {
         var styleFound = findConfigValue(config, 'subheaderStyle', viz);
         if (styleFound.found && String(styleFound.value).trim()) {
-            return String(styleFound.value).trim().toLowerCase();
+            return normalizeSubheaderStyleName(styleFound.value);
         }
         return truthy(optOrFromConfig(config, viz, 'subheaderMatchTile', 'true')) ? 'matchtile' : 'overlay';
     }
@@ -366,7 +428,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         if (!head) {
             return;
         }
-        var style = String(subheaderStyle || 'matchtile').toLowerCase();
+        var style = normalizeSubheaderStyleName(subheaderStyle);
         var bgColor = 'rgba(0,0,0,0.52)';
         if (style === 'matchtile') {
             bgColor = bg;
@@ -387,6 +449,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         head.style.display = 'flex';
         head.style.alignItems = 'center';
         head.style.overflow = 'hidden';
+        head.style.padding = '0 10px';
+        head.style.fontSize = '12px';
+        head.style.fontWeight = '500';
+        head.style.width = '100%';
+        head.style.boxSizing = 'border-box';
     }
 
     function measureSparkWrap(sparkWrap) {
@@ -855,14 +922,14 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             p = 2;
         }
         var arrow = delta >= 0 ? '\u25b2 ' : '\u25bc ';
-        if (String(mode).toLowerCase() === 'percent' && isFinite(last) && last !== 0) {
+        if (isPercentDelta(mode) && isFinite(last) && last !== 0) {
             var pct = (delta / Math.abs(last)) * 100;
             return arrow + pct.toLocaleString(undefined, { maximumFractionDigits: p }) + '%';
         }
         return arrow + delta.toLocaleString(undefined, { maximumFractionDigits: p });
     }
 
-    function formatHoverValue(v, precision, prefix) {
+    function formatHoverValue(v, precision, unit, prefix) {
         if (!isFinite(v)) {
             return '—';
         }
@@ -870,17 +937,16 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         if (!isFinite(p) || p < 0) {
             p = 2;
         }
-        var core = v.toLocaleString(undefined, { maximumFractionDigits: p, minimumFractionDigits: 0 });
+        var core =
+            v.toLocaleString(undefined, { maximumFractionDigits: p, minimumFractionDigits: 0 }) +
+            String(unit || '');
         var pre = String(prefix || '').trim();
-        if (pre.toLowerCase() === 'value') {
-            pre = '';
-        }
         return pre ? pre + ' ' + core : core;
     }
 
-    function clearSparkHover(sparkWrap, tooltip, hoverAnnEl) {
-        if (sparkWrap) {
-            var old = sparkWrap.querySelector('.bgdhamp-sparkline-value-viz__hoverOverlay');
+    function clearSparkHover(svg, tooltip, hoverAnnEl) {
+        if (svg) {
+            var old = svg.querySelector('.bgdhamp-sparkline-value-viz__hover');
             if (old && old.parentNode) {
                 old.parentNode.removeChild(old);
             }
@@ -894,37 +960,32 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
     }
 
-    function updateSparkHover(sparkWrap, tooltip, ownerDoc, opts) {
-        clearSparkHover(sparkWrap, tooltip, opts.hoverAnnEl);
-        var rect = sparkWrap.getBoundingClientRect();
-        var drawW = Math.max(1, rect.width);
-        var drawH = Math.max(1, rect.height);
-        var px = (opts.hx / opts.w) * drawW;
-        var py = (opts.hy / opts.h) * drawH;
-        var topPx = (opts.padT / opts.h) * drawH;
-        var bottomPx = drawH - (opts.padB / opts.h) * drawH;
+    function updateSparkHover(svg, tooltip, ownerDoc, opts) {
+        clearSparkHover(svg, tooltip, opts.hoverAnnEl);
+        var g = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'bgdhamp-sparkline-value-viz__hover');
+        g.setAttribute('pointer-events', 'none');
 
-        var overlay = ownerDoc.createElement('div');
-        overlay.className = 'bgdhamp-sparkline-value-viz__hoverOverlay';
-        overlay.setAttribute('aria-hidden', 'true');
+        var line = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', opts.hx.toFixed(1));
+        line.setAttribute('x2', opts.hx.toFixed(1));
+        line.setAttribute('y1', String(opts.padT));
+        line.setAttribute('y2', String(opts.h - opts.padB));
+        line.setAttribute('stroke', 'rgba(255,255,255,0.55)');
+        line.setAttribute('stroke-width', '1');
+        g.appendChild(line);
 
-        var line = ownerDoc.createElement('div');
-        line.className = 'bgdhamp-sparkline-value-viz__hoverLine';
-        line.style.left = px.toFixed(1) + 'px';
-        line.style.top = topPx.toFixed(1) + 'px';
-        line.style.height = Math.max(0, bottomPx - topPx).toFixed(1) + 'px';
-        overlay.appendChild(line);
+        var dot = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', opts.hx.toFixed(1));
+        dot.setAttribute('cy', opts.hy.toFixed(1));
+        dot.setAttribute('r', '4');
+        dot.setAttribute('fill', opts.stroke);
+        dot.setAttribute('stroke', 'rgba(0,0,0,0.35)');
+        dot.setAttribute('stroke-width', '1');
+        g.appendChild(dot);
+        svg.appendChild(g);
 
-        var dot = ownerDoc.createElement('div');
-        dot.className = 'bgdhamp-sparkline-value-viz__hoverDot';
-        dot.style.left = (px - 4).toFixed(1) + 'px';
-        dot.style.top = (py - 4).toFixed(1) + 'px';
-        dot.style.background = opts.stroke;
-        overlay.appendChild(dot);
-
-        sparkWrap.appendChild(overlay);
-
-        var valueLabel = formatHoverValue(opts.v, opts.precision, opts.tooltipPrefix);
+        var valueLabel = formatHoverValue(opts.v, opts.precision, opts.unit, opts.tooltipPrefix);
         var timeLabel = opts.timeLabel || '';
         var annotationLabel = opts.annotationLabel || '';
         var pointLabel = opts.pointLabel || '';
@@ -1022,6 +1083,25 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 return String(raw).trim();
             }
 
+            function isInlineHeadline(raw) {
+                var t = compactToken(raw);
+                return (
+                    t === 'inline' ||
+                    t === 'sidebyside' ||
+                    t === 'side' ||
+                    t === 'row' ||
+                    t === 'horizontal'
+                );
+            }
+
+            function isLabelRight(raw) {
+                var s = String(raw == null ? '' : raw)
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[_-]+/g, ' ');
+                return s === 'right' || s === 'right of value' || s === 'rightofvalue';
+            }
+
             if (typeof this._docHoverCleanup === 'function') {
                 this._docHoverCleanup();
                 this._docHoverCleanup = null;
@@ -1048,9 +1128,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var emptyText = String(opt('emptyText', 'No numeric results to display.') || '');
 
             if (values.length === 0) {
+                var emptyBg = sanitizeHexColor(opt('background', '#0B1F3B'), '#0B1F3B');
+                var emptyFg = sanitizeHexColor(opt('textColor', '#FFFFFF'), '#FFFFFF');
+                applyTrendHostStyle(this.el, emptyBg, emptyFg);
                 var empty = document.createElement('div');
                 empty.className = 'bgdhamp-sparkline-value-viz__err';
                 empty.textContent = emptyText;
+                empty.style.padding = '12px';
+                empty.style.fontSize = '12px';
+                empty.style.color = emptyFg;
                 this.el.appendChild(empty);
                 return;
             }
@@ -1101,13 +1187,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 optLabel('sparkPointLabels', DEMO_LABELS.sparkPointLabels)
             );
             var showPointLabels = truthy(optOr('showPointLabels', 'false'));
-            var headlineLayout = String(opt('headlineLayout', 'stacked') || 'stacked').toLowerCase();
+            var headlineLayoutRaw = opt('headlineLayout', 'stacked');
             var majorFontSizePx = parseFloat(opt('majorFontSize', '26'), 10);
             if (!isFinite(majorFontSizePx) || majorFontSizePx <= 0) {
                 majorFontSizePx = 26;
             }
             majorFontSizePx = Math.max(10, Math.min(96, majorFontSizePx));
-            var labelPosition = String(opt('labelPosition', 'above') || 'above').toLowerCase();
+            var labelPositionRaw = opt('labelPosition', 'above');
+            var labelPosition = isLabelRight(labelPositionRaw) ? 'right' : 'above';
+            var headlineIsInline = isInlineHeadline(headlineLayoutRaw);
             var sparkEdgeToEdge = truthy(opt('sparkEdgeToEdge', 'false'));
             var subheaderStyle = resolveSubheaderStyle(config, viz);
             var annotationField = String(opt('annotationField', 'annotation') || '').trim();
@@ -1134,6 +1222,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var root = document.createElement('div');
             root.className = 'bgdhamp-sparkline-value-viz';
             root.setAttribute('data-bgdhamp-viz-build', VIZ_BUILD);
+            root.setAttribute('data-bgdhamp-headline-layout', headlineIsInline ? 'inline' : 'stacked');
             root.setAttribute('data-bgdhamp-spark-area', showSparkArea ? 'on' : 'off');
             root.setAttribute('data-bgdhamp-frame-subheader', String(SUBHEADER_HEIGHT_PX));
             root.setAttribute('data-ss-frame-body', String(BODY_FRAME_HEIGHT_PX));
@@ -1184,10 +1273,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var headlineRow = document.createElement('div');
             headlineRow.className =
                 'bgdhamp-sparkline-value-viz__headlineRow bgdhamp-sparkline-value-viz__headlineRow--' +
-                (headlineLayout === 'inline' ? 'inline' : 'stacked');
+                (headlineIsInline ? 'inline' : 'stacked');
+            applyHeadlineRowLayout(headlineRow, headlineIsInline);
 
             var major = document.createElement('div');
             major.className = 'bgdhamp-sparkline-value-viz__major';
+            shrinkToContent(major);
             var majorVal = document.createElement('div');
             majorVal.className = 'bgdhamp-sparkline-value-viz__majorValue';
             majorVal.textContent = formatMajor(last, precision, unit);
@@ -1201,6 +1292,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (showDelta) {
                 var trend = document.createElement('div');
                 trend.className = 'bgdhamp-sparkline-value-viz__trend';
+                shrinkToContent(trend);
                 var deltaVal = document.createElement('div');
                 deltaVal.className = 'bgdhamp-sparkline-value-viz__trendValue';
                 deltaVal.textContent = formatDelta(delta, last, deltaMode, precision);
@@ -1218,7 +1310,16 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 hoverAnnEl = ownerDoc.createElement('div');
                 hoverAnnEl.className = 'bgdhamp-sparkline-value-viz__hoverAnn';
                 hoverAnnEl.setAttribute('aria-hidden', 'true');
+                hoverAnnEl.style.position = 'absolute';
+                hoverAnnEl.style.left = '10px';
+                hoverAnnEl.style.right = '10px';
                 hoverAnnEl.style.bottom = showSparkline ? sparkHeightPx + 16 + 'px' : '8px';
+                hoverAnnEl.style.display = 'none';
+                hoverAnnEl.style.fontSize = '11px';
+                hoverAnnEl.style.fontWeight = '500';
+                hoverAnnEl.style.textAlign = 'center';
+                hoverAnnEl.style.pointerEvents = 'none';
+                hoverAnnEl.style.zIndex = '2';
                 body.appendChild(hoverAnnEl);
             }
 
@@ -1382,21 +1483,20 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     var teardown = [];
                     function onDocPointerMove(e) {
                         if (!hitTestSpark(e.clientX, e.clientY)) {
-                            clearSparkHover(sparkWrap, tooltip, hoverAnnEl);
+                            clearSparkHover(svg, tooltip, hoverAnnEl);
                             return;
                         }
                         var idx = sparkIndexFromPointer(e.clientX, sparkWrap, padL, padR, w, n);
                         if (idx == null) {
-                            clearSparkHover(sparkWrap, tooltip, hoverAnnEl);
+                            clearSparkHover(svg, tooltip, hoverAnnEl);
                             return;
                         }
                         var xy = sparkXY(values, idx, w, h, padL, padR, padT, padB, scale.min, scale.max);
                         var hoverAnnotation =
                             showAnnotationHover && annotations[idx] ? annotations[idx] : '';
-                        updateSparkHover(sparkWrap, tooltip, ownerDoc, {
+                        updateSparkHover(svg, tooltip, ownerDoc, {
                             hx: xy.x,
                             hy: xy.y,
-                            w: w,
                             h: h,
                             padT: padT,
                             padB: padB,
@@ -1431,7 +1531,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                         for (ti = 0; ti < teardown.length; ti += 1) {
                             teardown[ti]();
                         }
-                        clearSparkHover(sparkWrap, tooltip, hoverAnnEl);
+                        clearSparkHover(svg, tooltip, hoverAnnEl);
                     };
                 }
                 };

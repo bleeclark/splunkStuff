@@ -46,16 +46,29 @@
 }
 
 .bgdhamp-sparkline-value-viz__headlineRow--stacked {
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
 }
 
 .bgdhamp-sparkline-value-viz__headlineRow--inline {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 16px;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: baseline !important;
+    gap: 16px !important;
+    width: auto !important;
+    max-width: 100%;
+    white-space: nowrap;
+}
+
+.bgdhamp-sparkline-value-viz__headlineRow--inline > .bgdhamp-sparkline-value-viz__major,
+.bgdhamp-sparkline-value-viz__headlineRow--inline > .bgdhamp-sparkline-value-viz__trend {
+    width: auto !important;
+    max-width: none !important;
+    flex: 0 0 auto !important;
+    display: inline-flex !important;
 }
 
 .bgdhamp-sparkline-value-viz__major {
@@ -120,33 +133,6 @@
 .bgdhamp-sparkline-value-viz__spark svg {
     display: block;
     overflow: visible;
-}
-
-.bgdhamp-sparkline-value-viz__hoverOverlay {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 2;
-}
-
-.bgdhamp-sparkline-value-viz__hoverLine {
-    position: absolute;
-    width: 1px;
-    margin-left: -0.5px;
-    background: rgba(255, 255, 255, 0.35);
-}
-
-.bgdhamp-sparkline-value-viz__hoverDot {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    margin: 0;
-    border-radius: 50%;
-    border: 1px solid rgba(0, 0, 0, 0.35);
-    box-sizing: border-box;
 }
 
 .bgdhamp-sparkline-value-viz__indicatorLabel {

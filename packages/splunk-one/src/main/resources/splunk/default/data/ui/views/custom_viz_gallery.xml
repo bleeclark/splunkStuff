@@ -251,7 +251,8 @@
 | streamstats count as n
 | eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
 | eval value = 28 + ((n * 13) % 52)
-| fields _time value
+| eval annotation=if((n % 7)=0, "note", "")
+| fields _time value annotation
 | sort 0 _time
 | tail 20
                 </query>

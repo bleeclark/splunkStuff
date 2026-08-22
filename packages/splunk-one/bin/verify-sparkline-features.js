@@ -69,7 +69,8 @@ function loadKpiSparklineViz() {
         src.indexOf('Sparkline value needs a numeric column') === -1,
         'kpi sparkline must not throw Single Value–incompatible VisualizationError'
     );
-    assert(src.indexOf('headlineLayout') !== -1, 'kpi sparkline must support headlineLayout');
+    assert(src.indexOf('applyHeadlineRowLayout') !== -1, 'kpi sparkline must apply headlineLayout in JS');
+    assert(src.indexOf('shrinkToContent') !== -1, 'kpi sparkline must keep headline blocks content-sized');
     assert(src.indexOf('showAnnotationHover') !== -1, 'kpi sparkline must support annotation hover');
     assert(src.indexOf('subheaderStyle') !== -1, 'kpi sparkline must support subheaderStyle');
     assert(src.indexOf('applySubheaderStyle') !== -1, 'kpi sparkline must apply subheader styles');
@@ -80,10 +81,14 @@ function loadKpiSparklineViz() {
     assert(src.indexOf('sparkAreaColor') !== -1, 'kpi sparkline must support sparkAreaColor');
     assert(src.indexOf('vizHeight') !== -1, 'kpi sparkline must support vizHeight');
     assert(src.indexOf('applyVizHeight') !== -1, 'kpi sparkline must apply vizHeight to the host panel');
+    assert(src.indexOf('opt(\'background\'') !== -1, 'kpi sparkline must apply empty-state background');
+    assert(src.indexOf('normalizeSubheaderStyleName') !== -1, 'kpi sparkline must normalize subheaderStyle tokens');
+    assert(src.indexOf('isPercentDelta') !== -1, 'kpi sparkline must normalize deltaMode percent');
     assert(
-        src.indexOf('bgdhamp-sparkline-value-viz__hoverOverlay') !== -1,
-        'kpi sparkline must use HTML hover overlay'
+        src.indexOf('bgdhamp-sparkline-value-viz__hover') !== -1,
+        'kpi sparkline must use SVG hover marks'
     );
+    assert(src.indexOf('hoverOverlay') === -1, 'kpi sparkline must not use HTML hover overlay');
     return filePath;
 }
 
