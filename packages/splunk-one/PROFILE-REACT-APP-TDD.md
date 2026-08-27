@@ -5,7 +5,8 @@
 **App:** `so_BUI_pickulationts`  
 **Primary page:** `/app/so_BUI_pickulationts/profile` (HTML React view — **not** Dashboard Studio)  
 **Related page:** `/app/so_BUI_pickulationts/feedback`  
-**Audience:** Engineering, product, QA, Splunk admins
+**Audience:** Engineering, product, QA, Splunk admins  
+**Full architecture diagrams:** [`PROFILE-REACT-ARCHITECTURE.md`](./PROFILE-REACT-ARCHITECTURE.md)
 
 ---
 

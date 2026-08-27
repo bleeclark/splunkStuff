@@ -69,8 +69,8 @@ function loadKpiSparklineViz() {
         src.indexOf('Sparkline value needs a numeric column') === -1,
         'kpi sparkline must not throw Single Value–incompatible VisualizationError'
     );
-    assert(src.indexOf('applyHeadlineRowLayout') !== -1, 'kpi sparkline must apply headlineLayout in JS');
-    assert(src.indexOf('shrinkToContent') !== -1, 'kpi sparkline must keep headline blocks content-sized');
+    assert(src.indexOf('HEADLINE_MIN_PX') !== -1, 'kpi sparkline must reserve headline space above spark');
+    assert(src.indexOf('HOVER_ANN_MIN_GAP_PX') !== -1, 'kpi sparkline must gate in-chart hover annotation by space');
     assert(src.indexOf('showAnnotationHover') !== -1, 'kpi sparkline must support annotation hover');
     assert(src.indexOf('subheaderStyle') !== -1, 'kpi sparkline must support subheaderStyle');
     assert(src.indexOf('applySubheaderStyle') !== -1, 'kpi sparkline must apply subheader styles');

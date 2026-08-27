@@ -5,12 +5,16 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20260819-kpi-svg-hover';
+    var VIZ_BUILD = '20260824-kpi-no-overlap';
     /** Layout budget: 35px subheader + 137px body = 172px panel default_height. */
     var SUBHEADER_HEIGHT_PX = 35;
     var BODY_FRAME_HEIGHT_PX = 137;
     var PANEL_DEFAULT_HEIGHT_PX = SUBHEADER_HEIGHT_PX + BODY_FRAME_HEIGHT_PX;
     var SPARK_STRIP_HEIGHT_PX = 36;
+    /** Minimum vertical space reserved for KPI + delta above the spark. */
+    var HEADLINE_MIN_PX = 64;
+    /** Minimum space above spark before in-chart hover annotation is allowed. */
+    var HOVER_ANN_MIN_GAP_PX = 28;
     var DEMO_LABELS = {
         majorLabel: '',
         deltaLabel: '',
@@ -813,7 +817,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         var iw = Math.max(1, w - padL - padR);
         var xStep = iw / (len - 1);
         var lastX = padL + (len - 1) * xStep;
-        var baselineY = h - padB;
+        // Flush to the SVG bottom (ignore padB) so the wash meets the tile edge.
+        var baselineY = h;
         return (
             line +
             ' L' +
@@ -1172,6 +1177,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var deltaMode = String(opt('deltaMode', 'absolute') || 'absolute');
             var showSparkline = truthy(opt('showSparkline', 'true')) && values.length >= 2;
             var showSparkArea = truthy(optOr('showSparkArea', 'true'));
+            // Cap spark so KPI + delta always keep a readable band above it.
+            if (showSparkline) {
+                var reservedAboveSpark =
+                    (subheader ? SUBHEADER_HEIGHT_PX : 0) + HEADLINE_MIN_PX + 12;
+                var maxSparkForTile = Math.max(12, vizHeightPx - reservedAboveSpark);
+                if (sparkHeightPx > maxSparkForTile) {
+                    sparkHeightPx = maxSparkForTile;
+                }
+            }
             var showTarget = truthy(opt('showTarget', 'false'));
             var target = parseFloat(opt('target', '50'), 10);
             var showThresholdBand = truthy(opt('showThresholdBand', 'false'));
@@ -1179,6 +1193,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var thresholdMax = parseFloat(opt('thresholdMax', '80'), 10);
             var showHover = truthy(opt('showHover', 'true'));
             var showHoverAnnotation = truthy(optOr('showHoverAnnotation', 'true'));
+            // In-chart hover text sits above the spark; skip it when that band is too thin
+            // (tooltip still shows). Fixes overlap at vizHeight=140 / sparkHeight=70.
+            var bodyBudgetPx = vizHeightPx - (subheader ? SUBHEADER_HEIGHT_PX : 0);
+            var spaceAboveSparkPx = showSparkline
+                ? bodyBudgetPx - sparkHeightPx - 12
+                : bodyBudgetPx;
+            if (showHoverAnnotation && spaceAboveSparkPx < HOVER_ANN_MIN_GAP_PX) {
+                showHoverAnnotation = false;
+            }
             var tooltipPrefix = String(optOr('tooltipPrefix', '') || '');
             var majorLabel = optLabel('majorLabel', DEMO_LABELS.majorLabel);
             var deltaLabel = optLabel('deltaLabel', DEMO_LABELS.deltaLabel);
@@ -1304,6 +1327,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
 
             body.appendChild(headlineRow);
+            headlineRow.style.position = 'relative';
+            headlineRow.style.zIndex = '3';
 
             var hoverAnnEl = null;
             if (showHoverAnnotation) {
@@ -1313,20 +1338,20 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 hoverAnnEl.style.position = 'absolute';
                 hoverAnnEl.style.left = '10px';
                 hoverAnnEl.style.right = '10px';
-                hoverAnnEl.style.bottom = showSparkline ? sparkHeightPx + 16 + 'px' : '8px';
+                hoverAnnEl.style.bottom = showSparkline ? sparkHeightPx + 8 + 'px' : '8px';
                 hoverAnnEl.style.display = 'none';
                 hoverAnnEl.style.fontSize = '11px';
                 hoverAnnEl.style.fontWeight = '500';
                 hoverAnnEl.style.textAlign = 'center';
                 hoverAnnEl.style.pointerEvents = 'none';
-                hoverAnnEl.style.zIndex = '2';
+                hoverAnnEl.style.zIndex = '1';
                 body.appendChild(hoverAnnEl);
             }
 
             var padL = sparkEdgeToEdge ? 0 : 28;
             var padR = sparkEdgeToEdge ? 0 : 28;
             var padT = 8;
-            var padB = 4;
+            var padB = 0;
             var w = 360;
             var h = sparkHeightPx;
             var n = values.length;
@@ -1341,7 +1366,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 sparkWrap.style.position = 'absolute';
                 sparkWrap.style.left = sparkEdgeToEdge ? '0' : '8px';
                 sparkWrap.style.right = sparkEdgeToEdge ? '0' : '8px';
-                sparkWrap.style.bottom = '4px';
+                sparkWrap.style.bottom = '0';
                 sparkWrap.style.height = sparkHeightPx + 'px';
                 sparkWrap.style.overflow = 'visible';
                 body.appendChild(sparkWrap);

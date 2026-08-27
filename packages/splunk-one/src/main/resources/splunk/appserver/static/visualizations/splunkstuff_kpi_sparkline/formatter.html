@@ -1,6 +1,6 @@
 <!--
   BGDHamp — KPI + sparkline (extended formatter)
-  formatter-build: 20260819-kpi-svg-hover
+  formatter-build: 20260824-kpi-no-overlap
 
   {{VIZ_NAMESPACE}} → display.visualizations.custom.<app_id>.splunkstuff_kpi_sparkline
 -->
@@ -26,6 +26,7 @@
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
         Height of this KPI tile (not the table under it). Default 172. Apply after changing.
+        Spark height is capped so the KPI and delta stay readable.
     </div>
     <splunk-control-group label="Sparkline height (px)">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.sparkHeight" value="36"></splunk-text-input>

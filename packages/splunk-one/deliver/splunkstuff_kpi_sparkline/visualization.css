@@ -120,7 +120,7 @@
     position: absolute;
     left: 8px;
     right: 8px;
-    bottom: 4px;
+    bottom: 0;
     height: 36px;
     overflow: visible;
 }
