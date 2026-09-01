@@ -7,15 +7,14 @@ import TabBar from '@splunk/react-ui/TabBar';
 import Select from '@splunk/react-ui/Select';
 import Button from '@splunk/react-ui/Button';
 import Modal from '@splunk/react-ui/Modal';
+import Message from '@splunk/react-ui/Message';
+import WaitSpinner from '@splunk/react-ui/WaitSpinner';
 
 import LineChart from '../../components/visualizations/LineChart';
 import { useContainerSize } from '../../hooks/useContainerSize';
 
-import {
-    FILTER_OPTIONS,
-    getMetricFeeds,
-    getProfileFeed,
-} from './profileFeeds';
+import { FILTER_OPTIONS } from './profileContract';
+import { useProfileData } from './hooks/useProfileData';
 import {
     Page,
     PageHeader,
@@ -24,6 +23,9 @@ import {
     FilterLabel,
     ButtonRow,
     CardGrid,
+    SummaryCard,
+    KpiValue,
+    KpiDelta,
     VizCard,
     VizPanel,
     TabPanel,
@@ -37,7 +39,6 @@ const palette = {
     textColor: '#FFFFFF',
 };
 
-/** Full-bleed chart height inside each VizCard (fills the panel edge-to-edge). */
 const VIZ_HEIGHT_DESKTOP = 168;
 const VIZ_HEIGHT_NARROW = 140;
 
@@ -103,11 +104,39 @@ function FullBleedChart({ feed, unit = '', panelHeight }) {
     );
 }
 
+function PanelStatus({ loading, error, empty }) {
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <WaitSpinner size="small" />
+                <span style={{ color: 'rgba(255,255,255,0.72)' }}>Running Splunk search…</span>
+            </div>
+        );
+    }
+    if (error) {
+        return (
+            <Message type="error" appearance="fill" style={{ marginBottom: 16 }}>
+                {String(error.message || error)}
+            </Message>
+        );
+    }
+    if (empty) {
+        return (
+            <Message type="info" appearance="fill" style={{ marginBottom: 16 }}>
+                No results for this filter.
+            </Message>
+        );
+    }
+    return null;
+}
+
 function ProfileTabContent() {
     const [filter, setFilter] = useState('all');
     const [actionModalOpen, setActionModalOpen] = useState(false);
     const vizHeight = useVizPanelHeight();
-    const data = getProfileFeed(filter);
+    const { data, loading, error } = useProfileData('profile', filter);
+    const cards = Array.isArray(data?.cards) ? data.cards : [];
+    const viz = Array.isArray(data?.viz) ? data.viz : [];
 
     return (
         <TabPanel>
@@ -134,11 +163,7 @@ function ProfileTabContent() {
                         appearance="secondary"
                         onClick={() => setActionModalOpen(true)}
                     />
-                    <Button
-                        label="Action 2"
-                        appearance="secondary"
-                        to={ACTION_2_URL}
-                    />
+                    <Button label="Action 2" appearance="secondary" to={ACTION_2_URL} />
                     <Button
                         label="Action 3"
                         appearance="secondary"
@@ -156,8 +181,8 @@ function ProfileTabContent() {
                 <Modal.Header title="Action 1" />
                 <Modal.Body>
                     <Paragraph>
-                        Placeholder modal for Action 1. Replace this content when you
-                        title the button.
+                        Placeholder modal for Action 1. Replace this content when you title the
+                        button.
                     </Paragraph>
                 </Modal.Body>
                 <Modal.Footer>
@@ -169,9 +194,27 @@ function ProfileTabContent() {
                 </Modal.Footer>
             </Modal>
 
+            <PanelStatus
+                loading={loading}
+                error={error}
+                empty={!loading && !error && cards.length === 0 && viz.length === 0}
+            />
+
             <CardGrid columns={3}>
-                {data.viz.map((vizFeed, index) => (
-                    <VizCard key={`${filter}-viz-${index}`} title={`card ${index + 1}`}>
+                {cards.map((card) => (
+                    <SummaryCard key={`${filter}-${card.title}`} title={card.title}>
+                        <KpiValue>{card.value}</KpiValue>
+                        <KpiDelta>{card.delta}</KpiDelta>
+                    </SummaryCard>
+                ))}
+            </CardGrid>
+
+            <CardGrid columns={3}>
+                {viz.map((vizFeed, index) => (
+                    <VizCard
+                        key={`${filter}-viz-${index}`}
+                        title={vizFeed.subheader || `card ${index + 1}`}
+                    >
                         <VizPanel height={vizHeight}>
                             <FullBleedChart feed={vizFeed} panelHeight={vizHeight} />
                         </VizPanel>
@@ -185,18 +228,15 @@ function ProfileTabContent() {
 function MetricTabContent() {
     const [metricModalOpen, setMetricModalOpen] = useState(false);
     const vizHeight = useVizPanelHeight();
-    const metrics = getMetricFeeds();
+    const { data, loading, error } = useProfileData('metric', 'all');
+    const metrics = Array.isArray(data?.cards) ? data.cards : [];
 
     return (
         <TabPanel>
             <FilterRow>
                 <FilterLabel>Metrics</FilterLabel>
                 <ButtonRow>
-                    <Button
-                        label="Metric A"
-                        appearance="secondary"
-                        to={ACTION_2_URL}
-                    />
+                    <Button label="Metric A" appearance="secondary" to={ACTION_2_URL} />
                     <Button
                         label="Metric B"
                         appearance="secondary"
@@ -213,8 +253,8 @@ function MetricTabContent() {
                 <Modal.Header title="Metric B" />
                 <Modal.Body>
                     <Paragraph>
-                        Placeholder modal for Metric B. Replace this content when you
-                        title the button.
+                        Placeholder modal for Metric B. Replace this content when you title the
+                        button.
                     </Paragraph>
                 </Modal.Body>
                 <Modal.Footer>
@@ -226,8 +266,14 @@ function MetricTabContent() {
                 </Modal.Footer>
             </Modal>
 
+            <PanelStatus
+                loading={loading}
+                error={error}
+                empty={!loading && !error && metrics.length === 0}
+            />
+
             <CardGrid columns={2}>
-                {metrics.cards.map((item) => (
+                {metrics.map((item) => (
                     <VizCard key={item.title} title={item.title}>
                         <VizPanel height={vizHeight}>
                             <FullBleedChart

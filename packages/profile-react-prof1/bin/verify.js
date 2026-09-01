@@ -69,7 +69,10 @@ function main() {
     const page = fs.readFileSync(pageSrc, 'utf8');
     assert(page.includes('@splunk/react-page/18'), 'page must boot with react-page/18');
     assert(page.includes('getUserTheme'), 'page must use getUserTheme()');
-    assert(page.includes('FILTER_OPTIONS') || page.includes('getProfileFeed'), 'page must wire filter feeds');
+    assert(
+        page.includes('useProfileData') || page.includes('FILTER_OPTIONS'),
+        'page must wire live useProfileData / filter'
+    );
 
     if (fs.existsSync(stageRoot)) {
         checkRoot(stageRoot, requiredStage, 'stage');

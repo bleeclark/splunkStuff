@@ -1,24 +1,19 @@
 /**
- * PROF-1 Profile page — Studio → React cutover scaffold.
- *
- * In scope (TDD PROF-1):
- * - Boot with @splunk/react-page/18 + getUserTheme()
- * - Navy page shell + header
- * - Filter Select (All / Region A / Region B)
- * - Embedded original Profile content: KPI summary cards + viz panels
- *
- * Out of scope (follow-on stories): Metric tab, action modals/nav, live Splunk REST.
+ * PROF-1 Profile page — live Splunk REST data only (no mock fixtures).
  */
 import React, { useEffect, useState } from 'react';
 import layout from '@splunk/react-page/18';
 import { getUserTheme } from '@splunk/splunk-utils/themes';
 
 import Select from '@splunk/react-ui/Select';
+import Message from '@splunk/react-ui/Message';
+import WaitSpinner from '@splunk/react-ui/WaitSpinner';
 
 import LineChart from '../../components/visualizations/LineChart';
 import { useContainerSize } from '../../hooks/useContainerSize';
 
-import { FILTER_OPTIONS, getProfileFeed } from './profileFeeds';
+import { FILTER_OPTIONS } from './profileContract';
+import { useProfileData } from './hooks/useProfileData';
 import {
     Page,
     PageHeader,
@@ -105,9 +100,9 @@ function FullBleedChart({ feed, panelHeight }) {
 function ProfileContent() {
     const [filter, setFilter] = useState('all');
     const vizHeight = useVizPanelHeight();
-    const data = getProfileFeed(filter);
-    const cards = Array.isArray(data.cards) ? data.cards : [];
-    const viz = Array.isArray(data.viz) ? data.viz : [];
+    const { data, loading, error } = useProfileData('profile', filter);
+    const cards = Array.isArray(data?.cards) ? data.cards : [];
+    const viz = Array.isArray(data?.viz) ? data.viz : [];
 
     return (
         <>
@@ -130,6 +125,23 @@ function ProfileContent() {
                 </FilterCluster>
             </FilterRow>
 
+            {loading ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                    <WaitSpinner size="small" />
+                    <span style={{ color: 'rgba(255,255,255,0.72)' }}>Running Splunk search…</span>
+                </div>
+            ) : null}
+            {error ? (
+                <Message type="error" appearance="fill" style={{ marginBottom: 16 }}>
+                    {String(error.message || error)}
+                </Message>
+            ) : null}
+            {!loading && !error && cards.length === 0 && viz.length === 0 ? (
+                <Message type="info" appearance="fill" style={{ marginBottom: 16 }}>
+                    No results for this filter.
+                </Message>
+            ) : null}
+
             <CardGrid columns={3}>
                 {cards.map((card) => (
                     <SummaryCard key={`${filter}-${card.title}`} title={card.title}>
@@ -141,7 +153,10 @@ function ProfileContent() {
 
             <CardGrid columns={3}>
                 {viz.map((vizFeed, index) => (
-                    <VizCard key={`${filter}-viz-${index}`} title={vizFeed.subheader || `card ${index + 1}`}>
+                    <VizCard
+                        key={`${filter}-viz-${index}`}
+                        title={vizFeed.subheader || `card ${index + 1}`}
+                    >
                         <VizPanel height={vizHeight}>
                             <FullBleedChart feed={vizFeed} panelHeight={vizHeight} />
                         </VizPanel>

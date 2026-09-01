@@ -3,12 +3,12 @@ import test from 'node:test';
 
 import {
     FILTER_OPTIONS,
-    getMetricFeeds,
-    getProfileFeed,
+    emptyProfileFeed,
     isValidProfileFeedShape,
-    metricFeeds,
-    profileFeeds,
-} from '../../src/main/webapp/pages/profile/profileFeeds.js';
+    mapRowsToMetricFeeds,
+    mapRowsToProfileFeed,
+} from '../../src/main/webapp/pages/profile/profileContract.js';
+import { filtersToSplunkParams, substituteSplTokens } from '../../src/main/webapp/pages/profile/filters/filtersToSplunkParams.js';
 
 test('FILTER_OPTIONS covers all / region_a / region_b', () => {
     assert.deepEqual(
@@ -17,50 +17,41 @@ test('FILTER_OPTIONS covers all / region_a / region_b', () => {
     );
 });
 
-test('getProfileFeed returns filter-keyed feeds with UI contract shape', () => {
-    for (const key of ['all', 'region_a', 'region_b']) {
-        const feed = getProfileFeed(key);
-        assert.equal(isValidProfileFeedShape(feed), true, key);
-        assert.equal(feed.cards.length, 3);
-        assert.equal(feed.viz.length, 3);
-        assert.equal(feed, profileFeeds[key]);
-    }
+test('emptyProfileFeed is a valid empty shape', () => {
+    const feed = emptyProfileFeed();
+    assert.equal(isValidProfileFeedShape(feed), true);
+    assert.equal(feed.cards.length, 0);
+    assert.equal(feed.viz.length, 0);
 });
 
-test('getProfileFeed falls back to all for unknown or empty keys', () => {
-    assert.equal(getProfileFeed('unknown'), profileFeeds.all);
-    assert.equal(getProfileFeed(undefined), profileFeeds.all);
-    assert.equal(getProfileFeed(''), profileFeeds.all);
-    assert.equal(getProfileFeed(null), profileFeeds.all);
-});
-
-test('region feeds differ from all (filter actually swaps values)', () => {
-    const all = getProfileFeed('all');
-    const a = getProfileFeed('region_a');
-    const b = getProfileFeed('region_b');
-    assert.notDeepEqual(a.viz[0].values, all.viz[0].values);
-    assert.notDeepEqual(b.viz[0].values, all.viz[0].values);
-    assert.notDeepEqual(a.cards[0].value, b.cards[0].value);
-});
-
-test('metric feeds are independent of profile filter keys', () => {
-    const metrics = getMetricFeeds();
-    assert.equal(metrics, metricFeeds);
-    assert.ok(Array.isArray(metrics.cards));
-    assert.equal(metrics.cards.length, 2);
-    assert.ok(metrics.cards.every((c) => c.title && c.feed && Array.isArray(c.feed.values)));
-    assert.notEqual(metrics, getProfileFeed('all'));
-});
-
-test('isValidProfileFeedShape rejects broken objects', () => {
-    assert.equal(isValidProfileFeedShape(null), false);
-    assert.equal(isValidProfileFeedShape({}), false);
-    assert.equal(isValidProfileFeedShape({ cards: [], viz: [] }), false);
-    assert.equal(
-        isValidProfileFeedShape({
-            cards: [{ title: 'x', value: '1', delta: '' }],
-            viz: [{ subheader: 's', values: [1], times: [] }],
-        }),
-        false
+test('mapRowsToProfileFeed builds cards + viz from live rows', () => {
+    const feed = mapRowsToProfileFeed(
+        [{ title: 'Active users', value: '12', delta: '+1%' }],
+        [
+            { series: 'Active users', _time: '2024-06-01T00:00:00Z', value: 10 },
+            { series: 'Active users', _time: '2024-06-01T01:00:00Z', value: 12 },
+        ]
     );
+    assert.equal(isValidProfileFeedShape(feed), true);
+    assert.equal(feed.cards[0].title, 'Active users');
+    assert.equal(feed.viz[0].values.length, 2);
+});
+
+test('mapRowsToMetricFeeds groups by title', () => {
+    const metrics = mapRowsToMetricFeeds([
+        { title: 'Throughput', _time: '2024-06-01T00:00:00Z', value: 5 },
+        { title: 'Throughput', _time: '2024-06-01T01:00:00Z', value: 8 },
+    ]);
+    assert.equal(metrics.cards.length, 1);
+    assert.equal(metrics.cards[0].feed.values.length, 2);
+});
+
+test('filtersToSplunkParams maps region filter', () => {
+    assert.equal(filtersToSplunkParams('all').filter_region, '*');
+    assert.equal(filtersToSplunkParams('region_a').filter_region, 'region_a');
+});
+
+test('substituteSplTokens replaces $tokens$', () => {
+    const out = substituteSplTokens('region=$filter_region$', { filter_region: 'region_b' });
+    assert.equal(out, 'region=region_b');
 });

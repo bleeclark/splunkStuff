@@ -6,7 +6,9 @@
 **Companion TDD:** [`PROFILE-REACT-APP-TDD.md`](./PROFILE-REACT-APP-TDD.md)  
 **Audience:** Engineering, product, QA  
 
-This document draws the **entire** Profile React architecture: packaging, page shell, data (mock → live), Studio replacement, and how filter/actions map to Splunk jobs.
+This document draws the **entire** Profile React architecture: packaging, page shell, **live Splunk REST data only**, Studio replacement, and how filter/actions map to Splunk jobs.
+
+There is **no mock / demo fixture data path**. UI always consumes live search results shaped as `{ cards, viz }`.
 
 ---
 
@@ -55,15 +57,14 @@ flowchart LR
     STok --> SPanel2
   end
 
-  subgraph react [React HTML Profile - TDD target]
+  subgraph react [React HTML Profile - live data]
     RFilter[Filter Select<br/>React state]
-    RHook["useProfileData<br/>PROF-40"]
+    RHook["useProfileData"]
     RJobs["Splunk REST jobs<br/>/services/search/jobs"]
     RShape["Stable feed shape<br/>cards + viz"]
     RUI[KPI cards + charts]
     RFilter --> RHook
-    RHook -->|mock default| RShape
-    RHook -->|?data=splunk| RJobs
+    RHook --> RJobs
     RJobs --> RShape
     RShape --> RUI
   end
@@ -77,14 +78,14 @@ flowchart LR
 | **Dashboard tokens** | Studio writes `$tok_ent$`-style values; panel searches substitute them automatically. |
 | **Panel SPL** | Each Studio panel’s search string. |
 | **Filter Select (React)** | Same product idea, stored in React `useState` — **not** Studio tokens. |
-| **useProfileData** | Planned data hook (PROF-40): mock vs live, always returns one UI contract. |
-| **Splunk REST jobs** | Live mode: create + poll search jobs. Replaces Studio datasources. |
-| **Stable feed shape** | `{ cards, viz }` object the UI already understands (see §6). |
-| **KPI cards + charts** | Visible Profile content (`NewSingleValue`, `LineChart`, summary cards). |
+| **useProfileData** | Live-only data hook: always runs REST searches, returns one UI contract. |
+| **Splunk REST jobs** | Create + poll search jobs. Replaces Studio datasources. |
+| **Stable feed shape** | `{ cards, viz }` object the UI understands (see §6). |
+| **KPI cards + charts** | Visible Profile content (`LineChart`, summary cards, …). |
 
 **One-line rule:**  
 Studio = Filter → **tokens** → panel SPL.  
-React = Filter → **state** → **REST jobs** (or mock) → feed shape → UI.
+React = Filter → **state** → **REST jobs** → feed shape → UI.
 
 ---
 
@@ -137,10 +138,10 @@ flowchart TB
 
   ProfTab --> Toolbar[FILTER Select + Actions 1/2/3]
   ProfTab --> Cards[3 summary KPI cards]
-  ProfTab --> Viz[3 viz cards: NewSingleValue x2 + LineChart]
+  ProfTab --> Viz[3 viz cards]
 
   MetTab --> MetToolbar[Metric A / Metric B]
-  MetTab --> MetViz[2 viz cards from metricFeeds]
+  MetTab --> MetViz[2 viz cards from live metric searches]
 
   Toolbar -->|Action 1| Modal1[Modal]
   Toolbar -->|Action 2| FeedbackNav[Navigate to Feedback]
@@ -154,72 +155,44 @@ flowchart TB
 | **Navy shell** | Full-page chrome `#0B1F3B` for Profile/Feedback. |
 | **Header** | Title left, brand mark right. |
 | **TabBar** | Profile vs Metric on one URL (no full reload). |
-| **FILTER Select** | Keys: `all` / `region_a` / `region_b` (demo; parity later). |
+| **FILTER Select** | Keys mapped to SPL/REST params (e.g. region). |
 | **Actions 1/2/3** | Modal / Feedback / external (labels may be renamed later). |
-| **Summary KPI cards** | Driven by `feed.cards`. |
-| **Viz cards** | Driven by `feed.viz` + shared viz components. |
-| **Metric tab** | Independent of Profile filter unless product later unifies. |
+| **Summary KPI cards** | Driven by live `feed.cards`. |
+| **Viz cards** | Driven by live `feed.viz` + shared viz components. |
+| **Metric tab** | Live searches independent of Profile filter unless product later unifies. |
 | **Feedback navigate** | In-app route to `/app/so_BUI_pickulationts/feedback`. |
 
 ---
 
-## 5. Data architecture (today → live)
-
-### 5.1 Current (PROF-1): mock only
-
-```mermaid
-flowchart LR
-  Filter[filter state]
-  Feeds[profileFeeds.js]
-  Get[getProfileFeed filterKey]
-  UI[Cards + charts]
-
-  Filter --> Get
-  Feeds --> Get
-  Get --> UI
-```
-
-| Box | Meaning |
-|-----|---------|
-| **filter state** | React state from the Select. |
-| **profileFeeds.js** | In-memory fixtures keyed by filter. |
-| **getProfileFeed** | Picks the feed object for that key (fallback `all`). |
-| **Cards + charts** | Re-render when filter changes. **No Splunk jobs yet.** |
-
-### 5.2 Target (PROF-40 / 41 / 42): mock + Splunk jobs
+## 5. Data architecture (live only)
 
 ```mermaid
 flowchart TB
-  User[User changes filter / opens tab / drills]
-  Page[Single Profile React page]
+  User[User changes filter / opens tab]
+  Page[Profile React page]
   Hook[useProfileData]
+  Map["Map filter → SPL / REST params"]
+  Jobs["POST + poll /services/search/jobs"]
+  Adapt[Adapt rows → cards + viz shape]
+  Shape[Stable feed shape]
+  UI[KPI cards + charts]
+  States[Per-panel loading / empty / error]
 
   User --> Page --> Hook
-  Hook --> Mode{mode?}
-
-  Mode -->|default mock| Mock[profileFeeds / fixtures]
-  Mode -->|?data=splunk| Map["PROF-41 map filter → SPL / REST params"]
-  Map --> Jobs["POST + poll /services/search/jobs"]
-  Jobs --> Adapt[Adapt rows → cards + viz shape]
-  Mock --> Shape[Stable feed shape]
-  Adapt --> Shape
-  Shape --> UI[KPI cards + charts]
-  Hook --> States[PROF-42 per-panel loading / empty / error]
-  States --> UI
+  Hook --> Map --> Jobs --> Adapt --> Shape --> UI
+  Hook --> States --> UI
 ```
 
 | Box | Meaning |
 |-----|---------|
-| **Single Profile React page** | Everything stays on one page; clicks don’t need Studio tokens. |
-| **useProfileData** | Owns fetch mode, cancellation, and shaping. |
-| **mock** | Local/dev default; fast UI work. |
-| **PROF-41 map** | Same *meaning* as old `$tok_ent$`, implemented as REST/SPL args — **not** Studio token bus. |
+| **useProfileData** | Owns fetch, cancellation, and shaping. **Always live** — no fixture branch. |
+| **Map** | Same *meaning* as old `$tok_ent$`, as REST/SPL args — **not** Studio token bus. |
 | **REST jobs** | Live searches; re-run when filter changes. |
 | **Adapt** | Convert job results into `{ cards, viz }`. |
-| **Stable feed shape** | UI contract unchanged when swapping mock → Splunk. |
-| **PROF-42 states** | Spinner / empty / error per panel; never blank whole page. |
+| **Stable feed shape** | UI contract; empty/error keep the shell intact. |
+| **Panel states** | Spinner / empty / error per panel; never blank the whole page. |
 
-### 5.3 Filter change sequence (live mode)
+### Filter change sequence
 
 ```mermaid
 sequenceDiagram
@@ -235,15 +208,15 @@ sequenceDiagram
   Note over D,S: Parity with old token values as REST/SPL args
   S-->>D: sid then results
   D->>D: Build cards + viz objects
-  D-->>R: Same feed shape as mock
-  R-->>U: Cards/charts update
+  D-->>R: feed shape + loading/error status
+  R-->>U: Cards/charts update or empty/error panel
 ```
 
 ---
 
 ## 6. UI contract (stable)
 
-Filter keys (demo):
+Filter keys (product may remap labels/values for Studio parity):
 
 | Value | Label |
 |-------|-------|
@@ -251,7 +224,7 @@ Filter keys (demo):
 | `region_a` | Region A |
 | `region_b` | Region B |
 
-Feed shape (mock and live must match):
+Feed shape (live results must map into this):
 
 ```js
 {
@@ -270,16 +243,19 @@ This is the React replacement for Studio datasources.
 |------|------|
 | Profile entry | `src/main/webapp/pages/profile/index.jsx` |
 | Styles / layout | `src/main/webapp/pages/profile/ProfileStyles.jsx` |
-| Demo feeds | `src/main/webapp/pages/profile/profileFeeds.js` |
+| Live data hook | `src/main/webapp/pages/profile/hooks/useProfileData.js` |
+| Filter → SPL params | `src/main/webapp/pages/profile/filters/filtersToSplunkParams.js` |
+| REST search client | `src/main/webapp/pages/profile/data/profileSearchClient.js` |
+| Feed contract helpers | `src/main/webapp/pages/profile/profileContract.js` |
 | Feedback entry | `src/main/webapp/pages/feedback/index.jsx` |
 | Profile template | `appserver/templates/profile.html` |
 | Feedback template | `appserver/templates/feedback.html` |
 | Views | `default/data/ui/views/profile.xml`, `feedback.xml` |
 | Nav | `default/data/ui/nav/default.xml` |
-| Shared viz | `src/main/webapp/components/visualizations/` (`NewSingleValue`, `LineChart`, …) |
+| Shared viz | `src/main/webapp/components/visualizations/` |
 | Built bundles | `stage/appserver/static/pages/profile.js`, `feedback.js` |
 
-Standalone PROF-1 transfer package (optional): `packages/profile-react-prof1/` (app id `so_profile_prof1`).
+Standalone transfer package (optional): `packages/profile-react-prof1/`.
 
 ---
 
@@ -287,8 +263,8 @@ Standalone PROF-1 transfer package (optional): `packages/profile-react-prof1/` (
 
 | Story | Role in this architecture |
 |-------|---------------------------|
-| **PROF-1** | Packaging + mock page + filter + embedded content |
-| **PROF-40** | `useProfileData` mock + `?data=splunk` |
+| **PROF-1** | Packaging + filter + embedded content wired to live data |
+| **PROF-40** | `useProfileData` live REST (no mock mode) |
 | **PROF-41** | Filter → SPL / REST params (not Studio tokens) |
 | **PROF-42** | Per-panel loading / empty / error |
 | **PROF-43** | Optional time range on toolbar |
@@ -314,4 +290,4 @@ http://127.0.0.1:8001/en-US/app/so_BUI_pickulationts/feedback
 
 ## 10. Scrum one-liner
 
-> Profile is one React HTML page that replaced Studio. Filters are React state. Live data will load Splunk search jobs via REST (PROF-40/41)—we do **not** pass Dashboard Studio tokens. Mock and live both feed the same `cards` + `viz` shape.
+> Profile is one React HTML page that replaced Studio. Filters are React state. Data always loads via Splunk REST search jobs (PROF-40/41)—we do **not** pass Dashboard Studio tokens and we do **not** ship mock fixtures. Live rows map into the stable `cards` + `viz` shape.

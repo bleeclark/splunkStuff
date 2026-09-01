@@ -1,7 +1,7 @@
 # Profile React App — TDD + Jira Stories
 
-**Status:** Partial implementation (React HTML Profile scaffold live; Studio Profile retired as the primary surface; live Splunk data and polish remaining)  
-**Last updated:** 2026-08-10  
+**Status:** Partial implementation (React HTML Profile scaffold live; Studio Profile retired as the primary surface; **live Splunk REST data only** — no mock fixtures; polish remaining)  
+**Last updated:** 2026-08-31  
 **App:** `so_BUI_pickulationts`  
 **Primary page:** `/app/so_BUI_pickulationts/profile` (HTML React view — **not** Dashboard Studio)  
 **Related page:** `/app/so_BUI_pickulationts/feedback`  
@@ -40,11 +40,11 @@ stage/appserver/static/pages/feedback.js
 - Deliver that React Profile page with packaging that matches other React pages (`pages/` → Webpack → Mako template → `type="html"` view XML → nav).
 - On first ship (PROF-1): include **filtering** and **embed the original Profile page content** (layout, KPIs, charts, controls) as React components — not an iframe of Studio.
 - Support **Profile** and **Metric** tabs on one page (post-scaffold UX stories).
-- Drive KPI cards and charts from a **filter Select** (parity with original Studio tokens / options; demo keys All / Region A / Region B initially).
+- Drive KPI cards and charts from a **filter Select** (parity with original Studio tokens / options).
 - Provide action buttons with distinct behaviors (modal, internal page, external link).
 - Provide a **Feedback** page reachable from Profile actions and app nav.
 - Match visualization navy (`#0B1F3B`) as the full page chrome for Profile/Feedback.
-- Start with demo feeds; later support Splunk REST searches without changing the UI contract.
+- Drive all KPI/viz panels from **live Splunk REST searches** via `useProfileData` (stable `{ cards, viz }` contract). No mock/demo fixture datasets.
 
 ## 3. Non-Goals (current phase)
 
@@ -87,8 +87,8 @@ flowchart TB
   feedbackTpl[templates/feedback.html]
   profileJs[pages/profile.js]
   feedbackJs[pages/feedback.js]
-  feeds[profileFeeds.js demo data]
-  viz[NewSingleValue / LineChart]
+  feeds[useProfileData live REST]
+  viz[LineChart / KPI cards]
 
   studioX -.->|replaced by| profileView
   nav --> profileView
@@ -121,7 +121,10 @@ flowchart TB
 |------|------|
 | Profile entry | `src/main/webapp/pages/profile/index.jsx` |
 | Profile styles / layout | `src/main/webapp/pages/profile/ProfileStyles.jsx` |
-| Demo feeds (filter-keyed) | `src/main/webapp/pages/profile/profileFeeds.js` |
+| Live data hook | `src/main/webapp/pages/profile/hooks/useProfileData.js` |
+| REST search client | `src/main/webapp/pages/profile/data/profileSearchClient.js` |
+| Filter → SPL params | `src/main/webapp/pages/profile/filters/filtersToSplunkParams.js` |
+| Feed contract / mappers | `src/main/webapp/pages/profile/profileContract.js` |
 | Feedback entry | `src/main/webapp/pages/feedback/index.jsx` |
 | Profile template | `appserver/templates/profile.html` |
 | Feedback template | `appserver/templates/feedback.html` |
@@ -156,14 +159,14 @@ flowchart TB
 ### 7.3 Profile tab
 
 - Toolbar: uppercase **FILTER** label + `Select` (All / Region A / Region B) + action buttons (wrap-friendly layout).
-- Three summary KPI cards driven by `profileFeeds[filter].cards` (original page content in React).
-- Three visualization cards driven by `profileFeeds[filter].viz` (`NewSingleValue` ×2 + `LineChart` ×1).
-- Changing filter re-renders cards and charts from the matching feed object.
+- Three summary KPI cards driven by live `useProfileData` → `feed.cards`.
+- Three visualization cards driven by live `feed.viz` (`LineChart`).
+- Changing filter re-runs Splunk REST searches and re-renders cards/charts.
 
 ### 7.4 Metric tab
 
 - Toolbar with Metric A / Metric B buttons.
-- Two viz cards from `metricFeeds` (independent of Profile filter).
+- Two viz cards from live metric searches via `useProfileData('metric')` (independent of Profile filter).
 
 | Control | Behavior |
 |---------|----------|
@@ -186,7 +189,7 @@ flowchart TB
 
 ### 7.7 Data (current)
 
-Demo-only JavaScript fixtures in `profileFeeds.js`. No Splunk REST searches yet.
+**Live only.** `useProfileData` always POSTs/polls `/services/search/jobs` and maps rows into `{ cards, viz }`. Loading / empty / error states stay on the page shell. No JavaScript fixture datasets.
 
 ---
 
@@ -206,14 +209,14 @@ These items complete the “entire React app” beyond the PROF-1 Studio→React
 
 ### 8.2 Data layer
 
-- Introduce `useProfileData` (mock vs `?data=splunk`) similar to Risk.
+- `useProfileData` is **live-only** (always Splunk REST; no mock mode / `?data=` switch).
 - Map React filter state → SPL / REST params (same semantics as former Studio `$token$` searches).
 - Per-panel loading / error / empty states (`PanelShell`-style).
 - Optional time range control on Profile toolbar.
 
 ### 8.3 Quality
 
-- Unit tests for feed selection by filter key (`yarn test:profile` → `test/profile/profileFeeds.test.mjs`).
+- Unit tests for live row → feed mappers + filter→SPL params (`yarn test:profile` → `test/profile/profileFeeds.test.mjs`).
 - Playwright artifact smoke: `test/playwright/profile-feedback.spec.ts` (stage bundles + view XML + nav).
 - Stage verify: `yarn verify:profile-feedback`.
 - Manual smoke: Profile loads, filter swaps values, Action 1 modal open/close, Action 2 routes to Feedback, Metric A → Feedback, Metric B modal (see §11 + §11.1 device matrix).
@@ -233,13 +236,13 @@ These items complete the “entire React app” beyond the PROF-1 Studio→React
 
 ### Filter keys
 
-Demo / scaffold keys (PROF-1). PROF-11 may remap to original Studio token values (e.g. `tok_ent`) without changing the feed object shape.
+Live filter values mapped to SPL `$filter_region$` (PROF-11 may remap to original Studio token values without changing the feed object shape).
 
 | Value | Label | Notes |
 |-------|-------|-------|
-| `all` | All | Demo “All”; map to `*` if matching Classic/Studio token style |
-| `region_a` | Region A | Demo; replace with Studio option values when parity table lands |
-| `region_b` | Region B | Demo; replace with Studio option values when parity table lands |
+| `all` | All | Maps to `*` in SPL |
+| `region_a` | Region A | Maps to REST/SPL param |
+| `region_b` | Region B | Maps to REST/SPL param |
 
 ### Feed shape
 
@@ -250,7 +253,7 @@ Demo / scaffold keys (PROF-1). PROF-11 may remap to original Studio token values
 }
 ```
 
-UI must keep working if mock feeds are replaced by Splunk-mapped objects of the same shape (PROF-40). This is the React replacement for Studio datasources.
+UI consumes this shape from live Splunk row mappers (PROF-40). This is the React replacement for Studio datasources.
 
 ---
 
@@ -331,7 +334,7 @@ Create the **main Profile page in React** and wire it into the Splunk app so it 
 1. **Packaging** — Webpack entry under `src/main/webapp/pages/profile/`, Mako template (`profile.html`) loading `pages/profile.js` with cache-bust `?v=`, `default/data/ui/views/profile.xml` with `type="html"`, and nav `<view name="profile" />` so Profile opens as an HTML React view at `/app/so_BUI_pickulationts/profile`.
 2. **Initial page** — Boot with `@splunk/react-page/18` + `getUserTheme()`; render the first usable Profile UI (header/shell + content), not an empty stub.
 3. **Filtering** — Include the Profile filter control on the initial page (Select driven by filter keys; demo options All / Region A / Region B are fine for v1) so changing the filter updates the embedded page content.
-4. **Embed the original page** — Recreate / port the original Studio Profile content into React (KPI summary cards + visualization panels using shared React viz components and `profileFeeds` or equivalent). Do **not** iframe Studio. Goal: users land on a fully React page that carries forward the original Profile experience.
+4. **Embed the original page** — Recreate / port the original Studio Profile content into React (KPI summary cards + visualization panels using shared React viz components fed by **live** `useProfileData`). Do **not** iframe Studio. Goal: users land on a fully React page that carries forward the original Profile experience with Splunk REST data.
 5. **Cutover** — Nav Profile points at the React view; document that Studio is no longer the Profile home. Note app id spelling (`so_BUI_pickulationts`) and that new views often need Splunk restart/refresh before they stop 404’ing.
 
 **Out of scope for PROF-1 (follow-on stories):** Metric tab depth (PROF-10/13), action modal/nav polish (PROF-20+), live Splunk REST (PROF-40+), brand/final copy (PROF-14/32).
@@ -386,13 +389,13 @@ On the React Profile page delivered by PROF-1, implement a Splunk React UI `TabB
 **Type:** Story · **Points:** 3 · **Priority:** Highest  
 
 **Description:**  
-PROF-1 already ships a working filter on the initial React page. This story hardens **filter parity** with the original Studio Profile (option labels/values / token semantics such as `tok_ent` or region keys) and locks the feed contract (`cards` + `viz` shape in §9) so live Splunk data (PROF-40+) can swap in later. Changing the filter must reliably re-render the three summary KPI cards and three visualization cards. Empty or missing data must degrade safely (empty/safe UI), not throw a hard VisualizationError that blanks the page. Demo fixtures in `profileFeeds.js` remain acceptable until PROF-40.
+PROF-1 already ships a working filter on the initial React page. This story hardens **filter parity** with the original Studio Profile (option labels/values / token semantics such as `tok_ent` or region keys) and locks the feed contract (`cards` + `viz` shape in §9) so live Splunk row mappers stay stable. Changing the filter must re-run searches and re-render the three summary KPI cards and three visualization cards. Empty or missing data must degrade safely (empty/safe UI), not throw a hard VisualizationError that blanks the page.
 
 **Acceptance criteria:**
 - [ ] Filter options/values documented against original Studio inputs (parity table).
-- [ ] Changing filter updates three KPI cards and three viz from filter-keyed feeds.
+- [ ] Changing filter updates three KPI cards and three viz from live searches.
 - [ ] No hard VisualizationError; empty data shows empty/safe UI.
-- [ ] Feed shape stable for PROF-40 mock→Splunk swap.
+- [ ] Feed shape stable for live row → UI mapping.
 
 ##### PROF-12 — Profile toolbar layout (filter + actions)
 **Type:** Story · **Points:** 3 · **Priority:** High  
@@ -408,7 +411,7 @@ Polish the Profile tab toolbar that PROF-1 introduced: uppercase **FILTER** labe
 **Type:** Story · **Points:** 3 · **Priority:** Medium  
 
 **Description:**  
-Build the Metric tab content on the React Profile page (not a separate Studio dashboard): a toolbar with **Metric A** and **Metric B** buttons plus two visualization cards fed by `metricFeeds` (independent of the Profile filter unless product later asks for shared state — see open decisions). Wire Metric A to navigate to the Feedback view URL, and Metric B to open a Splunk UI Modal dismissible via Close, header X, and Escape. Placeholder labels are fine until PROF-14.
+Build the Metric tab content on the React Profile page (not a separate Studio dashboard): a toolbar with **Metric A** and **Metric B** buttons plus two visualization cards fed by live `useProfileData('metric')` (independent of the Profile filter unless product later asks for shared state — see open decisions). Wire Metric A to navigate to the Feedback view URL, and Metric B to open a Splunk UI Modal dismissible via Close, header X, and Escape. Placeholder labels are fine until PROF-14.
 
 **Acceptance criteria:**
 - [ ] Two metric buttons and two cards with visualizations under them.
@@ -521,23 +524,23 @@ Replace the placeholder header mark with the product-supplied brand logo under `
 
 #### Workstream: Live Splunk data
 
-##### PROF-40 — Profile data hook (mock + Splunk mode)
+##### PROF-40 — Profile data hook (live Splunk REST only)
 **Type:** Story · **Points:** 8 · **Priority:** High  
 
 **Description:**  
-Introduce a data layer (e.g. `useProfileData`) that defaults to mock/demo feeds for local and day-to-day UI work, and can switch to live Splunk REST searches via a clear flag such as `?data=splunk` (same idea as Risk). This replaces Studio datasources for Profile: UI components must keep consuming the stable card/viz feed shape from §9 / PROF-1 so mock → Splunk is a data swap, not a layout rewrite or a return to Studio. This is the largest live-data story and unblocks token mapping and panel states.
+Introduce a live-only data layer (`useProfileData`) that always runs Splunk REST searches (create + poll `/services/search/jobs`). There is **no mock/demo fixture mode** and no `?data=splunk` switch — Profile is live by default. UI components consume the stable card/viz feed shape from §9. This replaces Studio datasources for Profile and unblocks token mapping and panel states.
 
 **Acceptance criteria:**
-- [ ] Default mock feeds for local/dev.
-- [ ] `?data=splunk` (or equivalent) runs REST searches.
-- [ ] UI continues to consume the same card/viz shape from the React Profile page.
+- [ ] `useProfileData` always runs REST searches (no mock branch).
+- [ ] UI consumes the same card/viz shape from the React Profile page.
+- [ ] Loading / empty / error do not blank the whole page.
 - [ ] No dependency on Dashboard Studio datasources for Profile.
 
 ##### PROF-41 — Filter → SPL / token mapping
 **Type:** Story · **Points:** 5 · **Priority:** High  
 
 **Description:**  
-Map Profile React filter values (region / entity / whatever PROF-11 parity table defined, including original Studio tokens such as `$tok_ent$` if applicable) to Splunk search tokens / REST params so changing the Select actually changes live search results, not only mock fixtures. Document example SPL per panel (cards and viz) so search authors and engineers share one contract — the React-side equivalent of Classic/Studio `$token$` substitution. Depends on PROF-40’s Splunk mode being available.
+Map Profile React filter values (region / entity / whatever PROF-11 parity table defined, including original Studio tokens such as `$tok_ent$` if applicable) to Splunk search tokens / REST params so changing the Select changes live search results. Document example SPL per panel (cards and viz) so search authors and engineers share one contract — the React-side equivalent of Classic/Studio `$token$` substitution. Depends on PROF-40.
 
 **Acceptance criteria:**
 - [ ] Filter values map to search tokens / REST params (parity with original Studio tokens where they existed).
@@ -558,7 +561,7 @@ Add per-panel (or PanelShell-style) loading, empty, and error states for Splunk-
 **Type:** Story · **Points:** 5 · **Priority:** Medium  
 
 **Description:**  
-Add an optional time range control to the React Profile toolbar that affects Splunk-backed panels once product agrees on apply vs auto-submit behavior (open decision). If the original Studio Profile had a time picker, prefer matching that behavior. Mock-only mode may ignore or stub the control. Schedule after core live data works; skip or defer if product decides time range is out of Profile v1.
+Add an optional time range control to the React Profile toolbar that affects Splunk-backed panels once product agrees on apply vs auto-submit behavior (open decision). If the original Studio Profile had a time picker, prefer matching that behavior. Schedule after core live data works; skip or defer if product decides time range is out of Profile v1.
 
 **Acceptance criteria:**
 - [ ] Time control affects Splunk-backed panels after apply/submit model agreed with product.
@@ -636,7 +639,7 @@ Run formal UAT against the §11 test plan (T1–T12) and §11.1 device matrix on
 | Area | Status |
 |------|--------|
 | PROF-1: React packaging + nav replacing Studio Profile | Done (scaffold) |
-| PROF-1: Initial filter + embedded original page content in React | Done (demo feeds) |
+| PROF-1: Initial filter + embedded original page content in React | Done (live REST) |
 | Tabs, toolbar polish, navy theme, logo mark | Done (scaffold) |
 | Action 1 modal / Action 2 Feedback / Action 3 external | Done (scaffold) |
 | Metric A → Feedback / Metric B modal | Done (scaffold) |
@@ -645,6 +648,6 @@ Run formal UAT against the §11 test plan (T1–T12) and §11.1 device matrix on
 | Container-measured charts + none-stretch hover / tooltip clamp | Done |
 | Automated unit + Playwright artifact smoke (PROF-50 partial) | Done |
 | Filter/token parity vs original Studio (PROF-11) | Partial / needs product table |
-| Live Splunk data / loading states (PROF-40+) | Not started |
+| Live Splunk data / loading states (PROF-40+) | In progress (live-only hook landed; product SPL TBD) |
 | Final copy, brand asset, persistence | Not started |
 | Formal §11 / §11.1 UAT sign-off (PROF-52) | Not started |
