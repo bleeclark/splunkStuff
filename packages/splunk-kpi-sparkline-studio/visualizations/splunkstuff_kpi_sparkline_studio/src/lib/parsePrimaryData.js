@@ -150,7 +150,7 @@ function pickNumericColumnIndex(searchData, preferredFieldName) {
     }
     let bestColumnIndex = -1;
     for (let columnIndex = 0; columnIndex < searchData.columns.length; columnIndex += 1) {
-        if (readFieldName(fields, columnIndex) === '_time') {
+        if (readFieldName(fields, columnIndex) === '_time' || readFieldName(fields, columnIndex).charAt(0) === '_') {
             continue;
         }
         const column = searchData.columns[columnIndex] || [];
@@ -288,7 +288,7 @@ function buildSeriesFromPairs(sortedPairs) {
  *   primary: { valueSeries: number[], timeSeries: Array<*>, valueFieldName: string, stringFieldsByName: object },
  *   trellisGroups: Array
  * }}
- * @throws {Error} When no numeric column or no parseable numbers exist
+ * Soft-fails (empty series) when no usable metric — Single Value–compatible.
  */
 export function parsePrimarySearchData(searchData, resolvedOptions) {
     if (!searchData || !searchData.columns || searchData.columns.length === 0) {
@@ -300,25 +300,31 @@ export function parsePrimarySearchData(searchData, resolvedOptions) {
 
     const fields = readFieldsList(searchData);
     const valueColumnIndex = pickNumericColumnIndex(searchData, resolvedOptions.majorValueFieldName);
+    // Soft-fail like Single Value: empty series when no usable metric (no throw).
     if (valueColumnIndex < 0) {
-        throw new Error('KPI sparkline needs a numeric column (e.g. value) beside _time.');
+        return {
+            primary: { valueSeries: [], timeSeries: [], valueFieldName: '', stringFieldsByName: {} },
+            trellisGroups: [],
+        };
     }
 
     const sortedPairs = buildTimeSortedValuePairs(searchData, valueColumnIndex);
     const primarySeries = buildSeriesFromPairs(sortedPairs);
-    if (!primarySeries.valueSeries.length) {
-        throw new Error('KPI sparkline found a value column but no parseable numbers in results.');
-    }
-
     const primary = {
-        valueSeries: primarySeries.valueSeries,
-        timeSeries: primarySeries.timeSeries,
+        valueSeries: primarySeries.valueSeries || [],
+        timeSeries: primarySeries.timeSeries || [],
         valueFieldName: readFieldName(fields, valueColumnIndex),
-        stringFieldsByName: buildStringFieldsByTime(searchData, valueColumnIndex),
+        stringFieldsByName: primarySeries.valueSeries.length
+            ? buildStringFieldsByTime(searchData, valueColumnIndex)
+            : {},
     };
 
     let trellisGroups = [];
-    if (resolvedOptions.splitByLayout === 'trellis' && resolvedOptions.trellisSplitByField) {
+    if (
+        primary.valueSeries.length &&
+        resolvedOptions.splitByLayout === 'trellis' &&
+        resolvedOptions.trellisSplitByField
+    ) {
         trellisGroups = buildTrellisGroups(searchData, valueColumnIndex, resolvedOptions.trellisSplitByField);
     }
 

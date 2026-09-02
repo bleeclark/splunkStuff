@@ -5,25 +5,57 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20260609-kpi-sparkline-header-hover-fix';
+    var VIZ_BUILD = '20260824-kpi-no-overlap';
+    /** Layout budget: 35px subheader + 137px body = 172px panel default_height. */
+    var SUBHEADER_HEIGHT_PX = 35;
+    var BODY_FRAME_HEIGHT_PX = 137;
+    var PANEL_DEFAULT_HEIGHT_PX = SUBHEADER_HEIGHT_PX + BODY_FRAME_HEIGHT_PX;
+    var SPARK_STRIP_HEIGHT_PX = 36;
+    /** Minimum vertical space reserved for KPI + delta above the spark. */
+    var HEADLINE_MIN_PX = 64;
+    /** Minimum space above spark before in-chart hover annotation is allowed. */
+    var HOVER_ANN_MIN_GAP_PX = 28;
     var DEMO_LABELS = {
         majorLabel: '',
         deltaLabel: '',
         badgeText: '',
         sparkPointLabels: '',
     };
+    /** Prefer these names when Format valueField is Auto (Single Value–like panels). */
+    var VALUE_FIELD_HINTS = [
+        'value',
+        'total_count',
+        'count',
+        'total',
+        'amount',
+        'sum',
+        'avg',
+        'metric',
+        'score',
+    ];
+    /** Skip Splunk metadata that looks numeric but is constant (flat sparklines). */
+    var SKIP_VALUE_FIELDS = {
+        _time: true,
+        _span: true,
+        _spandays: true,
+        _si: true,
+        _serial: true,
+        _cd: true,
+        _indextime: true,
+        linecount: true,
+    };
 
     function inlineCaptionStyle(el, textColor) {
         el.style.display = 'block';
-        el.style.fontSize = '13px';
+        el.style.fontSize = '11px';
         el.style.fontWeight = '700';
-        el.style.lineHeight = '1.2';
+        el.style.lineHeight = '1.15';
         el.style.color = textColor;
         el.style.textShadow = '0 1px 2px rgba(0,0,0,0.35)';
-        el.style.padding = '2px 8px';
+        el.style.padding = '1px 6px';
         el.style.borderRadius = '3px';
         el.style.background = 'rgba(0,0,0,0.28)';
-        el.style.marginBottom = '2px';
+        el.style.marginBottom = '1px';
         el.style.textAlign = 'center';
     }
 
@@ -31,12 +63,17 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         var pos = position === 'right' ? 'right' : 'above';
         var pair = document.createElement('div');
         pair.className =
-            'splunkstuff-sparkline-value-viz__indicatorPair splunkstuff-sparkline-value-viz__indicatorPair--' +
+            'bgdhamp-sparkline-value-viz__indicatorPair bgdhamp-sparkline-value-viz__indicatorPair--' +
             pos;
+        pair.style.display = 'flex';
+        pair.style.flexDirection = pos === 'right' ? 'row' : 'column';
+        pair.style.alignItems = pos === 'right' ? 'baseline' : 'center';
+        pair.style.justifyContent = 'center';
+        pair.style.gap = pos === 'right' ? '8px' : '2px';
 
         function makeLabel() {
             var lbl = document.createElement('div');
-            lbl.className = 'splunkstuff-sparkline-value-viz__indicatorLabel';
+            lbl.className = 'bgdhamp-sparkline-value-viz__indicatorLabel';
             lbl.textContent = labelText;
             inlineCaptionStyle(lbl, textColor);
             if (pos === 'right') {
@@ -56,8 +93,39 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
             pair.appendChild(valueEl);
         }
+        pair.style.setProperty('width', 'auto', 'important');
+        pair.style.setProperty('max-width', 'none', 'important');
+        pair.style.setProperty('flex', '0 0 auto', 'important');
         container.appendChild(pair);
         return pair;
+    }
+
+    function shrinkToContent(el) {
+        if (!el) {
+            return;
+        }
+        el.style.setProperty('display', 'inline-flex', 'important');
+        el.style.setProperty('width', 'auto', 'important');
+        el.style.setProperty('max-width', 'none', 'important');
+        el.style.setProperty('min-width', '0', 'important');
+        el.style.setProperty('flex', '0 0 auto', 'important');
+        el.style.setProperty('box-sizing', 'border-box', 'important');
+    }
+
+    function applyHeadlineRowLayout(row, isInline) {
+        if (!row) {
+            return;
+        }
+        row.style.setProperty('display', 'flex', 'important');
+        row.style.setProperty('flex-direction', isInline ? 'row' : 'column', 'important');
+        row.style.setProperty('flex-wrap', isInline ? 'nowrap' : 'nowrap', 'important');
+        row.style.setProperty('align-items', isInline ? 'baseline' : 'center', 'important');
+        row.style.setProperty('justify-content', 'center', 'important');
+        row.style.setProperty('gap', isInline ? '16px' : '8px', 'important');
+        row.style.setProperty('width', isInline ? 'auto' : '100%', 'important');
+        row.style.setProperty('max-width', '100%', 'important');
+        row.style.setProperty('white-space', isInline ? 'nowrap' : 'normal', 'important');
+        row.style.setProperty('text-align', 'center', 'important');
     }
 
     function inlineBadgeStyle(el) {
@@ -211,6 +279,32 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return s === '1' || s === 'true' || s === 'yes' || s === 'on';
     }
 
+    function compactToken(raw) {
+        return String(raw == null ? '' : raw)
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '');
+    }
+
+    function isPercentDelta(mode) {
+        var t = compactToken(mode);
+        return t === 'percent' || t === 'percentage';
+    }
+
+    function normalizeSubheaderStyleName(raw) {
+        var t = compactToken(raw);
+        if (!t || t === 'matchtile' || t.indexOf('match') === 0) {
+            return 'matchtile';
+        }
+        if (t === 'darkblue' || t.indexOf('darkblue') === 0) {
+            return 'darkblue';
+        }
+        if (t === 'overlay' || t.indexOf('overlay') === 0) {
+            return 'overlay';
+        }
+        return 'matchtile';
+    }
+
     function sanitizeHexColor(raw, fallback) {
         var s = String(raw == null ? '' : raw).trim();
         return /^#[0-9A-Fa-f]{6}$/.test(s) ? s : fallback;
@@ -220,33 +314,43 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return Math.max(lo, Math.min(hi, n));
     }
 
-    function sparkBounds(minIn, maxIn, values, sparkAuto) {
-        if (truthy(sparkAuto)) {
-            var lo = Infinity;
-            var hi = -Infinity;
-            var i;
-            for (i = 0; i < values.length; i += 1) {
-                var v = Number(values[i]);
-                if (!isFinite(v)) {
-                    continue;
-                }
-                if (v < lo) {
-                    lo = v;
-                }
-                if (v > hi) {
-                    hi = v;
-                }
+    function dataSparkBounds(values) {
+        var lo = Infinity;
+        var hi = -Infinity;
+        var i;
+        for (i = 0; i < values.length; i += 1) {
+            var v = Number(values[i]);
+            if (!isFinite(v)) {
+                continue;
             }
-            if (!isFinite(lo) || !isFinite(hi)) {
-                return { min: 0, max: 100 };
+            if (v < lo) {
+                lo = v;
             }
-            if (lo === hi) {
-                hi = lo + 1;
+            if (v > hi) {
+                hi = v;
             }
-            return { min: lo, max: hi };
         }
+        if (!isFinite(lo) || !isFinite(hi)) {
+            return { min: 0, max: 100 };
+        }
+        if (lo === hi) {
+            hi = lo + 1;
+        }
+        return { min: lo, max: hi };
+    }
+
+    /**
+     * Resolve spark Y scale. Auto when sparkAuto is on, or when min/max are blank
+     * (formatter labels say "blank if auto" — blank + Auto Off previously forced 0–100
+     * and flattened any series outside that range into a straight line).
+     */
+    function sparkBounds(minIn, maxIn, values, sparkAuto) {
         var lo2 = parseFloat(minIn, 10);
         var hi2 = parseFloat(maxIn, 10);
+        var hasManual = isFinite(lo2) || isFinite(hi2);
+        if (truthy(sparkAuto) || !hasManual) {
+            return dataSparkBounds(values);
+        }
         if (!isFinite(lo2)) {
             lo2 = 0;
         }
@@ -307,7 +411,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     function resolveSubheaderStyle(config, viz) {
         var styleFound = findConfigValue(config, 'subheaderStyle', viz);
         if (styleFound.found && String(styleFound.value).trim()) {
-            return String(styleFound.value).trim().toLowerCase();
+            return normalizeSubheaderStyleName(styleFound.value);
         }
         return truthy(optOrFromConfig(config, viz, 'subheaderMatchTile', 'true')) ? 'matchtile' : 'overlay';
     }
@@ -328,26 +432,39 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         if (!head) {
             return;
         }
-        var style = String(subheaderStyle || 'matchtile').toLowerCase();
+        var style = normalizeSubheaderStyleName(subheaderStyle);
         var bgColor = 'rgba(0,0,0,0.52)';
         if (style === 'matchtile') {
             bgColor = bg;
-            head.className += ' splunkstuff-sparkline-value-viz__header--matchTile';
+            head.className += ' bgdhamp-sparkline-value-viz__header--matchTile';
         } else if (style === 'darkblue') {
             bgColor = goodColor;
-            head.className += ' splunkstuff-sparkline-value-viz__header--darkBlue';
+            head.className += ' bgdhamp-sparkline-value-viz__header--darkBlue';
         } else {
-            head.className += ' splunkstuff-sparkline-value-viz__header--overlay';
+            head.className += ' bgdhamp-sparkline-value-viz__header--overlay';
         }
         head.style.setProperty('background', bgColor, 'important');
         head.style.setProperty('color', textColor, 'important');
+        head.style.flex = '0 0 ' + SUBHEADER_HEIGHT_PX + 'px';
+        head.style.height = SUBHEADER_HEIGHT_PX + 'px';
+        head.style.minHeight = SUBHEADER_HEIGHT_PX + 'px';
+        head.style.maxHeight = SUBHEADER_HEIGHT_PX + 'px';
+        head.style.boxSizing = 'border-box';
+        head.style.display = 'flex';
+        head.style.alignItems = 'center';
+        head.style.overflow = 'hidden';
+        head.style.padding = '0 10px';
+        head.style.fontSize = '12px';
+        head.style.fontWeight = '500';
+        head.style.width = '100%';
+        head.style.boxSizing = 'border-box';
     }
 
     function measureSparkWrap(sparkWrap) {
         var rect = sparkWrap.getBoundingClientRect();
         return {
             w: Math.max(1, Math.round(rect.width) || sparkWrap.clientWidth || 360),
-            h: Math.max(1, Math.round(rect.height) || sparkWrap.clientHeight || 46),
+            h: Math.max(1, Math.round(rect.height) || sparkWrap.clientHeight || SPARK_STRIP_HEIGHT_PX),
         };
     }
 
@@ -362,27 +479,104 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         svg.style.display = 'block';
     }
 
+    function normalizeName(name) {
+        return String(name == null ? '' : name)
+            .trim()
+            .toLowerCase();
+    }
+
+    function findFieldIndex(fields, requested) {
+        var wanted = normalizeName(requested);
+        var i;
+        if (!wanted) {
+            return -1;
+        }
+        for (i = 0; i < fields.length; i += 1) {
+            if (normalizeName(fieldName(fields, i)) === wanted) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function columnHasNumber(rawData, columnIndex) {
+        var col = (rawData && rawData.columns && rawData.columns[columnIndex]) || [];
+        var r;
+        for (r = 0; r < col.length; r += 1) {
+            if (isFinite(parseNum(col[r]))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function isSkippedValueField(name) {
+        var n = normalizeName(name);
+        return !n || !!SKIP_VALUE_FIELDS[n] || n.charAt(0) === '_';
+    }
+
     function pickNumericColumnIndex(rawData) {
         var fields = fieldsList(rawData);
         if (!rawData || !rawData.columns || !fields.length) {
             return -1;
         }
-        var best = -1;
+        var h;
         var c;
+        var best = -1;
+        for (h = 0; h < VALUE_FIELD_HINTS.length; h += 1) {
+            var hinted = findFieldIndex(fields, VALUE_FIELD_HINTS[h]);
+            if (
+                hinted >= 0 &&
+                !isSkippedValueField(fieldName(fields, hinted)) &&
+                columnHasNumber(rawData, hinted)
+            ) {
+                return hinted;
+            }
+        }
         for (c = 0; c < rawData.columns.length; c += 1) {
-            if (fieldName(fields, c) === '_time') {
+            if (isSkippedValueField(fieldName(fields, c))) {
                 continue;
             }
-            var col = rawData.columns[c] || [];
-            var r;
-            for (r = 0; r < col.length; r += 1) {
-                if (isFinite(parseNum(col[r]))) {
-                    best = c;
-                    break;
-                }
+            if (columnHasNumber(rawData, c)) {
+                best = c;
             }
         }
         return best;
+    }
+
+    function resolveValueColumnIndex(rawData, valueField) {
+        var fields = fieldsList(rawData);
+        var wanted = normalizeName(valueField);
+        if (wanted && wanted !== 'auto') {
+            var explicit = findFieldIndex(fields, valueField);
+            if (explicit >= 0 && fieldName(fields, explicit) !== '_time') {
+                return explicit;
+            }
+            return -1;
+        }
+        return pickNumericColumnIndex(rawData);
+    }
+
+    /**
+     * Build KPI series from column-major results.
+     * Soft-fails (empty values) when no usable metric — Single Value–compatible.
+     */
+    function buildSeriesFromRaw(rawData, valueField) {
+        if (!rawData || !rawData.columns || rawData.columns.length === 0) {
+            return { values: [], times: [], fieldName: '', stringFields: {} };
+        }
+        var fields = fieldsList(rawData);
+        var idx = resolveValueColumnIndex(rawData, valueField);
+        if (idx < 0) {
+            return { values: [], times: [], fieldName: '', stringFields: {} };
+        }
+        var series = reorderSeriesByTime(rawData, idx);
+        return {
+            values: series.values || [],
+            times: series.times || [],
+            fieldName: fieldName(fields, idx),
+            stringFields: reorderAllStringFieldsByTime(rawData, idx),
+        };
     }
 
     function getTimeSortedValuePairs(rawData, valueIdx) {
@@ -614,6 +808,71 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return parts.join(' ');
     }
 
+    function sparkAreaPath(values, w, h, padL, padR, padT, padB, vmin, vmax) {
+        var line = sparkPath(values, w, h, padL, padR, padT, padB, vmin, vmax);
+        if (!line) {
+            return '';
+        }
+        var len = values.length;
+        var iw = Math.max(1, w - padL - padR);
+        var xStep = iw / (len - 1);
+        var lastX = padL + (len - 1) * xStep;
+        // Flush to the SVG bottom (ignore padB) so the wash meets the tile edge.
+        var baselineY = h;
+        return (
+            line +
+            ' L' +
+            lastX.toFixed(1) +
+            ' ' +
+            baselineY.toFixed(1) +
+            ' L' +
+            padL.toFixed(1) +
+            ' ' +
+            baselineY.toFixed(1) +
+            ' Z'
+        );
+    }
+
+    /** Single Value–style area: flat wash of area color (default spark stroke white) at 20%. */
+    function resolveAreaFill(areaColor) {
+        return { color: areaColor || '#FFFFFF', opacity: '0.2' };
+    }
+
+    function applyVizHeight(el, heightPx) {
+        if (!el || !isFinite(heightPx)) {
+            return;
+        }
+        var h = Math.max(80, Math.min(800, Math.round(heightPx)));
+        var px = h + 'px';
+        var node = el;
+        var hops = 0;
+        while (node && hops < 14) {
+            node.style.height = px;
+            node.style.minHeight = px;
+            var cls = String(node.className || '');
+            if (cls.indexOf('dashboard-element') !== -1) {
+                break;
+            }
+            node = node.parentElement;
+            hops += 1;
+        }
+    }
+
+    function appendSparkAreaFill(svg, areaD, fillColor, fillOpacity) {
+        if (!areaD) {
+            return;
+        }
+        var area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        area.setAttribute('class', 'bgdhamp-sparkline-value-viz__sparkArea');
+        area.setAttribute('d', areaD);
+        area.setAttribute('fill', fillColor);
+        area.setAttribute('fill-opacity', String(fillOpacity));
+        area.setAttribute('stroke', 'none');
+        area.style.fill = fillColor;
+        area.style.fillOpacity = String(fillOpacity);
+        svg.appendChild(area);
+    }
+
     function sparkXY(values, idx, w, h, padL, padR, padT, padB, vmin, vmax) {
         var len = values.length;
         var iw = Math.max(1, w - padL - padR);
@@ -668,14 +927,14 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             p = 2;
         }
         var arrow = delta >= 0 ? '\u25b2 ' : '\u25bc ';
-        if (String(mode).toLowerCase() === 'percent' && isFinite(last) && last !== 0) {
+        if (isPercentDelta(mode) && isFinite(last) && last !== 0) {
             var pct = (delta / Math.abs(last)) * 100;
             return arrow + pct.toLocaleString(undefined, { maximumFractionDigits: p }) + '%';
         }
         return arrow + delta.toLocaleString(undefined, { maximumFractionDigits: p });
     }
 
-    function formatHoverValue(v, precision, prefix) {
+    function formatHoverValue(v, precision, unit, prefix) {
         if (!isFinite(v)) {
             return '—';
         }
@@ -683,17 +942,16 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         if (!isFinite(p) || p < 0) {
             p = 2;
         }
-        var core = v.toLocaleString(undefined, { maximumFractionDigits: p, minimumFractionDigits: 0 });
+        var core =
+            v.toLocaleString(undefined, { maximumFractionDigits: p, minimumFractionDigits: 0 }) +
+            String(unit || '');
         var pre = String(prefix || '').trim();
-        if (pre.toLowerCase() === 'value') {
-            pre = '';
-        }
         return pre ? pre + ' ' + core : core;
     }
 
-    function clearSparkHover(sparkWrap, tooltip, hoverAnnEl) {
-        if (sparkWrap) {
-            var old = sparkWrap.querySelector('.splunkstuff-sparkline-value-viz__hoverOverlay');
+    function clearSparkHover(svg, tooltip, hoverAnnEl) {
+        if (svg) {
+            var old = svg.querySelector('.bgdhamp-sparkline-value-viz__hover');
             if (old && old.parentNode) {
                 old.parentNode.removeChild(old);
             }
@@ -707,37 +965,32 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
     }
 
-    function updateSparkHover(sparkWrap, tooltip, ownerDoc, opts) {
-        clearSparkHover(sparkWrap, tooltip, opts.hoverAnnEl);
-        var rect = sparkWrap.getBoundingClientRect();
-        var drawW = Math.max(1, rect.width);
-        var drawH = Math.max(1, rect.height);
-        var px = (opts.hx / opts.w) * drawW;
-        var py = (opts.hy / opts.h) * drawH;
-        var topPx = (opts.padT / opts.h) * drawH;
-        var bottomPx = drawH - (opts.padB / opts.h) * drawH;
+    function updateSparkHover(svg, tooltip, ownerDoc, opts) {
+        clearSparkHover(svg, tooltip, opts.hoverAnnEl);
+        var g = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'bgdhamp-sparkline-value-viz__hover');
+        g.setAttribute('pointer-events', 'none');
 
-        var overlay = ownerDoc.createElement('div');
-        overlay.className = 'splunkstuff-sparkline-value-viz__hoverOverlay';
-        overlay.setAttribute('aria-hidden', 'true');
+        var line = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', opts.hx.toFixed(1));
+        line.setAttribute('x2', opts.hx.toFixed(1));
+        line.setAttribute('y1', String(opts.padT));
+        line.setAttribute('y2', String(opts.h - opts.padB));
+        line.setAttribute('stroke', 'rgba(255,255,255,0.55)');
+        line.setAttribute('stroke-width', '1');
+        g.appendChild(line);
 
-        var line = ownerDoc.createElement('div');
-        line.className = 'splunkstuff-sparkline-value-viz__hoverLine';
-        line.style.left = px.toFixed(1) + 'px';
-        line.style.top = topPx.toFixed(1) + 'px';
-        line.style.height = Math.max(0, bottomPx - topPx).toFixed(1) + 'px';
-        overlay.appendChild(line);
+        var dot = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', opts.hx.toFixed(1));
+        dot.setAttribute('cy', opts.hy.toFixed(1));
+        dot.setAttribute('r', '4');
+        dot.setAttribute('fill', opts.stroke);
+        dot.setAttribute('stroke', 'rgba(0,0,0,0.35)');
+        dot.setAttribute('stroke-width', '1');
+        g.appendChild(dot);
+        svg.appendChild(g);
 
-        var dot = ownerDoc.createElement('div');
-        dot.className = 'splunkstuff-sparkline-value-viz__hoverDot';
-        dot.style.left = (px - 4).toFixed(1) + 'px';
-        dot.style.top = (py - 4).toFixed(1) + 'px';
-        dot.style.background = opts.stroke;
-        overlay.appendChild(dot);
-
-        sparkWrap.appendChild(overlay);
-
-        var valueLabel = formatHoverValue(opts.v, opts.precision, opts.tooltipPrefix);
+        var valueLabel = formatHoverValue(opts.v, opts.precision, opts.unit, opts.tooltipPrefix);
         var timeLabel = opts.timeLabel || '';
         var annotationLabel = opts.annotationLabel || '';
         var pointLabel = opts.pointLabel || '';
@@ -760,10 +1013,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var row = ownerDoc.createElement('div');
             row.className =
                 i < valueLineIdx
-                    ? 'splunkstuff-sparkline-value-viz__tooltipPoint'
+                    ? 'bgdhamp-sparkline-value-viz__tooltipPoint'
                     : i === valueLineIdx
-                      ? 'splunkstuff-sparkline-value-viz__tooltipValue'
-                      : 'splunkstuff-sparkline-value-viz__tooltipTime';
+                      ? 'bgdhamp-sparkline-value-viz__tooltipValue'
+                      : 'bgdhamp-sparkline-value-viz__tooltipTime';
             row.textContent = lines[i];
             tooltip.appendChild(row);
         }
@@ -794,27 +1047,14 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         },
 
         formatData: function (rawData) {
-            if (!rawData || !rawData.columns || rawData.columns.length === 0) {
-                return { values: [], times: [], fieldName: '', stringFields: {} };
-            }
-            var fields = fieldsList(rawData);
-            var idx = pickNumericColumnIndex(rawData);
-            if (idx < 0) {
-                throw new SplunkVisualizationBase.VisualizationError(
-                    'Sparkline value needs a numeric column (e.g. value) beside _time.'
-                );
-            }
-            var series = reorderSeriesByTime(rawData, idx);
-            if (!series.values.length) {
-                throw new SplunkVisualizationBase.VisualizationError(
-                    'Sparkline value found a value column but no parseable numbers in results.'
-                );
-            }
+            var safe = rawData && rawData.columns ? rawData : { columns: [], fields: [] };
+            var series = buildSeriesFromRaw(safe, 'auto');
             return {
+                rawData: safe,
                 values: series.values,
                 times: series.times,
-                fieldName: fieldName(fields, idx),
-                stringFields: reorderAllStringFieldsByTime(rawData, idx),
+                fieldName: series.fieldName,
+                stringFields: series.stringFields,
             };
         },
 
@@ -848,6 +1088,25 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 return String(raw).trim();
             }
 
+            function isInlineHeadline(raw) {
+                var t = compactToken(raw);
+                return (
+                    t === 'inline' ||
+                    t === 'sidebyside' ||
+                    t === 'side' ||
+                    t === 'row' ||
+                    t === 'horizontal'
+                );
+            }
+
+            function isLabelRight(raw) {
+                var s = String(raw == null ? '' : raw)
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[_-]+/g, ' ');
+                return s === 'right' || s === 'right of value' || s === 'rightofvalue';
+            }
+
             if (typeof this._docHoverCleanup === 'function') {
                 this._docHoverCleanup();
                 this._docHoverCleanup = null;
@@ -858,19 +1117,36 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
 
             this.el.innerHTML = '';
-            var values = (data && data.values) || [];
-            var times = (data && data.times) || [];
+            var valueField = String(opt('valueField', 'auto') || 'auto').trim() || 'auto';
+            var rawData = data && data.rawData ? data.rawData : null;
+            var series =
+                rawData && rawData.columns
+                    ? buildSeriesFromRaw(rawData, valueField)
+                    : {
+                          values: (data && data.values) || [],
+                          times: (data && data.times) || [],
+                          fieldName: (data && data.fieldName) || '',
+                          stringFields: (data && data.stringFields) || {},
+                      };
+            var values = series.values || [];
+            var times = series.times || [];
             var emptyText = String(opt('emptyText', 'No numeric results to display.') || '');
 
             if (values.length === 0) {
+                var emptyBg = sanitizeHexColor(opt('background', '#0B1F3B'), '#0B1F3B');
+                var emptyFg = sanitizeHexColor(opt('textColor', '#FFFFFF'), '#FFFFFF');
+                applyTrendHostStyle(this.el, emptyBg, emptyFg);
                 var empty = document.createElement('div');
-                empty.className = 'splunkstuff-sparkline-value-viz__err';
+                empty.className = 'bgdhamp-sparkline-value-viz__err';
                 empty.textContent = emptyText;
+                empty.style.padding = '12px';
+                empty.style.fontSize = '12px';
+                empty.style.color = emptyFg;
                 this.el.appendChild(empty);
                 return;
             }
 
-            var sparkAuto = opt('sparkAuto', 'false');
+            var sparkAuto = opt('sparkAuto', 'true');
             var sparkMinRaw = opt('sparkMin', '');
             var sparkMaxRaw = opt('sparkMax', '');
             var scale = sparkBounds(sparkMinRaw, sparkMaxRaw, values, sparkAuto);
@@ -883,12 +1159,33 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (!isFinite(sparkStrokeWidth) || sparkStrokeWidth <= 0) {
                 sparkStrokeWidth = 2;
             }
+            var sparkAreaColor = sanitizeHexColor(optOr('sparkAreaColor', sparkStroke), sparkStroke);
+            var sparkHeightPx = parseFloat(optOr('sparkHeight', String(SPARK_STRIP_HEIGHT_PX)), 10);
+            if (!isFinite(sparkHeightPx) || sparkHeightPx <= 0) {
+                sparkHeightPx = SPARK_STRIP_HEIGHT_PX;
+            }
+            sparkHeightPx = Math.max(12, Math.min(240, sparkHeightPx));
+            var vizHeightPx = parseFloat(optOr('vizHeight', String(PANEL_DEFAULT_HEIGHT_PX)), 10);
+            if (!isFinite(vizHeightPx) || vizHeightPx <= 0) {
+                vizHeightPx = PANEL_DEFAULT_HEIGHT_PX;
+            }
+            vizHeightPx = Math.max(80, Math.min(800, vizHeightPx));
             var unit = String(opt('unit', '') || '');
             var subheader = String(opt('subheader', '') || '');
             var precision = opt('precision', '2');
-            var showDelta = truthy(opt('showDelta', 'true'));
+            var showDelta = truthy(opt('showDelta', 'true')) && values.length >= 2;
             var deltaMode = String(opt('deltaMode', 'absolute') || 'absolute');
-            var showSparkline = truthy(opt('showSparkline', 'true'));
+            var showSparkline = truthy(opt('showSparkline', 'true')) && values.length >= 2;
+            var showSparkArea = truthy(optOr('showSparkArea', 'true'));
+            // Cap spark so KPI + delta always keep a readable band above it.
+            if (showSparkline) {
+                var reservedAboveSpark =
+                    (subheader ? SUBHEADER_HEIGHT_PX : 0) + HEADLINE_MIN_PX + 12;
+                var maxSparkForTile = Math.max(12, vizHeightPx - reservedAboveSpark);
+                if (sparkHeightPx > maxSparkForTile) {
+                    sparkHeightPx = maxSparkForTile;
+                }
+            }
             var showTarget = truthy(opt('showTarget', 'false'));
             var target = parseFloat(opt('target', '50'), 10);
             var showThresholdBand = truthy(opt('showThresholdBand', 'false'));
@@ -896,6 +1193,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var thresholdMax = parseFloat(opt('thresholdMax', '80'), 10);
             var showHover = truthy(opt('showHover', 'true'));
             var showHoverAnnotation = truthy(optOr('showHoverAnnotation', 'true'));
+            // In-chart hover text sits above the spark; skip it when that band is too thin
+            // (tooltip still shows). Fixes overlap at vizHeight=140 / sparkHeight=70.
+            var bodyBudgetPx = vizHeightPx - (subheader ? SUBHEADER_HEIGHT_PX : 0);
+            var spaceAboveSparkPx = showSparkline
+                ? bodyBudgetPx - sparkHeightPx - 12
+                : bodyBudgetPx;
+            if (showHoverAnnotation && spaceAboveSparkPx < HOVER_ANN_MIN_GAP_PX) {
+                showHoverAnnotation = false;
+            }
             var tooltipPrefix = String(optOr('tooltipPrefix', '') || '');
             var majorLabel = optLabel('majorLabel', DEMO_LABELS.majorLabel);
             var deltaLabel = optLabel('deltaLabel', DEMO_LABELS.deltaLabel);
@@ -904,16 +1210,23 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 optLabel('sparkPointLabels', DEMO_LABELS.sparkPointLabels)
             );
             var showPointLabels = truthy(optOr('showPointLabels', 'false'));
-            var headlineLayout = String(opt('headlineLayout', 'stacked') || 'stacked').toLowerCase();
-            var labelPosition = String(opt('labelPosition', 'above') || 'above').toLowerCase();
+            var headlineLayoutRaw = opt('headlineLayout', 'stacked');
+            var majorFontSizePx = parseFloat(opt('majorFontSize', '26'), 10);
+            if (!isFinite(majorFontSizePx) || majorFontSizePx <= 0) {
+                majorFontSizePx = 26;
+            }
+            majorFontSizePx = Math.max(10, Math.min(96, majorFontSizePx));
+            var labelPositionRaw = opt('labelPosition', 'above');
+            var labelPosition = isLabelRight(labelPositionRaw) ? 'right' : 'above';
+            var headlineIsInline = isInlineHeadline(headlineLayoutRaw);
             var sparkEdgeToEdge = truthy(opt('sparkEdgeToEdge', 'false'));
             var subheaderStyle = resolveSubheaderStyle(config, viz);
             var annotationField = String(opt('annotationField', 'annotation') || '').trim();
             var showAnnotationHover = truthy(optOr('showAnnotationHover', 'true'));
             var showAnnotationLabels = truthy(optOr('showAnnotationLabels', 'false'));
             var annotations = [];
-            if (annotationField && data && data.stringFields && data.stringFields[annotationField]) {
-                annotations = data.stringFields[annotationField];
+            if (annotationField && series.stringFields && series.stringFields[annotationField]) {
+                annotations = series.stringFields[annotationField];
             }
             while (annotations.length < values.length) {
                 annotations.push('');
@@ -923,26 +1236,33 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var last = values[values.length - 1];
             var bg = trendBackground(delta, goodColor, badColor, invertTrend);
             applyTrendHostStyle(this.el, bg, textColor);
+            applyVizHeight(this.el, vizHeightPx);
+            var areaFill = resolveAreaFill(sparkAreaColor);
 
             var ownerDoc = (this.el && this.el.ownerDocument) || document;
             var norm = normalizeTimes(times, values.length);
 
             var root = document.createElement('div');
-            root.className = 'splunkstuff-sparkline-value-viz';
-            root.setAttribute('data-ss-viz-build', VIZ_BUILD);
+            root.className = 'bgdhamp-sparkline-value-viz';
+            root.setAttribute('data-bgdhamp-viz-build', VIZ_BUILD);
+            root.setAttribute('data-bgdhamp-headline-layout', headlineIsInline ? 'inline' : 'stacked');
+            root.setAttribute('data-bgdhamp-spark-area', showSparkArea ? 'on' : 'off');
+            root.setAttribute('data-bgdhamp-frame-subheader', String(SUBHEADER_HEIGHT_PX));
+            root.setAttribute('data-ss-frame-body', String(BODY_FRAME_HEIGHT_PX));
+            root.setAttribute('data-ss-frame-panel', String(PANEL_DEFAULT_HEIGHT_PX));
             root.style.position = 'relative';
             root.style.backgroundColor = bg;
             root.style.color = textColor;
             root.style.width = '100%';
             root.style.height = '100%';
-            root.style.minHeight = '200px';
+            root.style.minHeight = '0';
             root.style.boxSizing = 'border-box';
             root.style.display = 'flex';
             root.style.flexDirection = 'column';
 
             if (badgeText) {
                 var badge = document.createElement('div');
-                badge.className = 'splunkstuff-sparkline-value-viz__badge';
+                badge.className = 'bgdhamp-sparkline-value-viz__badge';
                 badge.textContent = badgeText;
                 badge.setAttribute('title', badgeText);
                 inlineBadgeStyle(badge);
@@ -951,34 +1271,41 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             if (subheader) {
                 var head = document.createElement('div');
-                head.className = 'splunkstuff-sparkline-value-viz__header';
+                head.className = 'bgdhamp-sparkline-value-viz__header';
                 applySubheaderStyle(head, subheaderStyle, bg, goodColor, textColor);
                 head.textContent = subheader;
                 root.appendChild(head);
             }
 
             var body = document.createElement('div');
-            body.className = 'splunkstuff-sparkline-value-viz__body';
+            body.className = 'bgdhamp-sparkline-value-viz__body';
             body.style.flex = '1 1 auto';
             body.style.position = 'relative';
             body.style.display = 'flex';
             body.style.flexDirection = 'column';
             body.style.alignItems = 'center';
             body.style.justifyContent = 'center';
-            body.style.padding = '12px 12px 76px';
+            // Reserve bottom strip for spark so KPI + delta fit in the 137px body frame.
+            body.style.padding = showSparkline
+                ? '6px 10px ' + (sparkHeightPx + 6) + 'px'
+                : '6px 10px 8px';
             body.style.boxSizing = 'border-box';
+            body.style.minHeight = '0';
+            body.style.overflow = 'hidden';
 
             var headlineRow = document.createElement('div');
             headlineRow.className =
-                'splunkstuff-sparkline-value-viz__headlineRow splunkstuff-sparkline-value-viz__headlineRow--' +
-                (headlineLayout === 'inline' ? 'inline' : 'stacked');
+                'bgdhamp-sparkline-value-viz__headlineRow bgdhamp-sparkline-value-viz__headlineRow--' +
+                (headlineIsInline ? 'inline' : 'stacked');
+            applyHeadlineRowLayout(headlineRow, headlineIsInline);
 
             var major = document.createElement('div');
-            major.className = 'splunkstuff-sparkline-value-viz__major';
+            major.className = 'bgdhamp-sparkline-value-viz__major';
+            shrinkToContent(major);
             var majorVal = document.createElement('div');
-            majorVal.className = 'splunkstuff-sparkline-value-viz__majorValue';
+            majorVal.className = 'bgdhamp-sparkline-value-viz__majorValue';
             majorVal.textContent = formatMajor(last, precision, unit);
-            majorVal.style.fontSize = '32px';
+            majorVal.style.fontSize = majorFontSizePx + 'px';
             majorVal.style.fontWeight = '600';
             majorVal.style.lineHeight = '1.05';
             majorVal.style.color = textColor;
@@ -987,11 +1314,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             if (showDelta) {
                 var trend = document.createElement('div');
-                trend.className = 'splunkstuff-sparkline-value-viz__trend';
+                trend.className = 'bgdhamp-sparkline-value-viz__trend';
+                shrinkToContent(trend);
                 var deltaVal = document.createElement('div');
-                deltaVal.className = 'splunkstuff-sparkline-value-viz__trendValue';
+                deltaVal.className = 'bgdhamp-sparkline-value-viz__trendValue';
                 deltaVal.textContent = formatDelta(delta, last, deltaMode, precision);
-                deltaVal.style.fontSize = '16px';
+                deltaVal.style.fontSize = '13px';
                 deltaVal.style.fontWeight = '600';
                 deltaVal.style.color = textColor;
                 appendIndicatorPair(trend, deltaVal, deltaLabel, textColor, labelPosition);
@@ -999,41 +1327,60 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
 
             body.appendChild(headlineRow);
+            headlineRow.style.position = 'relative';
+            headlineRow.style.zIndex = '3';
 
             var hoverAnnEl = null;
             if (showHoverAnnotation) {
                 hoverAnnEl = ownerDoc.createElement('div');
-                hoverAnnEl.className = 'splunkstuff-sparkline-value-viz__hoverAnn';
+                hoverAnnEl.className = 'bgdhamp-sparkline-value-viz__hoverAnn';
                 hoverAnnEl.setAttribute('aria-hidden', 'true');
+                hoverAnnEl.style.position = 'absolute';
+                hoverAnnEl.style.left = '10px';
+                hoverAnnEl.style.right = '10px';
+                hoverAnnEl.style.bottom = showSparkline ? sparkHeightPx + 8 + 'px' : '8px';
+                hoverAnnEl.style.display = 'none';
+                hoverAnnEl.style.fontSize = '11px';
+                hoverAnnEl.style.fontWeight = '500';
+                hoverAnnEl.style.textAlign = 'center';
+                hoverAnnEl.style.pointerEvents = 'none';
+                hoverAnnEl.style.zIndex = '1';
                 body.appendChild(hoverAnnEl);
             }
 
-            var padL = sparkEdgeToEdge ? 0 : 34;
-            var padR = sparkEdgeToEdge ? 0 : 34;
-            var padT = 14;
-            var padB = 6;
+            var padL = sparkEdgeToEdge ? 0 : 28;
+            var padR = sparkEdgeToEdge ? 0 : 28;
+            var padT = 8;
+            var padB = 0;
             var w = 360;
-            var h = 46;
+            var h = sparkHeightPx;
             var n = values.length;
             var sparkWrap = null;
 
             if (showSparkline) {
                 sparkWrap = document.createElement('div');
-                sparkWrap.className = 'splunkstuff-sparkline-value-viz__spark';
+                sparkWrap.className = 'bgdhamp-sparkline-value-viz__spark';
                 if (sparkEdgeToEdge) {
-                    sparkWrap.className += ' splunkstuff-sparkline-value-viz__spark--edgeToEdge';
+                    sparkWrap.className += ' bgdhamp-sparkline-value-viz__spark--edgeToEdge';
                 }
                 sparkWrap.style.position = 'absolute';
-                sparkWrap.style.left = sparkEdgeToEdge ? '0' : '10px';
-                sparkWrap.style.right = sparkEdgeToEdge ? '0' : '10px';
-                sparkWrap.style.bottom = '8px';
+                sparkWrap.style.left = sparkEdgeToEdge ? '0' : '8px';
+                sparkWrap.style.right = sparkEdgeToEdge ? '0' : '8px';
+                sparkWrap.style.bottom = '0';
+                sparkWrap.style.height = sparkHeightPx + 'px';
                 sparkWrap.style.overflow = 'visible';
                 body.appendChild(sparkWrap);
             }
 
             root.appendChild(body);
             this.el.appendChild(root);
-            this._lastData = data;
+            this._lastData = {
+                rawData: rawData,
+                values: values,
+                times: times,
+                fieldName: series.fieldName,
+                stringFields: series.stringFields,
+            };
             this._lastConfig = config;
 
             if (showSparkline && sparkWrap) {
@@ -1081,6 +1428,14 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
                 var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 var d = sparkPath(values, w, h, padL, padR, padT, padB, scale.min, scale.max);
+                if (d && showSparkArea) {
+                    appendSparkAreaFill(
+                        svg,
+                        sparkAreaPath(values, w, h, padL, padR, padT, padB, scale.min, scale.max),
+                        areaFill.color,
+                        areaFill.opacity
+                    );
+                }
                 if (d) {
                     path.setAttribute('d', d);
                     path.setAttribute('fill', 'none');
@@ -1132,7 +1487,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 sparkWrap.appendChild(svg);
 
                 var tooltip = ownerDoc.createElement('div');
-                tooltip.className = 'splunkstuff-sparkline-value-viz__tooltip';
+                tooltip.className = 'bgdhamp-sparkline-value-viz__tooltip';
                 tooltip.setAttribute('role', 'status');
                 tooltip.style.display = 'none';
                 viz._hoverTooltipEl = tooltip;
@@ -1153,21 +1508,20 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     var teardown = [];
                     function onDocPointerMove(e) {
                         if (!hitTestSpark(e.clientX, e.clientY)) {
-                            clearSparkHover(sparkWrap, tooltip, hoverAnnEl);
+                            clearSparkHover(svg, tooltip, hoverAnnEl);
                             return;
                         }
                         var idx = sparkIndexFromPointer(e.clientX, sparkWrap, padL, padR, w, n);
                         if (idx == null) {
-                            clearSparkHover(sparkWrap, tooltip, hoverAnnEl);
+                            clearSparkHover(svg, tooltip, hoverAnnEl);
                             return;
                         }
                         var xy = sparkXY(values, idx, w, h, padL, padR, padT, padB, scale.min, scale.max);
                         var hoverAnnotation =
                             showAnnotationHover && annotations[idx] ? annotations[idx] : '';
-                        updateSparkHover(sparkWrap, tooltip, ownerDoc, {
+                        updateSparkHover(svg, tooltip, ownerDoc, {
                             hx: xy.x,
                             hy: xy.y,
-                            w: w,
                             h: h,
                             padT: padT,
                             padB: padB,
@@ -1202,7 +1556,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                         for (ti = 0; ti < teardown.length; ti += 1) {
                             teardown[ti]();
                         }
-                        clearSparkHover(sparkWrap, tooltip, hoverAnnEl);
+                        clearSparkHover(svg, tooltip, hoverAnnEl);
                     };
                 }
                 };

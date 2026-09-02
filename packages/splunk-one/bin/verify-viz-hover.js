@@ -11,13 +11,16 @@ function assert(cond, msg) {
 
 async function main() {
     const mod = await import(
-        path.join(__dirname, '../src/main/webapp/lib/splunkstuffVizHoverMath.mjs')
+        path.join(__dirname, '../src/main/webapp/lib/bgdhampVizHoverMath.mjs')
     );
     const {
         hitTestPointInRect,
         seriesIndexFromClientX,
         seriesIndexFromPointerMeet,
+        seriesIndexFromPointerNone,
         viewportToSvgUserXY,
+        viewportToSvgUserXYNone,
+        clampTooltipViewport,
         clamp,
     } = mod;
 
@@ -97,6 +100,16 @@ async function main() {
         'null when viewport has no width'
     );
     assert(seriesIndexFromPointerMeet(400, 50, wideRect, 400, 100, 10, 10, 1) === null, 'null when n < 2');
+
+    // none stretch: wide 800×100 viewport, user 400×100 → center maps to user x 200
+    const mNone = viewportToSvgUserXYNone(400, 50, wideRect, 400, 100);
+    assert(mNone && Math.abs(mNone.x - 200) < 1e-9 && Math.abs(mNone.y - 50) < 1e-9, 'none stretch center');
+    const idxNone = seriesIndexFromPointerNone(400, 50, wideRect, 400, 100, 10, 10, 5);
+    assert(idxNone === 2, `none index: expected 2, got ${idxNone}`);
+
+    const tip = clampTooltipViewport(5, 5, { innerWidth: 320, innerHeight: 568 });
+    assert(tip.x >= 8 && tip.x <= 320 - 8, 'tooltip x clamped');
+    assert(tip.y >= 8, 'tooltip y clamped from top');
 
     console.log('verify-viz-hover: ok');
 }

@@ -1,4 +1,4 @@
-# SplunkStuff KPI + sparkline (React) — remade folder
+# BGDHamp KPI + sparkline (React) — remade folder
 
 **Viz id:** `splunkstuff_kpi_sparkline_react`  
 **NS:** `display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline_react.*`

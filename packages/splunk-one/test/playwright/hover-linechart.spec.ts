@@ -6,11 +6,11 @@ test('LineChart shows hover tooltip (document-capture hover + portal)', async ({
     const host = page.getByTestId('hover-chart-host');
     await expect(host).toBeVisible();
 
-    await expect(page.getByTestId('splunkstuff-line-chart-area')).toBeVisible();
+    await expect(page.getByTestId('bgdhamp-line-chart-area')).toBeVisible();
 
     await page.evaluate(() => {
-        const el = document.querySelector('[data-testid="splunkstuff-line-chart-area"]');
-        if (!el) throw new Error('missing splunkstuff-line-chart-area');
+        const el = document.querySelector('[data-testid="bgdhamp-line-chart-area"]');
+        if (!el) throw new Error('missing bgdhamp-line-chart-area');
         const r = el.getBoundingClientRect();
         const cx = r.left + r.width * 0.5;
         const cy = r.top + r.height * 0.5;
@@ -29,7 +29,7 @@ test('LineChart shows hover tooltip (document-capture hover + portal)', async ({
         }
     });
 
-    const tip = page.getByTestId('splunkstuff-line-hover-tooltip');
+    const tip = page.getByTestId('bgdhamp-line-hover-tooltip');
     await expect(tip).toBeVisible({ timeout: 5000 });
 
     await expect(tip).toContainText(/\d/);

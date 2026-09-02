@@ -8,7 +8,7 @@ import {
     applyTrendHostStyle,
     trendBackground,
     trendDelta,
-} from '../../lib/splunkstuffTrendColors';
+} from '../../lib/bgdhampTrendColors';
 import { mountViz, unmountViz } from './vizMount';
 
 const NS = 'display.visualizations.custom.so_BUI_pickulationts.fixed_loaded_line.';

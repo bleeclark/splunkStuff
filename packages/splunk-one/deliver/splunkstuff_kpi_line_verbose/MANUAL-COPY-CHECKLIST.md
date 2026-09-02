@@ -24,7 +24,7 @@ $SPLUNK_HOME/etc/apps/<APP_ID>/default/visualizations.conf
 
 ```conf
 [splunkstuff_kpi_line_verbose]
-label = SplunkStuff — KPI loaded line verbose (documented AMD)
+label = BGDHamp — KPI loaded line verbose (documented AMD)
 description = Same options as splunkstuff_kpi_line with expanded source comments and console diagnostics (SPLUNKSTUFF_KPI_LINE_VERBOSE_DEBUG).
 default_height = 200
 search_fragment = | timechart span=1h avg(my_metric) as value

@@ -6,7 +6,7 @@ Splunk dashboard **custom visualization** (readable RequireJS AMD — **not** a 
 
 - `visualization.js` — same logic as KPI line; file header documents data contract, config keys, hover math, formatter pitfalls.
 - `formatter.html` — same controls; HTML comment lists **short option names** ↔ sections.
-- `visualization.css` — shared BEM prefix `splunkstuff-kpi-line-viz` (pixel match to non-verbose viz).
+- `visualization.css` — shared BEM prefix `bgdhamp-kpi-line-viz` (pixel match to non-verbose viz).
 - `preview.png` — picker thumbnail.
 
 Splunk folder / viz id: **`splunkstuff_kpi_line_verbose`**.
@@ -27,7 +27,7 @@ Hard-refresh. Each `updateView` logs an **`effectiveConfig`** object and **`cons
 
 ## Portable handoff (one folder)
 
-Trend colors and hover math live **inside** `visualization.js` (inlined from the same logic as the `splunkstuffTrendColors` / `splunkstuffVizHoverMath` AMD modules in the repo). You can copy **the whole** `deliver/splunkstuff_kpi_line_verbose/` directory to another machine’s `appserver/static/visualizations/` without extra sibling `.js` helpers.
+Trend colors and hover math live **inside** `visualization.js` (inlined from the same logic as the `bgdhampTrendColors` / `bgdhampVizHoverMath` AMD modules in the repo). You can copy **the whole** `deliver/splunkstuff_kpi_line_verbose/` directory to another machine’s `appserver/static/visualizations/` without extra sibling `.js` helpers.
 
 Typical files:
 

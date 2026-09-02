@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<view template="so_BUI_pickulationts:/templates/formatter_compatibility.html" type="html">
+    <label>Formatter Compatibility</label>
+</view>

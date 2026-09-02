@@ -29,7 +29,7 @@ async function main() {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SplunkStuff LineChart hover harness</title>
+  <title>BGDHamp LineChart hover harness</title>
 </head>
 <body>
   <div id="root"></div>

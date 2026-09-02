@@ -1,8 +1,8 @@
 /* eslint-disable react/prop-types */
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { clamp, seriesIndexFromPointerMeet } from '../../lib/splunkstuffVizHoverMath.mjs';
-import { trendBackground, trendDelta } from '../../lib/splunkstuffTrendColors';
+import { clamp, seriesIndexFromPointerMeet } from '../../lib/bgdhampVizHoverMath.mjs';
+import { trendBackground, trendDelta } from '../../lib/bgdhampTrendColors';
 import {
     readBool,
     readConfig,
@@ -282,11 +282,11 @@ export default function KpiSparklineReactApp({ values = [], times = [], config =
         return (
             <div
                 ref={rootRef}
-                className="splunkstuff-sparkline-value-viz"
-                data-ss-viz-build={VIZ_BUILD}
+                className="bgdhamp-sparkline-value-viz"
+                data-bgdhamp-viz-build={VIZ_BUILD}
                 style={{ background: emptyBackground, color: textColor }}
             >
-                <div className="splunkstuff-sparkline-value-viz__err">{emptyText}</div>
+                <div className="bgdhamp-sparkline-value-viz__err">{emptyText}</div>
             </div>
         );
     }
@@ -320,44 +320,44 @@ export default function KpiSparklineReactApp({ values = [], times = [], config =
     return (
         <div
             ref={rootRef}
-            className="splunkstuff-sparkline-value-viz"
-            data-ss-viz-build={VIZ_BUILD}
+            className="bgdhamp-sparkline-value-viz"
+            data-bgdhamp-viz-build={VIZ_BUILD}
             style={{ background, color: textColor }}
         >
             {badgeText ? (
-                <div className="splunkstuff-sparkline-value-viz__badge" title={badgeText}>
+                <div className="bgdhamp-sparkline-value-viz__badge" title={badgeText}>
                     {badgeText}
                 </div>
             ) : null}
-            {subheader ? <div className="splunkstuff-sparkline-value-viz__header">{subheader}</div> : null}
+            {subheader ? <div className="bgdhamp-sparkline-value-viz__header">{subheader}</div> : null}
 
-            <div className="splunkstuff-sparkline-value-viz__body">
-                <div className="splunkstuff-sparkline-value-viz__major">
+            <div className="bgdhamp-sparkline-value-viz__body">
+                <div className="bgdhamp-sparkline-value-viz__major">
                     {majorLabel ? (
-                        <div className="splunkstuff-sparkline-value-viz__indicatorLabel">
+                        <div className="bgdhamp-sparkline-value-viz__indicatorLabel">
                             {majorLabel}
                         </div>
                     ) : null}
-                    <div className="splunkstuff-sparkline-value-viz__majorValue">
+                    <div className="bgdhamp-sparkline-value-viz__majorValue">
                         {formatMajor(last, precision, unit)}
                     </div>
                 </div>
 
                 {showDelta ? (
-                    <div className="splunkstuff-sparkline-value-viz__trend">
+                    <div className="bgdhamp-sparkline-value-viz__trend">
                         {deltaLabel ? (
-                            <div className="splunkstuff-sparkline-value-viz__indicatorLabel">
+                            <div className="bgdhamp-sparkline-value-viz__indicatorLabel">
                                 {deltaLabel}
                             </div>
                         ) : null}
-                        <div className="splunkstuff-sparkline-value-viz__trendValue">
+                        <div className="bgdhamp-sparkline-value-viz__trendValue">
                             {formatDelta(rawDelta, last, deltaMode, precision)}
                         </div>
                     </div>
                 ) : null}
 
                 {showHover && showHoverAnnotation && hoverIdx != null ? (
-                    <div className="splunkstuff-sparkline-value-viz__hoverAnn">
+                    <div className="bgdhamp-sparkline-value-viz__hoverAnn">
                         {[hoverLabel, formatHoverValue(hoverValue, precision, tooltipPrefix), hoverTime]
                             .filter(Boolean)
                             .join(' | ')}
@@ -367,7 +367,7 @@ export default function KpiSparklineReactApp({ values = [], times = [], config =
                 {showSparkline ? (
                     <div
                         ref={sparkRef}
-                        className="splunkstuff-sparkline-value-viz__spark"
+                        className="bgdhamp-sparkline-value-viz__spark"
                         onPointerMove={handlePointerMove}
                         onPointerLeave={clearHover}
                     >
@@ -432,7 +432,7 @@ export default function KpiSparklineReactApp({ values = [], times = [], config =
                                   })
                                 : null}
                             {hoverPoint ? (
-                                <g className="splunkstuff-sparkline-value-viz__hover">
+                                <g className="bgdhamp-sparkline-value-viz__hover">
                                     <line
                                         x1={hoverPoint.x}
                                         x2={hoverPoint.x}
@@ -460,17 +460,17 @@ export default function KpiSparklineReactApp({ values = [], times = [], config =
             vizDocument &&
             vizDocument.body
                 ? createPortal(
-                      <div className="splunkstuff-sparkline-value-viz__tooltip" style={{ display: 'block', left: tooltipViewport.x, top: tooltipViewport.y }}>
+                      <div className="bgdhamp-sparkline-value-viz__tooltip" style={{ display: 'block', left: tooltipViewport.x, top: tooltipViewport.y }}>
                           {hoverLabel ? (
-                              <div className="splunkstuff-sparkline-value-viz__tooltipPoint">
+                              <div className="bgdhamp-sparkline-value-viz__tooltipPoint">
                                   {hoverLabel}
                               </div>
                           ) : null}
-                          <div className="splunkstuff-sparkline-value-viz__tooltipValue">
+                          <div className="bgdhamp-sparkline-value-viz__tooltipValue">
                               {formatHoverValue(hoverValue, precision, tooltipPrefix)}
                           </div>
                           {hoverTime ? (
-                              <div className="splunkstuff-sparkline-value-viz__tooltipTime">
+                              <div className="bgdhamp-sparkline-value-viz__tooltipTime">
                                   {hoverTime}
                               </div>
                           ) : null}

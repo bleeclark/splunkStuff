@@ -1,4 +1,4 @@
-# SplunkStuff data pie (React)
+# BGDHamp data pie (React)
 
 React implementation of the categorical pie custom visualization.
 

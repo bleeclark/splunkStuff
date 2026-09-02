@@ -27,10 +27,10 @@ const VANILLA_VIZ_IDS = [
  * Source of truth: visualizations/_shared/*.js — synced before each deliver/stage copy.
  */
 const VIZ_SELF_CONTAINED_SHARED = {
-    line_single_value: ['splunkstuffTrendColors.js'],
-    fixed_loaded_line_vanilla: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],
-    splunkstuff_kpi_line: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],
-    refactor_viz_manual: ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'],
+    line_single_value: ['bgdhampTrendColors.js'],
+    fixed_loaded_line_vanilla: ['bgdhampTrendColors.js', 'bgdhampVizHoverMath.js'],
+    splunkstuff_kpi_line: ['bgdhampTrendColors.js', 'bgdhampVizHoverMath.js'],
+    refactor_viz_manual: ['bgdhampTrendColors.js', 'bgdhampVizHoverMath.js'],
     radial_meter: ['radialMeterArc.js'],
     radial_meter_showcase: ['radialMeterArc.js'],
 };
@@ -45,6 +45,44 @@ const REACT_VIZ_IDS = [
     'radial_meter_react',
     'radial_meter_react_advanced',
 ];
+
+const TRANSIENT_COPY_CODES = new Set(['EIO', 'EBUSY', 'EAGAIN', 'EMFILE', 'ENFILE']);
+
+/**
+ * copyFileSync with short retries — macOS/watchers sometimes throw transient EIO mid-sync
+ * and would otherwise kill `yarn start`.
+ */
+function copyFileWithRetry(src, dest, attempts = 4) {
+    let lastError;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+        try {
+            fs.copyFileSync(src, dest);
+            return;
+        } catch (err) {
+            lastError = err;
+            if (!err || !TRANSIENT_COPY_CODES.has(err.code) || attempt === attempts) {
+                throw err;
+            }
+            const waitMs = attempt * 40;
+            const end = Date.now() + waitMs;
+            while (Date.now() < end) {
+                /* busy-wait: sync path from webpack hooks */
+            }
+        }
+    }
+    throw lastError;
+}
+
+function tryCopyFile(src, dest, label) {
+    try {
+        copyFileWithRetry(src, dest);
+    } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(
+            `viz-sync: skip copy ${label || path.basename(src)} (${err.code || err.message})`
+        );
+    }
+}
 
 /**
  * Copy _shared AMD helpers into viz directories that use same-folder defines (portable deliver/).
@@ -63,7 +101,7 @@ function syncSelfContainedSharedModules(pkgRoot) {
             if (!fs.existsSync(sharedSrc)) {
                 return;
             }
-            fs.copyFileSync(sharedSrc, path.join(destDir, name));
+            tryCopyFile(sharedSrc, path.join(destDir, name), `${vizId}/${name}`);
         });
     });
 }
@@ -91,7 +129,7 @@ function syncReactVizBundlesToStage(pkgRoot) {
         deployRoots.forEach((deployRoot) => {
             const destDir = path.join(deployRoot, vizId);
             shell.mkdir('-p', destDir);
-            fs.copyFileSync(src, path.join(destDir, 'visualization.js'));
+            tryCopyFile(src, path.join(destDir, 'visualization.js'), `${vizId} -> ${deployRoot}`);
         });
     });
 }
@@ -122,7 +160,7 @@ function copyReadableVanillaViz(pkgRoot) {
                 if (!fs.existsSync(src)) {
                     return;
                 }
-                fs.copyFileSync(src, path.join(destDir, asset));
+                tryCopyFile(src, path.join(destDir, asset), `${vizId}/${asset}`);
             });
             const embeddedShared = VIZ_SELF_CONTAINED_SHARED[vizId];
             if (embeddedShared) {
@@ -131,13 +169,13 @@ function copyReadableVanillaViz(pkgRoot) {
                     if (!fs.existsSync(srcFile)) {
                         return;
                     }
-                    fs.copyFileSync(srcFile, path.join(destDir, name));
+                    tryCopyFile(srcFile, path.join(destDir, name), `${vizId}/${name}`);
                 });
             }
         });
     });
 
-    const sharedFiles = ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'];
+    const sharedFiles = ['bgdhampTrendColors.js', 'bgdhampVizHoverMath.js'];
     sharedFiles.forEach((name) => {
         const sharedSrc = path.join(staticVizRoot, '_shared', name);
         if (!fs.existsSync(sharedSrc)) {
@@ -146,7 +184,7 @@ function copyReadableVanillaViz(pkgRoot) {
         copyTargets.forEach((targetRoot) => {
             const destDir = path.join(targetRoot, '_shared');
             shell.mkdir('-p', destDir);
-            fs.copyFileSync(sharedSrc, path.join(destDir, name));
+            tryCopyFile(sharedSrc, path.join(destDir, name), `_shared/${name}`);
         });
     });
 }
@@ -179,7 +217,7 @@ function watchReadableVanillaViz(pkgRoot, onChange) {
         fs.watch(src, schedule);
     });
 
-    const sharedFiles = ['splunkstuffTrendColors.js', 'splunkstuffVizHoverMath.js'];
+    const sharedFiles = ['bgdhampTrendColors.js', 'bgdhampVizHoverMath.js'];
     sharedFiles.forEach((name) => {
         const sharedSrc = path.join(staticVizRoot, '_shared', name);
         if (fs.existsSync(sharedSrc)) {

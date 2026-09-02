@@ -1,12 +1,12 @@
 /**
  * @file visualization.css
  * @description BEM styles for splunkstuff_kpi_sparkline_studio tiles.
- *   Class prefix: splunkstuff-sparkline-value-viz
+ *   Class prefix: bgdhamp-sparkline-value-viz
  *   Inline styles in renderTile.js supplement this sheet for dynamic colors/sizing.
  */
 
 /* --- Root tile container --- */
-.splunkstuff-sparkline-value-viz {
+.bgdhamp-sparkline-value-viz {
     box-sizing: border-box;
     position: relative;
     width: 100%;
@@ -17,7 +17,7 @@
 }
 
 /* --- Subheader bar --- */
-.splunkstuff-sparkline-value-viz__header {
+.bgdhamp-sparkline-value-viz__header {
     flex: 0 0 auto;
     height: 28px;
     display: flex;
@@ -30,7 +30,7 @@
 }
 
 /* --- Body: headline + spark anchor --- */
-.splunkstuff-sparkline-value-viz__body {
+.bgdhamp-sparkline-value-viz__body {
     flex: 1 1 auto;
     min-height: 0;
     position: relative;
@@ -42,7 +42,7 @@
 }
 
 /* --- Headline row: major value + trend delta --- */
-.splunkstuff-sparkline-value-viz__headlineRow {
+.bgdhamp-sparkline-value-viz__headlineRow {
     display: flex;
     align-items: baseline;
     justify-content: center;
@@ -50,30 +50,30 @@
     width: 100%;
 }
 
-.splunkstuff-sparkline-value-viz__headlineRow--stacked {
+.bgdhamp-sparkline-value-viz__headlineRow--stacked {
     flex-direction: column;
     align-items: center;
     gap: 8px;
 }
 
-.splunkstuff-sparkline-value-viz__headlineRow--inline {
+.bgdhamp-sparkline-value-viz__headlineRow--inline {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: baseline;
     gap: 16px;
 }
 
-.splunkstuff-sparkline-value-viz__headlineRow--alignLeft {
+.bgdhamp-sparkline-value-viz__headlineRow--alignLeft {
     justify-content: flex-start;
     text-align: left;
 }
 
-.splunkstuff-sparkline-value-viz__headlineRow--alignRight {
+.bgdhamp-sparkline-value-viz__headlineRow--alignRight {
     justify-content: flex-end;
     text-align: right;
 }
 
-.splunkstuff-sparkline-value-viz__major {
+.bgdhamp-sparkline-value-viz__major {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -83,7 +83,7 @@
     text-align: center;
 }
 
-.splunkstuff-sparkline-value-viz__trend {
+.bgdhamp-sparkline-value-viz__trend {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -92,35 +92,35 @@
 }
 
 /* --- Indicator label + value pairs --- */
-.splunkstuff-sparkline-value-viz__indicatorPair {
+.bgdhamp-sparkline-value-viz__indicatorPair {
     display: flex;
     align-items: baseline;
     justify-content: center;
     gap: 2px;
 }
 
-.splunkstuff-sparkline-value-viz__indicatorPair--above {
+.bgdhamp-sparkline-value-viz__indicatorPair--above {
     flex-direction: column;
     align-items: center;
 }
 
-.splunkstuff-sparkline-value-viz__indicatorPair--right {
+.bgdhamp-sparkline-value-viz__indicatorPair--right {
     flex-direction: row;
     gap: 8px;
 }
 
-.splunkstuff-sparkline-value-viz__indicatorPair--right .splunkstuff-sparkline-value-viz__indicatorLabel {
+.bgdhamp-sparkline-value-viz__indicatorPair--right .bgdhamp-sparkline-value-viz__indicatorLabel {
     margin-bottom: 0;
 }
 
-.splunkstuff-sparkline-value-viz__trendValue {
+.bgdhamp-sparkline-value-viz__trendValue {
     font-size: 16px;
     font-weight: 600;
     line-height: 1.2;
 }
 
 /* --- Sparkline container and SVG --- */
-.splunkstuff-sparkline-value-viz__spark {
+.bgdhamp-sparkline-value-viz__spark {
     position: absolute;
     left: 10px;
     right: 10px;
@@ -129,18 +129,18 @@
     overflow: visible;
 }
 
-.splunkstuff-sparkline-value-viz__spark--edgeToEdge {
+.bgdhamp-sparkline-value-viz__spark--edgeToEdge {
     left: 0;
     right: 0;
 }
 
-.splunkstuff-sparkline-value-viz__spark svg {
+.bgdhamp-sparkline-value-viz__spark svg {
     display: block;
     overflow: visible;
 }
 
 /* --- Hover overlay (line + dot on spark) --- */
-.splunkstuff-sparkline-value-viz__hoverOverlay {
+.bgdhamp-sparkline-value-viz__hoverOverlay {
     position: absolute;
     left: 0;
     top: 0;
@@ -150,14 +150,14 @@
     z-index: 2;
 }
 
-.splunkstuff-sparkline-value-viz__hoverLine {
+.bgdhamp-sparkline-value-viz__hoverLine {
     position: absolute;
     width: 1px;
     margin-left: -0.5px;
     background: rgba(255, 255, 255, 0.35);
 }
 
-.splunkstuff-sparkline-value-viz__hoverDot {
+.bgdhamp-sparkline-value-viz__hoverDot {
     position: absolute;
     width: 8px;
     height: 8px;
@@ -167,7 +167,7 @@
     box-sizing: border-box;
 }
 
-.splunkstuff-sparkline-value-viz__indicatorLabel {
+.bgdhamp-sparkline-value-viz__indicatorLabel {
     font-size: 13px;
     font-weight: 700;
     opacity: 1;
@@ -179,14 +179,14 @@
     background: rgba(0, 0, 0, 0.28);
 }
 
-.splunkstuff-sparkline-value-viz__majorValue {
+.bgdhamp-sparkline-value-viz__majorValue {
     font-size: 32px;
     font-weight: 600;
     line-height: 1.05;
 }
 
 /* --- Static badge and in-chart hover annotation strip --- */
-.splunkstuff-sparkline-value-viz__badge {
+.bgdhamp-sparkline-value-viz__badge {
     position: absolute;
     top: 8px;
     right: 10px;
@@ -208,7 +208,7 @@
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
-.splunkstuff-sparkline-value-viz__hoverAnn {
+.bgdhamp-sparkline-value-viz__hoverAnn {
     position: absolute;
     left: 10px;
     right: 10px;
@@ -228,7 +228,7 @@
 }
 
 /* --- Fixed-position hover tooltip (appended to document.body) --- */
-.splunkstuff-sparkline-value-viz__tooltip {
+.bgdhamp-sparkline-value-viz__tooltip {
     display: none;
     padding: 6px 8px;
     font-size: 11px;
@@ -242,30 +242,30 @@
     z-index: 2147483646;
 }
 
-.splunkstuff-sparkline-value-viz__tooltipPoint {
+.bgdhamp-sparkline-value-viz__tooltipPoint {
     font-weight: 600;
     opacity: 0.95;
     margin-bottom: 2px;
 }
 
-.splunkstuff-sparkline-value-viz__tooltipValue {
+.bgdhamp-sparkline-value-viz__tooltipValue {
     font-weight: 600;
 }
 
-.splunkstuff-sparkline-value-viz__tooltipTime {
+.bgdhamp-sparkline-value-viz__tooltipTime {
     opacity: 0.88;
     margin-top: 2px;
 }
 
 /* --- Empty state and error message --- */
-.splunkstuff-sparkline-value-viz__err {
+.bgdhamp-sparkline-value-viz__err {
     padding: 12px;
     font-size: 12px;
     opacity: 0.9;
 }
 
 /* --- Trellis grid layout --- */
-.splunkstuff-sparkline-value-viz__trellisGrid {
+.bgdhamp-sparkline-value-viz__trellisGrid {
     display: grid;
     gap: 8px;
     width: 100%;
@@ -275,7 +275,7 @@
     overflow: auto;
 }
 
-.splunkstuff-sparkline-value-viz__trellisCell {
+.bgdhamp-sparkline-value-viz__trellisCell {
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -284,7 +284,7 @@
     overflow: hidden;
 }
 
-.splunkstuff-sparkline-value-viz__trellisTitle {
+.bgdhamp-sparkline-value-viz__trellisTitle {
     flex: 0 0 auto;
     padding: 4px 8px;
     font-size: 11px;
@@ -292,7 +292,7 @@
     background: rgba(0, 0, 0, 0.25);
 }
 
-.splunkstuff-sparkline-value-viz__trellisTileMount {
+.bgdhamp-sparkline-value-viz__trellisTileMount {
     flex: 1 1 auto;
     min-height: 0;
     position: relative;

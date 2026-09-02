@@ -2,14 +2,14 @@
 
 **Refactor viz manual:** same **runtime behavior and formatter options** as [`splunkstuff_kpi_line`](../splunkstuff_kpi_line/) / [`splunkstuff_kpi_line_verbose`](../splunkstuff_kpi_line_verbose/), with its own viz id and config namespace.
 
-`visualization.js` matches `splunkstuff_kpi_line` except `VIZ_ID`, `NS`, and `REFACTOR_VIZ_MANUAL_DEBUG`. It **`define`s** `./splunkstuffTrendColors` and `./splunkstuffVizHoverMath` (copies in this folder, synced from repo `visualizations/_shared/` on `yarn build`).
+`visualization.js` matches `splunkstuff_kpi_line` except `VIZ_ID`, `NS`, and `REFACTOR_VIZ_MANUAL_DEBUG`. It **`define`s** `./bgdhampTrendColors` and `./bgdhampVizHoverMath` (copies in this folder, synced from repo `visualizations/_shared/` on `yarn build`).
 
 ## Files
 
 - `visualization.js` — AMD viz.
 - `formatter.html` — same controls as verbose.
-- `visualization.css` — `splunkstuff-kpi-line-viz` BEM.
-- `splunkstuffTrendColors.js`, `splunkstuffVizHoverMath.js` — per-viz copies of shared AMD helpers.
+- `visualization.css` — `bgdhamp-kpi-line-viz` BEM.
+- `bgdhampTrendColors.js`, `bgdhampVizHoverMath.js` — per-viz copies of shared AMD helpers.
 - `preview.png`, `visualizations.conf.snippet`.
 
 ## Debug

@@ -6,7 +6,7 @@
     "canSetTokens": [],
     "hasEventHandlers": false,
     "config": {
-        "name": "SplunkStuff KPI + Sparkline",
+        "name": "BGDHamp KPI + Sparkline",
         "description": "Dashboard Studio KPI tile with delta, sparkline, optional area fill, annotations, thresholds, and trellis.",
         "category": "Custom",
         "dataContract": {
@@ -76,7 +76,7 @@
             },
             "sparkAuto": {
                 "type": "boolean",
-                "default": false
+                "default": true
             },
             "goodColor": {
                 "type": "string",

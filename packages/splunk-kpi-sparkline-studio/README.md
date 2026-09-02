@@ -1,4 +1,4 @@
-# SplunkStuff KPI + Sparkline — Dashboard Studio extension
+# BGDHamp KPI + Sparkline — Dashboard Studio extension
 
 **Viz id:** `splunkstuff_kpi_sparkline_studio`  
 **Framework:** Splunk Dashboard Studio (`framework_type = studio_visualization`)  
@@ -35,7 +35,7 @@ Use `yarn link:app` from `packages/splunk-one` or package via `yarn package:viz`
 ## Dashboard Studio usage
 
 1. Open **Dashboard Studio** → **Edit** → **Add chart**
-2. Choose **SplunkStuff KPI + Sparkline** (Custom)
+2. Choose **BGDHamp KPI + Sparkline** (Custom)
 3. Attach a primary search with `_time` + numeric `value` (+ optional string `annotation`)
 
 Example SPL:
@@ -67,4 +67,4 @@ node packages/splunk-one/bin/verify-studio-kpi-sparkline.js
 
 ## Cache notes
 
-After changes: run `yarn build`, restart Splunk or reload the app, hard refresh the Studio dashboard. Confirm `data-ss-viz-build` on the tile root in DevTools.
+After changes: run `yarn build`, restart Splunk or reload the app, hard refresh the Studio dashboard. Confirm `data-bgdhamp-viz-build` on the tile root in DevTools.

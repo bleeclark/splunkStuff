@@ -85,7 +85,7 @@ const optionDefinitions = [
     ['sparklineDisplay', 'string', 'below', 'select', 'sparklineDisplay'],
     ['sparkMin', 'string', '', 'text'],
     ['sparkMax', 'string', '', 'text'],
-    ['sparkAuto', 'boolean', false, 'checkbox'],
+    ['sparkAuto', 'boolean', true, 'checkbox'],
     ['goodColor', 'string', '#01417F', 'color'],
     ['badColor', 'string', '#DFA611', 'color'],
     ['invertTrend', 'boolean', false, 'checkbox'],
@@ -194,7 +194,7 @@ const config = {
     canSetTokens: [],
     hasEventHandlers: false,
     config: {
-        name: 'SplunkStuff KPI + Sparkline',
+        name: 'BGDHamp KPI + Sparkline',
         description:
             'Dashboard Studio KPI tile with delta, sparkline, optional area fill, annotations, thresholds, and trellis.',
         category: 'Custom',

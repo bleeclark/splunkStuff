@@ -6,7 +6,7 @@ Splunk dashboard **custom visualization** (RequireJS AMD, no React bundle):
 - `formatter.html` — Format editor (Y min/max, colors, labels).
 - `visualization.css` — layout and typography aligned with fixed single value.
 - `preview.png` — visualization picker thumbnail.
-- `splunkstuffTrendColors.js` — trend helper AMD module (same folder; synced from repo `visualizations/_shared/` on build).
+- `bgdhampTrendColors.js` — trend helper AMD module (same folder; synced from repo `visualizations/_shared/` on build).
 
 Splunk folder name / viz id: **`line_single_value`** (maps to stanza `[line_single_value]`).
 
@@ -30,7 +30,7 @@ Copy into the app tree:
 | `visualization.css`         | *(same folder)*                                                                     |
 | `formatter.html`          | *(same folder)*                                                                     |
 | `preview.png`               | *(same folder)*                                                                     |
-| `splunkstuffTrendColors.js` | *(same folder — trend helper AMD module)* |
+| `bgdhampTrendColors.js` | *(same folder — trend helper AMD module)* |
 
 Merge `visualizations.conf.snippet` into:
 

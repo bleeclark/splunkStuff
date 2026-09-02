@@ -111,20 +111,20 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
             this.el.innerHTML = '';
             var root = document.createElement('div');
-            root.className = 'splunkstuff-simple-small-viz';
+            root.className = 'bgdhamp-simple-small-viz';
             root.style.background = bg;
             root.style.color = text;
 
             var title = document.createElement('div');
-            title.className = 'splunkstuff-simple-small-viz__label';
+            title.className = 'bgdhamp-simple-small-viz__label';
             title.textContent = label;
 
             var value = document.createElement('div');
-            value.className = 'splunkstuff-simple-small-viz__value';
+            value.className = 'bgdhamp-simple-small-viz__value';
             value.textContent = formatNumber(data.value) + unit;
 
             var meta = document.createElement('div');
-            meta.className = 'splunkstuff-simple-small-viz__meta';
+            meta.className = 'bgdhamp-simple-small-viz__meta';
             meta.textContent = data.rows ? data.rows + ' rows' : 'No numeric values';
 
             root.appendChild(title);

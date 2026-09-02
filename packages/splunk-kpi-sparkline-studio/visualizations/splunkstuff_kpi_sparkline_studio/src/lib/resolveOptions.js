@@ -152,7 +152,7 @@ export function resolveOptions(rawOptions) {
         // --- Spark scale ---
         sparkScaleMinimum: readOptionString(rawOptions, 'sparkMin'),
         sparkScaleMaximum: readOptionString(rawOptions, 'sparkMax'),
-        autoScaleSparkline: readOptionBoolean(rawOptions, ['sparkAuto'], false),
+        autoScaleSparkline: readOptionBoolean(rawOptions, ['sparkAuto'], true),
 
         // --- Trend colors ---
         upTrendColor: readOptionString(rawOptions, 'goodColor') || '#01417F',

@@ -45,17 +45,17 @@ function loadKpiSparklineViz() {
     );
     const src = fs.readFileSync(filePath, 'utf8');
     assert(src.indexOf('DEMO_LABELS') !== -1, 'kpi sparkline must define DEMO_LABELS');
-    assert(src.indexOf('data-ss-viz-build') !== -1, 'kpi sparkline must set data-ss-viz-build');
+    assert(src.indexOf('data-bgdhamp-viz-build') !== -1, 'kpi sparkline must set data-bgdhamp-viz-build');
     assert(src.indexOf('inlineCaptionStyle') !== -1, 'kpi sparkline must use inlineCaptionStyle');
     assert(
         src.indexOf('splunkstuff_kpi_sparkline') !== -1,
         'kpi sparkline namespace missing'
     );
     assert(
-        src.indexOf('splunkstuff-sparkline-value-viz__indicatorLabel') !== -1,
+        src.indexOf('bgdhamp-sparkline-value-viz__indicatorLabel') !== -1,
         'sparkline must render indicatorLabel class'
     );
-    assert(src.indexOf('splunkstuff-sparkline-value-viz__badge') !== -1, 'sparkline must render badge class');
+    assert(src.indexOf('bgdhamp-sparkline-value-viz__badge') !== -1, 'sparkline must render badge class');
     assert(src.indexOf('function optLabel') !== -1, 'kpi sparkline must define optLabel');
     assert(
         src.indexOf("if (badgeText)") !== -1,
@@ -63,15 +63,32 @@ function loadKpiSparklineViz() {
     );
     assert(src.indexOf('appendIndicatorPair') !== -1, 'kpi sparkline must support indicator pair layout');
     assert(src.indexOf('stringFields') !== -1, 'kpi sparkline must extract stringFields in formatData');
-    assert(src.indexOf('headlineLayout') !== -1, 'kpi sparkline must support headlineLayout');
+    assert(src.indexOf('valueField') !== -1, 'kpi sparkline must support valueField');
+    assert(src.indexOf('buildSeriesFromRaw') !== -1, 'kpi sparkline must soft-build series via buildSeriesFromRaw');
+    assert(
+        src.indexOf('Sparkline value needs a numeric column') === -1,
+        'kpi sparkline must not throw Single Value–incompatible VisualizationError'
+    );
+    assert(src.indexOf('HEADLINE_MIN_PX') !== -1, 'kpi sparkline must reserve headline space above spark');
+    assert(src.indexOf('HOVER_ANN_MIN_GAP_PX') !== -1, 'kpi sparkline must gate in-chart hover annotation by space');
     assert(src.indexOf('showAnnotationHover') !== -1, 'kpi sparkline must support annotation hover');
     assert(src.indexOf('subheaderStyle') !== -1, 'kpi sparkline must support subheaderStyle');
     assert(src.indexOf('applySubheaderStyle') !== -1, 'kpi sparkline must apply subheader styles');
     assert(src.indexOf('getBoundingClientRect') !== -1, 'kpi sparkline must measure spark via layout rect');
+    assert(src.indexOf('sparkAreaPath') !== -1, 'kpi sparkline must draw area fill under the spark line');
+    assert(src.indexOf('showSparkArea') !== -1, 'kpi sparkline must support showSparkArea');
+    assert(src.indexOf('sparkHeight') !== -1, 'kpi sparkline must support sparkHeight');
+    assert(src.indexOf('sparkAreaColor') !== -1, 'kpi sparkline must support sparkAreaColor');
+    assert(src.indexOf('vizHeight') !== -1, 'kpi sparkline must support vizHeight');
+    assert(src.indexOf('applyVizHeight') !== -1, 'kpi sparkline must apply vizHeight to the host panel');
+    assert(src.indexOf('opt(\'background\'') !== -1, 'kpi sparkline must apply empty-state background');
+    assert(src.indexOf('normalizeSubheaderStyleName') !== -1, 'kpi sparkline must normalize subheaderStyle tokens');
+    assert(src.indexOf('isPercentDelta') !== -1, 'kpi sparkline must normalize deltaMode percent');
     assert(
-        src.indexOf('splunkstuff-sparkline-value-viz__hoverOverlay') !== -1,
-        'kpi sparkline must use HTML hover overlay'
+        src.indexOf('bgdhamp-sparkline-value-viz__hover') !== -1,
+        'kpi sparkline must use SVG hover marks'
     );
+    assert(src.indexOf('hoverOverlay') === -1, 'kpi sparkline must not use HTML hover overlay');
     return filePath;
 }
 

@@ -770,10 +770,10 @@ function applyIndicatorLabelStyles(labelElement, textColor) {
 function appendLabelValuePair(containerElement, valueElement, labelText, textColor, labelPosition) {
   const position = labelPosition === "right" ? "right" : "above";
   const pairElement = document.createElement("div");
-  pairElement.className = `splunkstuff-sparkline-value-viz__indicatorPair splunkstuff-sparkline-value-viz__indicatorPair--${position}`;
+  pairElement.className = `bgdhamp-sparkline-value-viz__indicatorPair bgdhamp-sparkline-value-viz__indicatorPair--${position}`;
   function createLabelElement() {
     const labelElement = document.createElement("div");
-    labelElement.className = "splunkstuff-sparkline-value-viz__indicatorLabel";
+    labelElement.className = "bgdhamp-sparkline-value-viz__indicatorLabel";
     labelElement.textContent = labelText;
     applyIndicatorLabelStyles(labelElement, textColor);
     if (position === "right") {
@@ -799,19 +799,19 @@ function applySubheaderBarStyles(headerElement, subheaderStyle, tileBackgroundCo
   let headerBackgroundColor = "rgba(0,0,0,0.52)";
   if (styleName === "matchtile") {
     headerBackgroundColor = tileBackgroundColor;
-    headerElement.className += " splunkstuff-sparkline-value-viz__header--matchTile";
+    headerElement.className += " bgdhamp-sparkline-value-viz__header--matchTile";
   } else if (styleName === "darkblue") {
     headerBackgroundColor = upTrendColor;
-    headerElement.className += " splunkstuff-sparkline-value-viz__header--darkBlue";
+    headerElement.className += " bgdhamp-sparkline-value-viz__header--darkBlue";
   } else {
-    headerElement.className += " splunkstuff-sparkline-value-viz__header--overlay";
+    headerElement.className += " bgdhamp-sparkline-value-viz__header--overlay";
   }
   headerElement.style.setProperty("background", headerBackgroundColor, "important");
   headerElement.style.setProperty("color", textColor, "important");
 }
 function clearSparkHoverState(sparkContainer, tooltipElement, hoverAnnotationElement) {
   if (sparkContainer) {
-    const existingOverlay = sparkContainer.querySelector(".splunkstuff-sparkline-value-viz__hoverOverlay");
+    const existingOverlay = sparkContainer.querySelector(".bgdhamp-sparkline-value-viz__hoverOverlay");
     if (existingOverlay && existingOverlay.parentNode) {
       existingOverlay.parentNode.removeChild(existingOverlay);
     }
@@ -834,16 +834,16 @@ function updateSparkHoverState(sparkContainer, tooltipElement, ownerDocument, ho
   const topPixel = hoverState.paddingTop / hoverState.svgHeight * drawHeight;
   const bottomPixel = drawHeight - hoverState.paddingBottom / hoverState.svgHeight * drawHeight;
   const overlayElement = ownerDocument.createElement("div");
-  overlayElement.className = "splunkstuff-sparkline-value-viz__hoverOverlay";
+  overlayElement.className = "bgdhamp-sparkline-value-viz__hoverOverlay";
   overlayElement.setAttribute("aria-hidden", "true");
   const lineElement = ownerDocument.createElement("div");
-  lineElement.className = "splunkstuff-sparkline-value-viz__hoverLine";
+  lineElement.className = "bgdhamp-sparkline-value-viz__hoverLine";
   lineElement.style.left = `${pixelX.toFixed(1)}px`;
   lineElement.style.top = `${topPixel.toFixed(1)}px`;
   lineElement.style.height = `${Math.max(0, bottomPixel - topPixel).toFixed(1)}px`;
   overlayElement.appendChild(lineElement);
   const dotElement = ownerDocument.createElement("div");
-  dotElement.className = "splunkstuff-sparkline-value-viz__hoverDot";
+  dotElement.className = "bgdhamp-sparkline-value-viz__hoverDot";
   dotElement.style.left = `${(pixelX - 4).toFixed(1)}px`;
   dotElement.style.top = `${(pixelY - 4).toFixed(1)}px`;
   dotElement.style.background = hoverState.sparklineStrokeColor;
@@ -869,7 +869,7 @@ function updateSparkHoverState(sparkContainer, tooltipElement, ownerDocument, ho
   const valueLineIndex = tooltipLines.indexOf(valueLabel);
   for (let lineIndex = 0; lineIndex < tooltipLines.length; lineIndex += 1) {
     const rowElement = ownerDocument.createElement("div");
-    rowElement.className = lineIndex < valueLineIndex ? "splunkstuff-sparkline-value-viz__tooltipPoint" : lineIndex === valueLineIndex ? "splunkstuff-sparkline-value-viz__tooltipValue" : "splunkstuff-sparkline-value-viz__tooltipTime";
+    rowElement.className = lineIndex < valueLineIndex ? "bgdhamp-sparkline-value-viz__tooltipPoint" : lineIndex === valueLineIndex ? "bgdhamp-sparkline-value-viz__tooltipValue" : "bgdhamp-sparkline-value-viz__tooltipTime";
     rowElement.textContent = tooltipLines[lineIndex];
     tooltipElement.appendChild(rowElement);
   }
@@ -1069,7 +1069,7 @@ function paintSparkline(sparkContainer, seriesData, resolvedOptions, sparklineSt
     sparkContainer.appendChild(svgElement);
     if (!sharedHover2.tooltipElement) {
       sharedHover2.tooltipElement = ownerDocument.createElement("div");
-      sharedHover2.tooltipElement.className = "splunkstuff-sparkline-value-viz__tooltip";
+      sharedHover2.tooltipElement.className = "bgdhamp-sparkline-value-viz__tooltip";
       sharedHover2.tooltipElement.setAttribute("role", "status");
       sharedHover2.tooltipElement.style.display = "none";
     }
@@ -1158,7 +1158,7 @@ function renderKpiSparklineTile(mountElement, seriesData, resolvedOptions, owner
   const valueSeries = Array.isArray(resolvedOptions.sparklineValuesOverride) && resolvedOptions.sparklineValuesOverride.length ? resolvedOptions.sparklineValuesOverride.map((value) => Number(value)) : seriesData.valueSeries;
   if (!valueSeries.length) {
     const emptyElement = document.createElement("div");
-    emptyElement.className = "splunkstuff-sparkline-value-viz__err";
+    emptyElement.className = "bgdhamp-sparkline-value-viz__err";
     emptyElement.textContent = resolvedOptions.emptyStateMessage;
     mountElement.appendChild(emptyElement);
     return;
@@ -1184,8 +1184,8 @@ function renderKpiSparklineTile(mountElement, seriesData, resolvedOptions, owner
     resolvedOptions.autoScaleSparkline
   );
   const rootElement = document.createElement("div");
-  rootElement.className = "splunkstuff-sparkline-value-viz";
-  rootElement.setAttribute("data-ss-viz-build", VIZ_BUILD);
+  rootElement.className = "bgdhamp-sparkline-value-viz";
+  rootElement.setAttribute("data-bgdhamp-viz-build", VIZ_BUILD);
   rootElement.style.position = "relative";
   rootElement.style.backgroundColor = tileBackgroundColor;
   rootElement.style.color = defaultTextColor;
@@ -1197,14 +1197,14 @@ function renderKpiSparklineTile(mountElement, seriesData, resolvedOptions, owner
   rootElement.style.flexDirection = "column";
   if (resolvedOptions.badgeStatusText) {
     const badgeElement = document.createElement("div");
-    badgeElement.className = "splunkstuff-sparkline-value-viz__badge";
+    badgeElement.className = "bgdhamp-sparkline-value-viz__badge";
     badgeElement.textContent = resolvedOptions.badgeStatusText;
     badgeElement.setAttribute("title", resolvedOptions.badgeStatusText);
     rootElement.appendChild(badgeElement);
   }
   if (resolvedOptions.subheaderText) {
     const headerElement = document.createElement("div");
-    headerElement.className = "splunkstuff-sparkline-value-viz__header";
+    headerElement.className = "bgdhamp-sparkline-value-viz__header";
     applySubheaderBarStyles(
       headerElement,
       resolvedOptions.subheaderStyle,
@@ -1216,7 +1216,7 @@ function renderKpiSparklineTile(mountElement, seriesData, resolvedOptions, owner
     rootElement.appendChild(headerElement);
   }
   const bodyElement = document.createElement("div");
-  bodyElement.className = "splunkstuff-sparkline-value-viz__body";
+  bodyElement.className = "bgdhamp-sparkline-value-viz__body";
   bodyElement.style.flex = "1 1 auto";
   bodyElement.style.position = "relative";
   bodyElement.style.display = "flex";
@@ -1225,15 +1225,15 @@ function renderKpiSparklineTile(mountElement, seriesData, resolvedOptions, owner
   bodyElement.style.justifyContent = "center";
   bodyElement.style.padding = "12px 12px 76px";
   bodyElement.style.boxSizing = "border-box";
-  const alignClass = resolvedOptions.align === "left" ? "splunkstuff-sparkline-value-viz__headlineRow--alignLeft" : resolvedOptions.align === "right" ? "splunkstuff-sparkline-value-viz__headlineRow--alignRight" : "";
+  const alignClass = resolvedOptions.align === "left" ? "bgdhamp-sparkline-value-viz__headlineRow--alignLeft" : resolvedOptions.align === "right" ? "bgdhamp-sparkline-value-viz__headlineRow--alignRight" : "";
   const headlineRowElement = document.createElement("div");
-  headlineRowElement.className = `splunkstuff-sparkline-value-viz__headlineRow splunkstuff-sparkline-value-viz__headlineRow--${resolvedOptions.headlineLayout === "inline" ? "inline" : "stacked"} ${alignClass}`.trim();
+  headlineRowElement.className = `bgdhamp-sparkline-value-viz__headlineRow bgdhamp-sparkline-value-viz__headlineRow--${resolvedOptions.headlineLayout === "inline" ? "inline" : "stacked"} ${alignClass}`.trim();
   const majorValueNumeric = resolvedOptions.majorValueOverride != null && Number.isFinite(Number(resolvedOptions.majorValueOverride)) ? Number(resolvedOptions.majorValueOverride) : lastValue;
   const majorDisplayText = resolvedOptions.majorValueDisplayOverride != null && String(resolvedOptions.majorValueDisplayOverride).trim() !== "" ? String(resolvedOptions.majorValueDisplayOverride) : formatMajorValue(majorValueNumeric, resolvedOptions);
   const majorBlock = document.createElement("div");
-  majorBlock.className = "splunkstuff-sparkline-value-viz__major";
+  majorBlock.className = "bgdhamp-sparkline-value-viz__major";
   const majorValueElement = document.createElement("div");
-  majorValueElement.className = "splunkstuff-sparkline-value-viz__majorValue";
+  majorValueElement.className = "bgdhamp-sparkline-value-viz__majorValue";
   majorValueElement.textContent = majorDisplayText;
   majorValueElement.style.fontSize = resolvedOptions.majorFontSize ? `${resolvedOptions.majorFontSize}px` : "32px";
   majorValueElement.style.fontWeight = "600";
@@ -1250,9 +1250,9 @@ function renderKpiSparklineTile(mountElement, seriesData, resolvedOptions, owner
   headlineRowElement.appendChild(majorBlock);
   if (resolvedOptions.showTrendDelta) {
     const trendBlock = document.createElement("div");
-    trendBlock.className = "splunkstuff-sparkline-value-viz__trend";
+    trendBlock.className = "bgdhamp-sparkline-value-viz__trend";
     const trendValueElement = document.createElement("div");
-    trendValueElement.className = "splunkstuff-sparkline-value-viz__trendValue";
+    trendValueElement.className = "bgdhamp-sparkline-value-viz__trendValue";
     trendValueElement.textContent = formatTrendDeltaValue(trendDeltaValue, lastValue, resolvedOptions);
     trendValueElement.style.fontSize = resolvedOptions.trendFontSize ? `${resolvedOptions.trendFontSize}px` : "16px";
     trendValueElement.style.fontWeight = "600";
@@ -1270,7 +1270,7 @@ function renderKpiSparklineTile(mountElement, seriesData, resolvedOptions, owner
   let hoverAnnotationElement = null;
   if (resolvedOptions.showInChartHoverAnnotation) {
     hoverAnnotationElement = ownerDocument.createElement("div");
-    hoverAnnotationElement.className = "splunkstuff-sparkline-value-viz__hoverAnn";
+    hoverAnnotationElement.className = "bgdhamp-sparkline-value-viz__hoverAnn";
     hoverAnnotationElement.setAttribute("aria-hidden", "true");
     bodyElement.appendChild(hoverAnnotationElement);
   }
@@ -1278,9 +1278,9 @@ function renderKpiSparklineTile(mountElement, seriesData, resolvedOptions, owner
   let sparkContainer = null;
   if (showSparkSection) {
     sparkContainer = document.createElement("div");
-    sparkContainer.className = "splunkstuff-sparkline-value-viz__spark";
+    sparkContainer.className = "bgdhamp-sparkline-value-viz__spark";
     if (resolvedOptions.sparkEdgeToEdge) {
-      sparkContainer.className += " splunkstuff-sparkline-value-viz__spark--edgeToEdge";
+      sparkContainer.className += " bgdhamp-sparkline-value-viz__spark--edgeToEdge";
     }
     sparkContainer.style.position = "absolute";
     sparkContainer.style.left = resolvedOptions.sparkEdgeToEdge ? "0" : "10px";
@@ -1408,7 +1408,7 @@ scenarios.forEach((scenario) => {
   const resolvedOptions = resolveOptions(scenario.options);
   const parsedData = parsePrimarySearchData(searchData, resolvedOptions);
   renderKpiSparklineTile(tileHost, parsedData.primary, resolvedOptions, document, sharedHover);
-  const tileRoot = tileHost.querySelector(".splunkstuff-sparkline-value-viz");
+  const tileRoot = tileHost.querySelector(".bgdhamp-sparkline-value-viz");
   mountRoot.appendChild(panel);
 });
 function collectDiagnostics() {
@@ -1418,9 +1418,9 @@ function collectDiagnostics() {
       return;
     }
     const tileHost = panel.querySelector(".harness-tile-host");
-    const tileRoot = tileHost ? tileHost.querySelector(".splunkstuff-sparkline-value-viz") : null;
-    const headlineRow = tileHost ? tileHost.querySelector(".splunkstuff-sparkline-value-viz__headlineRow") : null;
-    const sparkContainer = tileHost ? tileHost.querySelector(".splunkstuff-sparkline-value-viz__spark") : null;
+    const tileRoot = tileHost ? tileHost.querySelector(".bgdhamp-sparkline-value-viz") : null;
+    const headlineRow = tileHost ? tileHost.querySelector(".bgdhamp-sparkline-value-viz__headlineRow") : null;
+    const sparkContainer = tileHost ? tileHost.querySelector(".bgdhamp-sparkline-value-viz__spark") : null;
     const sparkSvg = sparkContainer ? sparkContainer.querySelector("svg") : null;
     const headlineClass = headlineRow ? headlineRow.className : "(missing)";
     const containerWidth = sparkContainer ? Math.round(sparkContainer.getBoundingClientRect().width) : 0;
@@ -1432,7 +1432,7 @@ function collectDiagnostics() {
       containerWidth,
       svgWidth,
       widthMatch,
-      build: tileRoot ? tileRoot.getAttribute("data-ss-viz-build") : ""
+      build: tileRoot ? tileRoot.getAttribute("data-bgdhamp-viz-build") : ""
     });
   });
 }

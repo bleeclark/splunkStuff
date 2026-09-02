@@ -4,7 +4,7 @@ import {
     DEFAULT_UP_COLOR,
     trendBackground,
     trendDelta,
-} from '../../lib/splunkstuffTrendColors';
+} from '../../lib/bgdhampTrendColors';
 import { sparkBounds, sparkPath } from './sparkPath';
 
 function sanitizeHexColor(raw, fallback) {

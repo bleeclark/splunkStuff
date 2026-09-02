@@ -3,7 +3,7 @@
  * Splunk custom visualization entry — React KPI + sparkline bundle.
  */
 import SplunkVisualizationBase from 'api/SplunkVisualizationBase';
-import { applyTrendHostStyle, trendBackground, trendDelta } from '../../lib/splunkstuffTrendColors';
+import { applyTrendHostStyle, trendBackground, trendDelta } from '../../lib/bgdhampTrendColors';
 import { numericSeries, readBool, readConfig, safeColor } from '../splunkVizData';
 import { mountViz, reflowViz, unmountViz } from './vizMount';
 

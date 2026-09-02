@@ -1,4 +1,4 @@
-# SplunkStuff custom visualization kit (submit / handoff)
+# BGDHamp custom visualization kit (submit / handoff)
 
 Splunk does not use a single “viz file.” A dashboard custom visualization is always a **small bundle** of files under one folder, plus one stanza in **`default/visualizations.conf`**.
 
@@ -30,8 +30,8 @@ Per-viz “zip this folder” copies (without the app shell) still live under `d
 
 ## Find and use in the UI
 
-- **Dashboards:** open **SplunkStuff custom viz gallery** (view id `custom_viz_gallery`) in the `splunk-one` app, or search dashboards for **SplunkStuff**.
-- **Search → Visualization:** run a search, open the visualization drop-down, filter by **SplunkStuff** (labels are set in `visualizations.conf`).
+- **Dashboards:** open **BGDHamp custom viz gallery** (view id `custom_viz_gallery`) in the `splunk-one` app, or search dashboards for **BGDHamp**.
+- **Search → Visualization:** run a search, open the visualization drop-down, filter by **BGDHamp** (labels are set in `visualizations.conf`).
 
 ## Copy of the demo dashboard (Simple XML)
 

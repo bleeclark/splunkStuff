@@ -1,4 +1,4 @@
-.splunkstuff-sparkline-value-viz {
+.bgdhamp-sparkline-value-viz {
     box-sizing: border-box;
     position: relative;
     width: 100%;
@@ -8,7 +8,7 @@
     font-family: 'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-.splunkstuff-sparkline-value-viz__header {
+.bgdhamp-sparkline-value-viz__header {
     flex: 0 0 auto;
     height: 28px;
     display: flex;
@@ -20,7 +20,7 @@
     font-weight: 500;
 }
 
-.splunkstuff-sparkline-value-viz__body {
+.bgdhamp-sparkline-value-viz__body {
     flex: 1 1 auto;
     min-height: 0;
     position: relative;
@@ -31,7 +31,7 @@
     padding: 12px 12px 56px;
 }
 
-.splunkstuff-sparkline-value-viz__major {
+.bgdhamp-sparkline-value-viz__major {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -41,7 +41,7 @@
     text-align: center;
 }
 
-.splunkstuff-sparkline-value-viz__trend {
+.bgdhamp-sparkline-value-viz__trend {
     margin-top: 8px;
     display: flex;
     flex-direction: column;
@@ -50,13 +50,13 @@
     text-align: center;
 }
 
-.splunkstuff-sparkline-value-viz__trendValue {
+.bgdhamp-sparkline-value-viz__trendValue {
     font-size: 16px;
     font-weight: 600;
     line-height: 1.2;
 }
 
-.splunkstuff-sparkline-value-viz__spark {
+.bgdhamp-sparkline-value-viz__spark {
     position: absolute;
     left: 10px;
     right: 10px;
@@ -64,14 +64,14 @@
     height: 40px;
 }
 
-.splunkstuff-sparkline-value-viz__spark svg {
+.bgdhamp-sparkline-value-viz__spark svg {
     display: block;
     width: 100%;
     height: 100%;
     overflow: visible;
 }
 
-.splunkstuff-sparkline-value-viz__indicatorLabel {
+.bgdhamp-sparkline-value-viz__indicatorLabel {
     font-size: 13px;
     font-weight: 700;
     opacity: 1;
@@ -83,13 +83,13 @@
     background: rgba(0, 0, 0, 0.28);
 }
 
-.splunkstuff-sparkline-value-viz__majorValue {
+.bgdhamp-sparkline-value-viz__majorValue {
     font-size: 32px;
     font-weight: 600;
     line-height: 1.05;
 }
 
-.splunkstuff-sparkline-value-viz__badge {
+.bgdhamp-sparkline-value-viz__badge {
     position: absolute;
     top: 8px;
     right: 10px;
@@ -111,7 +111,7 @@
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
-.splunkstuff-sparkline-value-viz__hoverAnn {
+.bgdhamp-sparkline-value-viz__hoverAnn {
     position: absolute;
     left: 10px;
     right: 10px;
@@ -130,7 +130,7 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
-.splunkstuff-sparkline-value-viz__tooltip {
+.bgdhamp-sparkline-value-viz__tooltip {
     display: none;
     padding: 6px 8px;
     font-size: 11px;
@@ -144,27 +144,27 @@
     z-index: 2147483646;
 }
 
-.splunkstuff-sparkline-value-viz__tooltipPoint {
+.bgdhamp-sparkline-value-viz__tooltipPoint {
     font-weight: 600;
     opacity: 0.95;
     margin-bottom: 2px;
 }
 
-.splunkstuff-sparkline-value-viz__tooltipValue {
+.bgdhamp-sparkline-value-viz__tooltipValue {
     font-weight: 600;
 }
 
-.splunkstuff-sparkline-value-viz__tooltipTime {
+.bgdhamp-sparkline-value-viz__tooltipTime {
     opacity: 0.88;
     margin-top: 2px;
 }
 
-.splunkstuff-sparkline-value-viz__hover line,
-.splunkstuff-sparkline-value-viz__hover circle {
+.bgdhamp-sparkline-value-viz__hover line,
+.bgdhamp-sparkline-value-viz__hover circle {
     pointer-events: none;
 }
 
-.splunkstuff-sparkline-value-viz__err {
+.bgdhamp-sparkline-value-viz__err {
     padding: 12px;
     font-size: 12px;
     opacity: 0.9;
