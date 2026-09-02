@@ -1,20 +1,8 @@
 <nav>
-    <view name="start" default="true" />
-    <view name="profile" />
-    <view name="feedback" />
+    <view name="profile" default="true" />
     <collection label="Resources">
+        <view name="documentation" />
         <a href="https://docs.splunk.com/Documentation/Splunk/9.4.0" target="_blank">Splunk 9.4 Docs</a>
-        <a href="https://splunkui.splunk.com/" target="_blank">Splunk UI</a>
         <a href="https://dev.splunk.com/" target="_blank">Splunk Dev</a>
     </collection>
-    <view name="documentation" />
-    <view name="custom_viz_gallery" />
-    <view name="demo" />
-    <view name="progress" />
-    <view name="integration" />
-    <view name="formatter_compatibility" />
-    <view name="formatter_cards_94" />
-    <view name="architecture" />
-    <view name="risk" />
-    <view name="risk_dashboard" />
 </nav>

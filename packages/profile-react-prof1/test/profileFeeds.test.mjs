@@ -25,6 +25,9 @@ describe('PROF-1 live profile contract', () => {
             [{ series: 'A', _time: '2024-06-01T00:00:00Z', value: 1 }]
         );
         assert.equal(isValidProfileFeedShape(feed), true);
+        assert.equal(feed.viz[0].title, 'Trend 1');
+        assert.equal(feed.viz[0].subheader, 'A');
+        assert.notEqual(feed.viz[0].title, feed.viz[0].subheader);
     });
 
     it('empty feed is valid', () => {

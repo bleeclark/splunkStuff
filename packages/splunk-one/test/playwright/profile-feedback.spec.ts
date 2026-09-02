@@ -43,13 +43,14 @@ test.describe('profile + feedback build artifacts', () => {
         expect(feedbackXml).toContain('feedback.html');
     });
 
-    test('nav registers profile and feedback', async () => {
+    test('nav registers profile and Resources, not feedback', async () => {
         const { root } = resolveRoots();
         const nav = fs.readFileSync(
             path.join(root, 'default/data/ui/nav/default.xml'),
             'utf8'
         );
         expect(nav).toContain('name="profile"');
-        expect(nav).toContain('name="feedback"');
+        expect(nav).toContain('label="Resources"');
+        expect(nav).not.toContain('name="feedback"');
     });
 });

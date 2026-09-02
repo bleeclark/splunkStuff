@@ -1,11 +1,12 @@
-/**
- * PROF-1 Profile page — live Splunk REST data only (no mock fixtures).
- */
 import React, { useEffect, useState } from 'react';
 import layout from '@splunk/react-page/18';
 import { getUserTheme } from '@splunk/splunk-utils/themes';
 
+import Paragraph from '@splunk/react-ui/Paragraph';
+import TabBar from '@splunk/react-ui/TabBar';
 import Select from '@splunk/react-ui/Select';
+import Button from '@splunk/react-ui/Button';
+import Modal from '@splunk/react-ui/Modal';
 import Message from '@splunk/react-ui/Message';
 import WaitSpinner from '@splunk/react-ui/WaitSpinner';
 
@@ -13,6 +14,7 @@ import LineChart from '../../components/visualizations/LineChart';
 import { useContainerSize } from '../../hooks/useContainerSize';
 
 import { FILTER_OPTIONS } from './profileContract';
+import { isProfileDemoMode } from './data/profileDemoFeeds';
 import { useProfileData } from './hooks/useProfileData';
 import {
     Page,
@@ -20,13 +22,14 @@ import {
     FilterRow,
     FilterCluster,
     FilterLabel,
+    ButtonRow,
     CardGrid,
-    SummaryCard,
-    KpiValue,
-    KpiDelta,
     VizCard,
     VizPanel,
+    TabPanel,
     PAGE_BLUE,
+    PANEL_BLUE,
+    profileModalStyle,
 } from './ProfileStyles';
 
 const palette = {
@@ -37,6 +40,9 @@ const palette = {
 
 const VIZ_HEIGHT_DESKTOP = 168;
 const VIZ_HEIGHT_NARROW = 140;
+
+const ACTION_2_URL = '/app/so_BUI_pickulationts/feedback';
+const ACTION_3_URL = 'https://dev.splunk.com/';
 
 function useVizPanelHeight() {
     const [height, setHeight] = useState(
@@ -61,7 +67,7 @@ function useVizPanelHeight() {
     return height;
 }
 
-function FullBleedChart({ feed, panelHeight }) {
+function FullBleedChart({ feed, unit = '', panelHeight }) {
     const { hostRef, width: chartWidth, height: chartHeight } = useContainerSize({
         minWidth: 160,
         minHeight: 96,
@@ -79,12 +85,12 @@ function FullBleedChart({ feed, panelHeight }) {
                 fillContainer
                 stroke="rgba(255,255,255,0.95)"
                 strokeWidth={2}
-                background={PAGE_BLUE}
+                background={PANEL_BLUE}
                 showMajor
                 goodColor={palette.goodColor}
                 badColor={palette.badColor}
                 textColor={palette.textColor}
-                unit=""
+                unit={unit}
                 subheader={feed.subheader}
                 centerMajor
                 colorPlacement="full"
@@ -97,15 +103,54 @@ function FullBleedChart({ feed, panelHeight }) {
     );
 }
 
-function ProfileContent() {
+function PanelStatus({ loading, error, empty }) {
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <WaitSpinner size="small" />
+                <span style={{ color: 'rgba(255,255,255,0.72)' }}>Running Splunk search…</span>
+            </div>
+        );
+    }
+    if (error) {
+        return (
+            <Message type="error" appearance="fill" style={{ marginBottom: 16 }}>
+                {String(error.message || error)}
+            </Message>
+        );
+    }
+    if (empty) {
+        return (
+            <Message type="info" appearance="fill" style={{ marginBottom: 16 }}>
+                No results for this filter.
+            </Message>
+        );
+    }
+    return null;
+}
+
+function ProfileTabContent() {
     const [filter, setFilter] = useState('all');
+    const [actionModalOpen, setActionModalOpen] = useState(false);
     const vizHeight = useVizPanelHeight();
-    const { data, loading, error } = useProfileData('profile', filter);
-    const cards = Array.isArray(data?.cards) ? data.cards : [];
+    const { data, loading, error, status } = useProfileData('profile', filter);
     const viz = Array.isArray(data?.viz) ? data.viz : [];
+    const demoMode = isProfileDemoMode();
 
     return (
-        <>
+        <TabPanel>
+            {demoMode ? (
+                <Message type="info" appearance="fill" style={{ marginBottom: 16 }}>
+                    Demo data — trend charts. Remove{' '}
+                    <code>?data=demo</code> for live Splunk REST.
+                </Message>
+            ) : null}
+            {status === 'demo-fallback' ? (
+                <Message type="warning" appearance="fill" style={{ marginBottom: 16 }}>
+                    Live Splunk search unavailable — showing demo chart data. Add{' '}
+                    <code>?data=demo</code> to force demo, or fix REST/search to load live rows.
+                </Message>
+            ) : null}
             <FilterRow>
                 <FilterCluster>
                     <FilterLabel>Filter</FilterLabel>
@@ -123,39 +168,54 @@ function ProfileContent() {
                         ))}
                     </Select>
                 </FilterCluster>
+                <ButtonRow>
+                    <Button
+                        label="Action 1"
+                        appearance="secondary"
+                        onClick={() => setActionModalOpen(true)}
+                    />
+                    <Button label="Action 2" appearance="secondary" to={ACTION_2_URL} />
+                    <Button
+                        label="Action 3"
+                        appearance="secondary"
+                        to={ACTION_3_URL}
+                        openInNewContext
+                    />
+                </ButtonRow>
             </FilterRow>
 
-            {loading ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                    <WaitSpinner size="small" />
-                    <span style={{ color: 'rgba(255,255,255,0.72)' }}>Running Splunk search…</span>
-                </div>
-            ) : null}
-            {error ? (
-                <Message type="error" appearance="fill" style={{ marginBottom: 16 }}>
-                    {String(error.message || error)}
-                </Message>
-            ) : null}
-            {!loading && !error && cards.length === 0 && viz.length === 0 ? (
-                <Message type="info" appearance="fill" style={{ marginBottom: 16 }}>
-                    No results for this filter.
-                </Message>
-            ) : null}
+            <Modal
+                open={actionModalOpen}
+                onRequestClose={() => setActionModalOpen(false)}
+                style={profileModalStyle}
+            >
+                <Modal.Header title="Action 1" />
+                <Modal.Body>
+                    <Paragraph>
+                        Placeholder modal for Action 1. Replace this content when you title the
+                        button.
+                    </Paragraph>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button
+                        appearance="primary"
+                        label="Close"
+                        onClick={() => setActionModalOpen(false)}
+                    />
+                </Modal.Footer>
+            </Modal>
 
-            <CardGrid columns={3}>
-                {cards.map((card) => (
-                    <SummaryCard key={`${filter}-${card.title}`} title={card.title}>
-                        <KpiValue>{card.value}</KpiValue>
-                        <KpiDelta>{card.delta}</KpiDelta>
-                    </SummaryCard>
-                ))}
-            </CardGrid>
+            <PanelStatus
+                loading={loading}
+                error={error}
+                empty={!loading && !error && viz.length === 0}
+            />
 
             <CardGrid columns={3}>
                 {viz.map((vizFeed, index) => (
                     <VizCard
                         key={`${filter}-viz-${index}`}
-                        title={vizFeed.subheader || `card ${index + 1}`}
+                        title={vizFeed.title || `Trend ${index + 1}`}
                     >
                         <VizPanel height={vizHeight}>
                             <FullBleedChart feed={vizFeed} panelHeight={vizHeight} />
@@ -163,11 +223,77 @@ function ProfileContent() {
                     </VizCard>
                 ))}
             </CardGrid>
-        </>
+        </TabPanel>
+    );
+}
+
+function MetricTabContent() {
+    const [metricModalOpen, setMetricModalOpen] = useState(false);
+    const vizHeight = useVizPanelHeight();
+    const { data, loading, error } = useProfileData('metric', 'all');
+    const metrics = Array.isArray(data?.cards) ? data.cards : [];
+
+    return (
+        <TabPanel>
+            <FilterRow>
+                <FilterLabel>Metrics</FilterLabel>
+                <ButtonRow>
+                    <Button label="Metric A" appearance="secondary" to={ACTION_2_URL} />
+                    <Button
+                        label="Metric B"
+                        appearance="secondary"
+                        onClick={() => setMetricModalOpen(true)}
+                    />
+                </ButtonRow>
+            </FilterRow>
+
+            <Modal
+                open={metricModalOpen}
+                onRequestClose={() => setMetricModalOpen(false)}
+                style={profileModalStyle}
+            >
+                <Modal.Header title="Metric B" />
+                <Modal.Body>
+                    <Paragraph>
+                        Placeholder modal for Metric B. Replace this content when you title the
+                        button.
+                    </Paragraph>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button
+                        appearance="primary"
+                        label="Close"
+                        onClick={() => setMetricModalOpen(false)}
+                    />
+                </Modal.Footer>
+            </Modal>
+
+            <PanelStatus
+                loading={loading}
+                error={error}
+                empty={!loading && !error && metrics.length === 0}
+            />
+
+            <CardGrid columns={2}>
+                {metrics.map((item) => (
+                    <VizCard key={item.title} title={item.title}>
+                        <VizPanel height={vizHeight}>
+                            <FullBleedChart
+                                feed={item.feed}
+                                unit={item.chart ? 'ms' : ''}
+                                panelHeight={vizHeight}
+                            />
+                        </VizPanel>
+                    </VizCard>
+                ))}
+            </CardGrid>
+        </TabPanel>
     );
 }
 
 function ProfilePage() {
+    const [activeTabId, setActiveTabId] = useState('profile');
+
     useEffect(() => {
         const style = document.createElement('style');
         style.setAttribute('data-profile-page-bg', '1');
@@ -189,7 +315,15 @@ function ProfilePage() {
     return (
         <Page>
             <PageHeader title="Profile" />
-            <ProfileContent />
+            <TabBar
+                activeTabId={activeTabId}
+                onChange={(e, { selectedTabId }) => setActiveTabId(selectedTabId)}
+            >
+                <TabBar.Tab label="Profile" tabId="profile" />
+                <TabBar.Tab label="Metric" tabId="metric" />
+            </TabBar>
+            {activeTabId === 'profile' ? <ProfileTabContent /> : null}
+            {activeTabId === 'metric' ? <MetricTabContent /> : null}
         </Page>
     );
 }
@@ -200,7 +334,7 @@ getUserTheme()
             ...theme,
             backgroundColorPage: PAGE_BLUE,
             backgroundColorSection: PAGE_BLUE,
-            backgroundColorPopup: '#122a4d',
+            backgroundColorPopup: PANEL_BLUE,
         };
         layout(<ProfilePage />, { theme: themed });
     })

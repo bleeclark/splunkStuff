@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
 export const PAGE_BLUE = '#0B1F3B';
-export const PANEL_BLUE = '#122a4d';
+export const PANEL_BLUE = '#73A4CF';
 export const MUTED = 'rgba(255,255,255,0.72)';
 export const BORDER = 'rgba(255,255,255,0.14)';
 
@@ -219,12 +219,35 @@ export function CardGrid({ children, columns = 3, ...rest }) {
     );
 }
 
+export function SectionHeading({ children, subtitle, tone = 'kpi', ...rest }) {
+    const accent = tone === 'viz' ? '#5B9BD5' : '#DFA611';
+    return (
+        <div style={{ marginBottom: 12, marginTop: tone === 'viz' ? 8 : 0 }} {...rest}>
+            <div
+                style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: accent,
+                }}
+            >
+                {children}
+            </div>
+            {subtitle ? (
+                <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>{subtitle}</div>
+            ) : null}
+        </div>
+    );
+}
+
 export function SummaryCard({ title, children, ...rest }) {
     return (
         <div
             style={{
                 background: PANEL_BLUE,
                 border: `1px solid ${BORDER}`,
+                borderLeft: '3px solid #DFA611',
                 borderRadius: 8,
                 padding: '16px 18px',
                 boxSizing: 'border-box',
@@ -236,7 +259,7 @@ export function SummaryCard({ title, children, ...rest }) {
                 style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: MUTED,
+                    color: PAGE_BLUE,
                     marginBottom: 8,
                 }}
             >
@@ -252,7 +275,7 @@ export function VizCard({ title, children, ...rest }) {
         <div
             style={{
                 background: PANEL_BLUE,
-                border: `1px solid ${BORDER}`,
+                border: `1px solid rgba(11,31,59,0.2)`,
                 borderRadius: 8,
                 overflow: 'hidden',
                 boxSizing: 'border-box',
@@ -263,8 +286,10 @@ export function VizCard({ title, children, ...rest }) {
                 style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: MUTED,
-                    padding: '12px 14px 8px',
+                    color: '#FFFFFF',
+                    padding: '10px 14px 8px',
+                    background: 'rgba(11,31,59,0.42)',
+                    borderBottom: `1px solid rgba(255,255,255,0.18)`,
                 }}
             >
                 {title}
@@ -278,7 +303,7 @@ export function VizPanel({ children, height = 168, ...rest }) {
     return (
         <div
             style={{
-                background: PAGE_BLUE,
+                background: PANEL_BLUE,
                 width: '100%',
                 height,
                 color: '#FFFFFF',

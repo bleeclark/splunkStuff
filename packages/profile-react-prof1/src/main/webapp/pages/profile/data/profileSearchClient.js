@@ -6,29 +6,29 @@ import { filtersToSplunkParams, substituteSplTokens } from '../filters/filtersTo
 
 /**
  * Live SPL templates. Replace with product searches; keep $filter_region$ tokens.
- * Field contract for mappers: cards → title,value,delta ; viz/metric → series,_time,value|count.
+ * Field contract for mappers: cards → title,value,delta ;
+ * viz → series,_time,value|count (optional card_title for wrapper, distinct from series);
+ * metric → title,_time,value|count (optional series for viz subheader, distinct from title).
  */
 const SEARCH_TEMPLATES = {
     profile_cards: `
-search index=_internal earliest=$earliest$ latest=$latest$
+search index=_internal
 | stats count as value by sourcetype
 | rename sourcetype as title
 | eval delta="live"
-| eval keep=if("$filter_region$"="*" OR match(title, "$filter_region$"), 1, 1)
-| where keep=1
 | head 3
 | fields title value delta
 `,
     profile_viz: `
-search index=_internal earliest=$earliest$ latest=$latest$
+search index=_internal
 | timechart span=1h count as value
-| eval series="Events"
-| fields _time series value
+| eval series="Events / hour", card_title="Event volume"
+| fields _time series value card_title
 `,
     profile_metrics: `
-search index=_internal earliest=$earliest$ latest=$latest$
+search index=_internal
 | timechart span=1h count as value
-| eval title="Throughput", series="Throughput"
+| eval title="Throughput", series="Requests / hour"
 | fields _time title series value
 `,
 };
@@ -36,10 +36,39 @@ search index=_internal earliest=$earliest$ latest=$latest$
 const DEFAULT_MAX_WAIT_MS = 300000;
 const POLL_INTERVAL_MS = 250;
 
-function getSplunkBase() {
-    if (typeof window === 'undefined') return '';
+/**
+ * Resolve Splunk REST proxy base (…/splunkd/__raw) from page globals.
+ * Splunk 10 HTML views expose __splunkd_partials__ keyed by endpoint, not splunkd.rootUrl.
+ */
+export function getSplunkRestBase() {
+    if (typeof window === 'undefined') {
+        return '';
+    }
+
     const cfg = window.__splunkd_partials__ || {};
-    return cfg.splunkd?.rootUrl || '';
+    if (cfg.splunkd?.rootUrl) {
+        return cfg.splunkd.rootUrl;
+    }
+
+    if (typeof window.$C !== 'undefined' && window.$C.SPLUNKD_PATH) {
+        return `${window.location.origin}${window.$C.SPLUNKD_PATH}`;
+    }
+
+    const lang = cfg['/services/session']?.entry?.[0]?.content?.lang;
+    if (lang) {
+        return `${window.location.origin}/${encodeURIComponent(lang)}/splunkd/__raw`;
+    }
+
+    const localeMatch = window.location.pathname.match(/^\/([^/]+)/);
+    if (localeMatch) {
+        return `${window.location.origin}/${localeMatch[1]}/splunkd/__raw`;
+    }
+
+    return '';
+}
+
+function getSplunkBase() {
+    return getSplunkRestBase();
 }
 
 function parseResultsJson(json) {
@@ -163,7 +192,12 @@ export async function runProfileSearch(searchName, filterKey, options = {}) {
     const createJson = await createRes.json();
     const sid = createJson.sid || createJson.entry?.[0]?.content?.sid;
     if (!sid) {
-        throw new Error('Failed to create search job');
+        const detail =
+            createJson.messages?.[0]?.text ||
+            createJson.messages?.[0]?.message ||
+            createJson.error ||
+            createRes.statusText;
+        throw new Error(`Failed to create search job${detail ? `: ${detail}` : ''}`);
     }
 
     await waitForJob(base, sid, { onProgress, signal, maxWaitMs });

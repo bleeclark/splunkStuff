@@ -12,12 +12,19 @@ import {
     Page,
     PageHeader,
     PAGE_BLUE,
-    PANEL_BLUE,
+    CARD_NAVY,
+    ACCENT_GOLD,
     BORDER,
     MUTED,
 } from '../profile/ProfileStyles';
 
-const FEEDBACK_URL = '/app/so_BUI_pickulationts/profile';
+const PROFILE_URL = '/app/so_BUI_pickulationts/profile';
+
+const fieldStyle = {
+    background: PAGE_BLUE,
+    color: '#FFFFFF',
+    borderColor: 'rgba(255,255,255,0.28)',
+};
 
 function FeedbackForm() {
     const [name, setName] = useState('');
@@ -31,13 +38,15 @@ function FeedbackForm() {
 
     return (
         <div
+            className="ss-feedback-card"
             style={{
                 marginTop: 20,
                 maxWidth: 560,
-                padding: 20,
+                padding: 24,
                 borderRadius: 8,
-                background: PANEL_BLUE,
+                background: CARD_NAVY,
                 border: `1px solid ${BORDER}`,
+                color: '#FFFFFF',
             }}
         >
             {submitted ? (
@@ -51,6 +60,7 @@ function FeedbackForm() {
                         value={name}
                         onChange={(e, { value }) => setName(value)}
                         placeholder="Your name"
+                        style={fieldStyle}
                     />
                 </ControlGroup>
                 <ControlGroup label="Feedback" labelPosition="top">
@@ -59,20 +69,27 @@ function FeedbackForm() {
                         onChange={(e, { value }) => setMessage(value)}
                         placeholder="Tell us what you think…"
                         rows={5}
+                        style={fieldStyle}
                     />
                 </ControlGroup>
                 <div className="ss-profile-feedback-actions">
-                    <Button appearance="primary" label="Submit" type="submit" />
                     <Button
-                        appearance="secondary"
-                        label="Back to Profile"
-                        to={FEEDBACK_URL}
+                        className="ss-feedback-submit"
+                        appearance="primary"
+                        label="Submit"
+                        type="submit"
+                        style={{
+                            background: ACCENT_GOLD,
+                            borderColor: ACCENT_GOLD,
+                            color: PAGE_BLUE,
+                        }}
                     />
+                    <Button appearance="secondary" label="Back to Profile" to={PROFILE_URL} />
                 </div>
             </form>
             <p style={{ color: MUTED, fontSize: 13, marginTop: 16, marginBottom: 0 }}>
-                Placeholder feedback page. Wire this to a Splunk collection or webhook
-                when you are ready.
+                Placeholder feedback page. Wire this to a Splunk collection or webhook when you
+                are ready.
             </p>
         </div>
     );
@@ -111,7 +128,7 @@ getUserTheme()
             ...theme,
             backgroundColorPage: PAGE_BLUE,
             backgroundColorSection: PAGE_BLUE,
-            backgroundColorPopup: '#122a4d',
+            backgroundColorPopup: CARD_NAVY,
         };
         layout(<FeedbackPage />, { theme: themed });
     })

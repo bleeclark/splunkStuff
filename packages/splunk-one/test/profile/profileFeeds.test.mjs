@@ -35,6 +35,25 @@ test('mapRowsToProfileFeed builds cards + viz from live rows', () => {
     assert.equal(isValidProfileFeedShape(feed), true);
     assert.equal(feed.cards[0].title, 'Active users');
     assert.equal(feed.viz[0].values.length, 2);
+    assert.equal(feed.viz[0].subheader, 'Active users');
+    assert.equal(feed.viz[0].title, 'Trend 1');
+    assert.notEqual(feed.viz[0].title, feed.viz[0].subheader);
+});
+
+test('mapRowsToProfileFeed uses card_title when it differs from viz subheader', () => {
+    const feed = mapRowsToProfileFeed(
+        [],
+        [
+            {
+                series: 'Revenue trend (USD)',
+                card_title: 'Revenue',
+                _time: '2024-06-01T00:00:00Z',
+                value: 10,
+            },
+        ]
+    );
+    assert.equal(feed.viz[0].title, 'Revenue');
+    assert.equal(feed.viz[0].subheader, 'Revenue trend (USD)');
 });
 
 test('mapRowsToMetricFeeds groups by title', () => {
@@ -44,6 +63,8 @@ test('mapRowsToMetricFeeds groups by title', () => {
     ]);
     assert.equal(metrics.cards.length, 1);
     assert.equal(metrics.cards[0].feed.values.length, 2);
+    assert.equal(metrics.cards[0].title, 'Throughput');
+    assert.equal(metrics.cards[0].feed.subheader, 'Throughput trend');
 });
 
 test('filtersToSplunkParams maps region filter', () => {
@@ -54,4 +75,36 @@ test('filtersToSplunkParams maps region filter', () => {
 test('substituteSplTokens replaces $tokens$', () => {
     const out = substituteSplTokens('region=$filter_region$', { filter_region: 'region_b' });
     assert.equal(out, 'region=region_b');
+});
+
+test('getSplunkRestBase resolves locale splunkd proxy path', async () => {
+    const { getSplunkRestBase } = await import(
+        '../../src/main/webapp/pages/profile/data/profileSearchClient.js'
+    );
+    global.window = {
+        location: { origin: 'http://127.0.0.1:8001', pathname: '/en-US/app/so_BUI_pickulationts/profile' },
+        __splunkd_partials__: {
+            '/services/session': { entry: [{ content: { lang: 'en-US' } }] },
+        },
+    };
+    assert.equal(getSplunkRestBase(), 'http://127.0.0.1:8001/en-US/splunkd/__raw');
+    delete global.window;
+});
+
+test('demo profile feeds are valid and differ by filter', async () => {
+    const { getDemoProfileFeed, isProfileDemoMode } = await import(
+        '../../src/main/webapp/pages/profile/data/profileDemoFeeds.js'
+    );
+    assert.equal(isProfileDemoMode(), false);
+    const all = getDemoProfileFeed('all');
+    const regionA = getDemoProfileFeed('region_a');
+    assert.equal(isValidProfileFeedShape(all), true);
+    assert.equal(all.cards[0].title, 'Total revenue');
+    assert.notEqual(all.cards[0].title, regionA.cards[0].title);
+    assert.notEqual(all.viz[0].subheader, regionA.viz[0].subheader);
+    assert.equal(all.viz[0].title, 'Revenue');
+    assert.equal(all.viz[0].subheader, 'Revenue trend (USD)');
+    all.viz.forEach((panel) => {
+        assert.notEqual(panel.title, panel.subheader);
+    });
 });

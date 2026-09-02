@@ -66,7 +66,11 @@ function main() {
     );
     const nav = fs.readFileSync(navPath, 'utf8');
     assert(nav.includes('name="profile"'), 'nav missing profile view');
-    assert(nav.includes('name="feedback"'), 'nav missing feedback view');
+    assert(nav.includes('label="Resources"'), 'nav missing Resources collection');
+    assert(
+        !nav.includes('name="feedback"'),
+        'feedback should stay off the nav bar (Action 2 still opens the view)'
+    );
 
     console.log(`verify-profile-feedback: ok (${label})`);
 }

@@ -32,9 +32,28 @@ export function isValidProfileFeedShape(feedObj) {
 }
 
 /**
+ * Card chrome title, kept distinct from the viz subheader.
+ * @param {Record<string, unknown>} row
+ * @param {string} subheader
+ * @param {number} index
+ */
+function distinctVizCardTitle(row, subheader, index) {
+    const explicit = row.card_title ?? row.panel_title ?? row.panel;
+    if (explicit != null && String(explicit).trim() !== '') {
+        return String(explicit);
+    }
+    const maybe = row.title;
+    if (maybe != null && String(maybe).trim() !== '' && String(maybe) !== subheader) {
+        return String(maybe);
+    }
+    return `Trend ${index + 1}`;
+}
+
+/**
  * Map Splunk result rows → Profile feed shape.
  * Expected card rows: title, value, delta
- * Expected viz rows: series (or subheader), _time, count (or value)
+ * Expected viz rows: series (or subheader), _time, count (or value);
+ * optional card_title / panel for the wrapper card (different from viz subheader)
  *
  * @param {Array<Record<string, unknown>>} cardRows
  * @param {Array<Record<string, unknown>>} vizRows
@@ -49,9 +68,15 @@ export function mapRowsToProfileFeed(cardRows = [], vizRows = []) {
 
     const bySeries = new Map();
     (Array.isArray(vizRows) ? vizRows : []).forEach((row) => {
-        const key = String(row.series ?? row.subheader ?? row.title ?? 'Series');
+        const key = String(row.series ?? row.subheader ?? 'Series');
         if (!bySeries.has(key)) {
-            bySeries.set(key, { subheader: key, tooltipText: key, values: [], times: [] });
+            bySeries.set(key, {
+                title: distinctVizCardTitle(row, key, bySeries.size),
+                subheader: key,
+                tooltipText: key,
+                values: [],
+                times: [],
+            });
         }
         const series = bySeries.get(key);
         const rawT = row._time ?? row.time;
@@ -80,14 +105,18 @@ export function mapRowsToProfileFeed(cardRows = [], vizRows = []) {
 export function mapRowsToMetricFeeds(rows = []) {
     const byTitle = new Map();
     (Array.isArray(rows) ? rows : []).forEach((row) => {
-        const title = String(row.title ?? row.series ?? 'Metric');
+        const title = String(row.title ?? row.panel ?? row.card_title ?? 'Metric');
+        let subheader = String(row.series ?? row.subheader ?? '');
+        if (!subheader || subheader === title) {
+            subheader = `${title} trend`;
+        }
         if (!byTitle.has(title)) {
             byTitle.set(title, {
                 title,
                 chart: String(row.unit || '').toLowerCase() === 'ms',
                 feed: {
-                    subheader: title,
-                    tooltipText: title,
+                    subheader,
+                    tooltipText: subheader,
                     values: [],
                     times: [],
                 },

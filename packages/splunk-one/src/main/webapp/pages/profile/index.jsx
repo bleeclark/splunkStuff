@@ -14,6 +14,7 @@ import LineChart from '../../components/visualizations/LineChart';
 import { useContainerSize } from '../../hooks/useContainerSize';
 
 import { FILTER_OPTIONS } from './profileContract';
+import { isProfileDemoMode } from './data/profileDemoFeeds';
 import { useProfileData } from './hooks/useProfileData';
 import {
     Page,
@@ -23,13 +24,11 @@ import {
     FilterLabel,
     ButtonRow,
     CardGrid,
-    SummaryCard,
-    KpiValue,
-    KpiDelta,
     VizCard,
     VizPanel,
     TabPanel,
     PAGE_BLUE,
+    PANEL_BLUE,
     profileModalStyle,
 } from './ProfileStyles';
 
@@ -86,7 +85,7 @@ function FullBleedChart({ feed, unit = '', panelHeight }) {
                 fillContainer
                 stroke="rgba(255,255,255,0.95)"
                 strokeWidth={2}
-                background={PAGE_BLUE}
+                background={PANEL_BLUE}
                 showMajor
                 goodColor={palette.goodColor}
                 badColor={palette.badColor}
@@ -134,12 +133,24 @@ function ProfileTabContent() {
     const [filter, setFilter] = useState('all');
     const [actionModalOpen, setActionModalOpen] = useState(false);
     const vizHeight = useVizPanelHeight();
-    const { data, loading, error } = useProfileData('profile', filter);
-    const cards = Array.isArray(data?.cards) ? data.cards : [];
+    const { data, loading, error, status } = useProfileData('profile', filter);
     const viz = Array.isArray(data?.viz) ? data.viz : [];
+    const demoMode = isProfileDemoMode();
 
     return (
         <TabPanel>
+            {demoMode ? (
+                <Message type="info" appearance="fill" style={{ marginBottom: 16 }}>
+                    Demo data — trend charts. Remove{' '}
+                    <code>?data=demo</code> for live Splunk REST.
+                </Message>
+            ) : null}
+            {status === 'demo-fallback' ? (
+                <Message type="warning" appearance="fill" style={{ marginBottom: 16 }}>
+                    Live Splunk search unavailable — showing demo chart data. Add{' '}
+                    <code>?data=demo</code> to force demo, or fix REST/search to load live rows.
+                </Message>
+            ) : null}
             <FilterRow>
                 <FilterCluster>
                     <FilterLabel>Filter</FilterLabel>
@@ -197,23 +208,14 @@ function ProfileTabContent() {
             <PanelStatus
                 loading={loading}
                 error={error}
-                empty={!loading && !error && cards.length === 0 && viz.length === 0}
+                empty={!loading && !error && viz.length === 0}
             />
-
-            <CardGrid columns={3}>
-                {cards.map((card) => (
-                    <SummaryCard key={`${filter}-${card.title}`} title={card.title}>
-                        <KpiValue>{card.value}</KpiValue>
-                        <KpiDelta>{card.delta}</KpiDelta>
-                    </SummaryCard>
-                ))}
-            </CardGrid>
 
             <CardGrid columns={3}>
                 {viz.map((vizFeed, index) => (
                     <VizCard
                         key={`${filter}-viz-${index}`}
-                        title={vizFeed.subheader || `card ${index + 1}`}
+                        title={vizFeed.title || `Trend ${index + 1}`}
                     >
                         <VizPanel height={vizHeight}>
                             <FullBleedChart feed={vizFeed} panelHeight={vizHeight} />
@@ -332,7 +334,7 @@ getUserTheme()
             ...theme,
             backgroundColorPage: PAGE_BLUE,
             backgroundColorSection: PAGE_BLUE,
-            backgroundColorPopup: '#122a4d',
+            backgroundColorPopup: PANEL_BLUE,
         };
         layout(<ProfilePage />, { theme: themed });
     })

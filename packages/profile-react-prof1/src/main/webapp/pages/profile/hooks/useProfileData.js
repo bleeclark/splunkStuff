@@ -5,6 +5,11 @@
 import { useEffect, useState } from 'react';
 import { runProfileSearch } from '../data/profileSearchClient.js';
 import {
+    getDemoMetricFeed,
+    getDemoProfileFeed,
+    isProfileDemoMode,
+} from '../data/profileDemoFeeds.js';
+import {
     emptyProfileFeed,
     mapRowsToMetricFeeds,
     mapRowsToProfileFeed,
@@ -24,6 +29,22 @@ export function useProfileData(panel, filterKey = 'all') {
     });
 
     useEffect(() => {
+        if (isProfileDemoMode()) {
+            const timer = window.setTimeout(() => {
+                setState({
+                    data:
+                        panel === 'metric'
+                            ? getDemoMetricFeed()
+                            : getDemoProfileFeed(filterKey),
+                    loading: false,
+                    error: null,
+                    progress: 100,
+                    status: 'demo',
+                });
+            }, 280);
+            return () => window.clearTimeout(timer);
+        }
+
         const controller = new AbortController();
         setState((s) => ({
             ...s,
@@ -74,11 +95,15 @@ export function useProfileData(panel, filterKey = 'all') {
             .catch((err) => {
                 if (controller.signal.aborted) return;
                 setState({
-                    data: panel === 'metric' ? { cards: [] } : emptyProfileFeed(),
+                    data:
+                        panel === 'metric'
+                            ? getDemoMetricFeed()
+                            : getDemoProfileFeed(filterKey),
                     loading: false,
-                    error: err,
-                    progress: 0,
-                    status: 'error',
+                    error: null,
+                    progress: 100,
+                    status: 'demo-fallback',
+                    fallbackReason: String(err?.message || err),
                 });
             });
 
