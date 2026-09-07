@@ -17,8 +17,13 @@ const RESPONSIVE_CSS = `
   padding: 28px 32px 48px;
 }
 .ss-profile-page__inner {
-  max-width: 1100px;
+  max-width: 1180px;
   margin: 0 auto;
+}
+.ss-profile-page button,
+.ss-profile-page [role="tab"],
+.ss-profile-page a {
+  color: #FFFFFF !important;
 }
 .ss-profile-filter-row {
   display: flex;
@@ -283,13 +288,20 @@ export function VizCard({ title, children, ...rest }) {
             {...rest}
         >
             <div
+                title={title}
                 style={{
-                    fontSize: 13,
-                    fontWeight: 600,
+                    fontSize: 16,
+                    fontWeight: 700,
                     color: '#FFFFFF',
-                    padding: '10px 14px 8px',
-                    background: 'rgba(11,31,59,0.42)',
+                    padding: '14px 16px',
+                    background: 'rgba(11,31,59,0.55)',
                     borderBottom: `1px solid rgba(255,255,255,0.18)`,
+                    fontFamily:
+                        "'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis',
+                    lineHeight: 1.3,
                 }}
             >
                 {title}

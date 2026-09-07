@@ -1156,9 +1156,10 @@ function LineChart(_ref3) {
     };
   }, [series, values, times, stroke, comparisonSeries]);
   var showSubheader = Boolean(subheader);
-  var subheaderH = showSubheader ? 28 : 0;
+  var compact = height <= 90;
+  var subheaderH = showSubheader ? compact ? 16 : 22 : 0;
   var labelExtra = showMajor && stackedMajor ? (majorLabel ? 18 : 0) + (deltaLabel ? 18 : 0) : 0;
-  var majorH = showMajor ? 44 + labelExtra + (stackedMajor && showDelta ? 8 : 0) : 0;
+  var majorH = showMajor ? (compact ? 22 : 36) + (compact ? 0 : labelExtra) + (stackedMajor && showDelta && !compact ? 8 : 0) : 0;
   var headerH = subheaderH + majorH;
   var chartH = Math.max(1, height - headerH);
   var primaryValues = normalized.series[0] ? normalized.series[0].values : [];
@@ -1166,8 +1167,9 @@ function LineChart(_ref3) {
   var prev = primaryValues.length > 1 ? primaryValues[primaryValues.length - 2] : last;
   var delta = last - prev;
   var trendBg = trendBackground(delta, goodColor, badColor);
-  var containerBg = showMajor ? colorPlacement === 'top' ? background : trendBg : background;
-  var subheaderBg = 'rgba(0, 0, 0, 0.52)';
+  var deltaColor = !Number.isFinite(delta) || delta >= 0 ? '#9ED4FF' : '#E8C04A';
+  var containerBg = showMajor && colorPlacement === 'full' ? trendBg : background;
+  var subheaderBg = 'transparent';
   var majorBg = showMajor && colorPlacement === 'top' ? trendBg : 'transparent';
   var _useMemo = (0,react.useMemo)(function () {
       return formatMajor(last, unit);
@@ -1442,33 +1444,38 @@ function LineChart(_ref3) {
       width: '100%',
       height: '100%',
       background: containerBg,
-      borderRadius: 4,
+      borderRadius: 0,
       color: showMajor ? textColor : undefined,
       overflow: 'hidden'
     }
   }, showSubheader ? /*#__PURE__*/react.createElement("div", {
+    title: String(subheader),
     style: {
       height: subheaderH,
-      padding: '0 10px',
+      padding: compact ? '1px 8px' : '6px 12px',
       boxSizing: 'border-box',
-      fontSize: 12,
-      fontWeight: 500,
-      lineHeight: '28px',
-      opacity: 0.82,
+      fontSize: compact ? 10 : 12,
+      fontWeight: 600,
+      lineHeight: compact ? 1.2 : 1.3,
+      opacity: 0.95,
       background: subheaderBg,
-      display: 'flex',
-      alignItems: 'center'
+      color: textColor || '#FFFFFF',
+      display: '-webkit-box',
+      WebkitLineClamp: compact ? 1 : 2,
+      WebkitBoxOrient: 'vertical',
+      overflow: 'hidden',
+      wordBreak: 'break-word'
     }
   }, String(subheader)) : null, showMajor ? /*#__PURE__*/react.createElement("div", {
     style: {
       height: majorH,
-      padding: stackedMajor ? '8px 12px 6px' : '6px 12px 6px',
+      padding: compact ? '1px 0' : stackedMajor ? '4px 0 6px' : '2px 0 8px',
       boxSizing: 'border-box',
       display: 'flex',
-      flexDirection: stackedMajor ? 'column' : 'row',
-      alignItems: stackedMajor ? 'center' : 'flex-end',
-      justifyContent: centerMajor ? 'center' : 'space-between',
-      gap: stackedMajor ? 4 : 6,
+      flexDirection: stackedMajor && !compact ? 'column' : 'row',
+      alignItems: stackedMajor && !compact ? 'flex-start' : 'baseline',
+      justifyContent: centerMajor ? 'center' : 'flex-start',
+      gap: compact ? 4 : stackedMajor ? 4 : 6,
       textAlign: centerMajor ? 'center' : undefined,
       background: majorBg
     }
@@ -1484,7 +1491,7 @@ function LineChart(_ref3) {
     }
   }, majorLabel) : null, /*#__PURE__*/react.createElement("div", {
     style: {
-      fontSize: 28,
+      fontSize: compact ? 16 : 26,
       fontWeight: 600,
       lineHeight: 1.1,
       display: 'inline-flex',
@@ -1509,11 +1516,12 @@ function LineChart(_ref3) {
     }
   }, deltaLabel) : null, /*#__PURE__*/react.createElement("div", {
     style: {
-      fontSize: stackedMajor ? 16 : 11,
+      fontSize: stackedMajor ? 16 : 12,
       lineHeight: 1.2,
       fontWeight: 600,
-      opacity: 0.95,
-      marginLeft: centerMajor && !stackedMajor ? 6 : undefined
+      color: deltaColor,
+      opacity: 1,
+      marginLeft: centerMajor && !stackedMajor ? 8 : undefined
     }
   }, formatDelta(delta))) : null) : null, /*#__PURE__*/react.createElement("div", {
     ref: setChartAreaEl,

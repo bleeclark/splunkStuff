@@ -289,7 +289,7 @@ export default function LineChart({
     }, [series, values, times, stroke, comparisonSeries]);
 
     const showSubheader = Boolean(subheader);
-    const subheaderH = showSubheader ? 28 : 0;
+    const subheaderH = showSubheader ? 40 : 0;
     const labelExtra =
         showMajor && stackedMajor ? (majorLabel ? 18 : 0) + (deltaLabel ? 18 : 0) : 0;
     const majorH = showMajor ? 44 + labelExtra + (stackedMajor && showDelta ? 8 : 0) : 0;
@@ -606,17 +606,22 @@ export default function LineChart({
             >
                 {showSubheader ? (
                     <div
+                        title={String(subheader)}
                         style={{
                             height: subheaderH,
-                            padding: '0 10px',
+                            padding: '6px 12px',
                             boxSizing: 'border-box',
                             fontSize: 12,
-                            fontWeight: 500,
-                            lineHeight: '28px',
-                            opacity: 0.82,
+                            fontWeight: 600,
+                            lineHeight: 1.3,
+                            opacity: 0.95,
                             background: subheaderBg,
-                            display: 'flex',
-                            alignItems: 'center',
+                            color: textColor || '#FFFFFF',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            wordBreak: 'break-word',
                         }}
                     >
                         {String(subheader)}

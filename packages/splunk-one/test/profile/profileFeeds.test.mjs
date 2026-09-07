@@ -103,8 +103,39 @@ test('demo profile feeds are valid and differ by filter', async () => {
     assert.notEqual(all.cards[0].title, regionA.cards[0].title);
     assert.notEqual(all.viz[0].subheader, regionA.viz[0].subheader);
     assert.equal(all.viz[0].title, 'Revenue');
-    assert.equal(all.viz[0].subheader, 'Revenue trend (USD)');
+    assert.equal(
+        all.viz[0].subheader,
+        'Trailing 24-hour revenue trend in USD, including refunds, tax, and channel mix'
+    );
     all.viz.forEach((panel) => {
+        assert.notEqual(panel.title, panel.subheader);
+    });
+});
+
+test('getProfileStandardCharts returns pie, line, and column by filter', async () => {
+    const { getProfileStandardCharts } = await import(
+        '../../src/main/webapp/pages/profile/data/profileDemoFeeds.js'
+    );
+    const all = getProfileStandardCharts('all');
+    const regionA = getProfileStandardCharts('region_a');
+    assert.equal(all.pie.title, 'Channels');
+    assert.equal(all.line.title, 'Adoption');
+    assert.equal(all.column.title, 'Tickets');
+    assert.equal(all.line.subheader, 'Weekly feature adoption');
+    assert.equal(all.column.subheader, 'Open ticket volume');
+    assert.notEqual(all.line.title, all.line.subheader);
+    assert.notEqual(all.column.title, all.column.subheader);
+    assert.ok(all.pie.slices.length >= 3);
+    assert.notEqual(all.pie.slices[0].value, regionA.pie.slices[0].value);
+    assert.equal(all.line.values.length, all.line.times.length);
+    assert.equal(all.column.values.length, all.column.times.length);
+    assert.equal(all.singles.length, 3);
+    assert.deepEqual(
+        all.singles.map((s) => s.title),
+        ['NPS', 'SLA', 'Coverage']
+    );
+    all.singles.forEach((panel) => {
+        assert.equal(panel.values.length, panel.times.length);
         assert.notEqual(panel.title, panel.subheader);
     });
 });
