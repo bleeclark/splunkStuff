@@ -41,7 +41,12 @@ const PROFILE_DEMO_BY_FILTER = {
             { title: 'Conversion rate', value: '4.8%', delta: '-0.2 pts vs target' },
         ],
         viz: [
-            vizEntry('Revenue trend (USD)', 220, 'up', 'Revenue'),
+            vizEntry(
+                'Trailing 24-hour revenue trend in USD, including refunds, tax, and channel mix',
+                220,
+                'up',
+                'Revenue'
+            ),
             vizEntry('Hourly sessions', 920, 'wave', 'Sessions'),
             vizEntry('Churn risk index', 38, 'down', 'Churn risk'),
         ],
@@ -103,4 +108,44 @@ export function getDemoProfileFeed(filterKey = 'all') {
 /** @returns {{ cards: Array }} */
 export function getDemoMetricFeed() {
     return METRIC_DEMO;
+}
+
+const STANDARD_PIE = {
+    all: [
+        { label: 'Product', value: 42 },
+        { label: 'Services', value: 28 },
+        { label: 'Add-ons', value: 18 },
+        { label: 'Other', value: 12 },
+    ],
+    region_a: [
+        { label: 'Product', value: 55 },
+        { label: 'Services', value: 22 },
+        { label: 'Add-ons', value: 15 },
+        { label: 'Other', value: 8 },
+    ],
+    region_b: [
+        { label: 'Product', value: 31 },
+        { label: 'Services', value: 36 },
+        { label: 'Add-ons', value: 21 },
+        { label: 'Other', value: 12 },
+    ],
+};
+
+/**
+ * Second Profile row: official @splunk/visualizations Pie / Line / Column.
+ * @param {string} filterKey
+ * @returns {{ pie: { title: string, slices: Array }, line: object, column: object }}
+ */
+export function getProfileStandardCharts(filterKey = 'all') {
+    const pieSlices = STANDARD_PIE[filterKey] || STANDARD_PIE.all;
+    return {
+        pie: { title: 'Channels', slices: pieSlices },
+        line: vizEntry('Weekly feature adoption', 48, 'up', 'Adoption'),
+        column: vizEntry('Open ticket volume', 36, 'wave', 'Tickets'),
+        singles: [
+            vizEntry('Net promoter score', 62, 'up', 'NPS'),
+            vizEntry('Service level', 97.2, 'flat', 'SLA'),
+            vizEntry('Feature coverage', 81, 'wave', 'Coverage'),
+        ],
+    };
 }

@@ -19,8 +19,16 @@ const RESPONSIVE_CSS = `
   padding: 28px 32px 48px;
 }
 .ss-profile-page__inner {
-  max-width: 1100px;
+  max-width: 1180px;
   margin: 0 auto;
+}
+.ss-profile-page button,
+.ss-profile-page [role="tab"],
+.ss-profile-page a {
+  color: #FFFFFF !important;
+}
+.ss-profile-standard-viz text {
+  fill: #FFFFFF;
 }
 .ss-profile-filter-row {
   display: flex;
@@ -28,11 +36,10 @@ const RESPONSIVE_CSS = `
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 20px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid ${BORDER};
+  margin-bottom: 24px;
+  padding: 8px 0 16px;
+  background: transparent;
+  border: none;
 }
 .ss-profile-actions {
   display: flex;
@@ -221,10 +228,10 @@ export function CardGrid({ children, columns = 3, ...rest }) {
             style={{
                 display: 'grid',
                 gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${
-                    columns === 2 ? 280 : 220
+                    columns === 2 ? 280 : 260
                 }px), 1fr))`,
-                gap: 16,
-                marginBottom: 20,
+                gap: 20,
+                marginBottom: 24,
             }}
             {...rest}
         >
@@ -284,41 +291,73 @@ export function SummaryCard({ title, children, ...rest }) {
     );
 }
 
-export function VizCard({ title, children, ...rest }) {
+export function VizCard({ title, subheader, headerBlue = false, children, ...rest }) {
+    const name = title || subheader;
+    const caption = title && subheader ? subheader : null;
     return (
         <div
             style={{
-                background: PANEL_BLUE,
-                border: `1px solid rgba(11,31,59,0.2)`,
-                borderRadius: 8,
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 14,
                 overflow: 'hidden',
                 boxSizing: 'border-box',
             }}
             {...rest}
         >
-            <div
-                style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: '#FFFFFF',
-                    padding: '10px 14px 8px',
-                    background: 'rgba(11,31,59,0.42)',
-                    borderBottom: `1px solid rgba(255,255,255,0.18)`,
-                }}
-            >
-                {title}
-            </div>
-            {children}
+            {name ? (
+                <div
+                    title={name}
+                    style={{
+                        background: headerBlue ? PANEL_BLUE : 'transparent',
+                        padding: headerBlue ? '12px 16px' : '4px 4px 8px',
+                        borderRadius: headerBlue ? 14 : 0,
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: '#FFFFFF',
+                        letterSpacing: '-0.01em',
+                        fontFamily:
+                            "'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        textOverflow: 'ellipsis',
+                        lineHeight: 1.3,
+                    }}
+                >
+                    {name}
+                </div>
+            ) : null}
+            {caption ? (
+                <div
+                    title={caption}
+                    style={{
+                        background: 'transparent',
+                        fontSize: 12,
+                        fontWeight: 400,
+                        color: MUTED,
+                        padding: headerBlue ? '8px 16px 4px' : '0 4px 8px',
+                        lineHeight: 1.35,
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        textOverflow: 'ellipsis',
+                        fontFamily:
+                            "'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                    }}
+                >
+                    {caption}
+                </div>
+            ) : null}
+            <div style={{ padding: headerBlue ? '8px 12px 12px' : '0 4px 8px' }}>{children}</div>
         </div>
     );
 }
 
-export function VizPanel({ children, height = 168, ...rest }) {
+export function VizPanel({ children, width = '100%', height = 200, background = 'transparent', ...rest }) {
     return (
         <div
             style={{
-                background: PANEL_BLUE,
-                width: '100%',
+                background,
+                width,
                 height,
                 color: '#FFFFFF',
                 padding: 0,

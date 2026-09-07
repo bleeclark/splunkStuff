@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import layout from '@splunk/react-page/18';
 import { getUserTheme } from '@splunk/splunk-utils/themes';
 
@@ -11,10 +11,16 @@ import Message from '@splunk/react-ui/Message';
 import WaitSpinner from '@splunk/react-ui/WaitSpinner';
 
 import LineChart from '../../components/visualizations/LineChart';
+import {
+    StandardColumnChart,
+    StandardLineChart,
+    StandardPieChart,
+    StandardSingleValueChart,
+} from '../../components/visualizations/StandardSplunkViz';
 import { useContainerSize } from '../../hooks/useContainerSize';
 
 import { FILTER_OPTIONS } from './profileContract';
-import { isProfileDemoMode } from './data/profileDemoFeeds';
+import { getProfileStandardCharts, isProfileDemoMode } from './data/profileDemoFeeds';
 import { useProfileData } from './hooks/useProfileData';
 import {
     Page,
@@ -38,41 +44,17 @@ const palette = {
     textColor: '#FFFFFF',
 };
 
-const VIZ_HEIGHT_DESKTOP = 168;
-const VIZ_HEIGHT_NARROW = 140;
+const VIZ_HEIGHT = 200;
 
 const ACTION_2_URL = '/app/so_BUI_pickulationts/feedback';
 const ACTION_3_URL = 'https://dev.splunk.com/';
-
-function useVizPanelHeight() {
-    const [height, setHeight] = useState(
-        typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
-            ? VIZ_HEIGHT_NARROW
-            : VIZ_HEIGHT_DESKTOP
-    );
-
-    useEffect(() => {
-        if (typeof window === 'undefined' || !window.matchMedia) return undefined;
-        const mq = window.matchMedia('(max-width: 768px)');
-        const apply = () => setHeight(mq.matches ? VIZ_HEIGHT_NARROW : VIZ_HEIGHT_DESKTOP);
-        apply();
-        if (mq.addEventListener) {
-            mq.addEventListener('change', apply);
-            return () => mq.removeEventListener('change', apply);
-        }
-        mq.addListener(apply);
-        return () => mq.removeListener(apply);
-    }, []);
-
-    return height;
-}
 
 function FullBleedChart({ feed, unit = '', panelHeight }) {
     const { hostRef, width: chartWidth, height: chartHeight } = useContainerSize({
         minWidth: 160,
         minHeight: 96,
         defaultWidth: 420,
-        defaultHeight: panelHeight || VIZ_HEIGHT_DESKTOP,
+        defaultHeight: panelHeight || VIZ_HEIGHT,
     });
 
     return (
@@ -81,23 +63,22 @@ function FullBleedChart({ feed, unit = '', panelHeight }) {
                 values={feed.values}
                 times={feed.times}
                 width={chartWidth}
-                height={chartHeight || panelHeight || VIZ_HEIGHT_DESKTOP}
+                height={chartHeight || panelHeight || VIZ_HEIGHT}
                 fillContainer
-                stroke="rgba(255,255,255,0.95)"
+                stroke="rgba(255,255,255,0.88)"
                 strokeWidth={2}
-                background={PANEL_BLUE}
+                background="transparent"
                 showMajor
                 goodColor={palette.goodColor}
                 badColor={palette.badColor}
                 textColor={palette.textColor}
                 unit={unit}
-                subheader={feed.subheader}
-                centerMajor
-                colorPlacement="full"
-                padLeft={8}
-                padRight={8}
+                centerMajor={false}
+                colorPlacement="none"
+                padLeft={2}
+                padRight={2}
                 padTop={4}
-                padBottom={10}
+                padBottom={4}
             />
         </div>
     );
@@ -132,10 +113,12 @@ function PanelStatus({ loading, error, empty }) {
 function ProfileTabContent() {
     const [filter, setFilter] = useState('all');
     const [actionModalOpen, setActionModalOpen] = useState(false);
-    const vizHeight = useVizPanelHeight();
+    const action1Ref = useRef(null);
+    const vizHeight = VIZ_HEIGHT;
     const { data, loading, error, status } = useProfileData('profile', filter);
     const viz = Array.isArray(data?.viz) ? data.viz : [];
     const demoMode = isProfileDemoMode();
+    const standard = getProfileStandardCharts(filter);
 
     return (
         <TabPanel>
@@ -170,6 +153,7 @@ function ProfileTabContent() {
                 </FilterCluster>
                 <ButtonRow>
                     <Button
+                        elementRef={action1Ref}
                         label="Action 1"
                         appearance="secondary"
                         onClick={() => setActionModalOpen(true)}
@@ -186,6 +170,7 @@ function ProfileTabContent() {
 
             <Modal
                 open={actionModalOpen}
+                returnFocus={action1Ref}
                 onRequestClose={() => setActionModalOpen(false)}
                 style={profileModalStyle}
             >
@@ -215,10 +200,53 @@ function ProfileTabContent() {
                 {viz.map((vizFeed, index) => (
                     <VizCard
                         key={`${filter}-viz-${index}`}
+                        headerBlue
                         title={vizFeed.title || `Trend ${index + 1}`}
+                        subheader={vizFeed.subheader}
                     >
-                        <VizPanel height={vizHeight}>
+                        <VizPanel height={vizHeight} background="transparent">
                             <FullBleedChart feed={vizFeed} panelHeight={vizHeight} />
+                        </VizPanel>
+                    </VizCard>
+                ))}
+            </CardGrid>
+
+            <CardGrid columns={3}>
+                <VizCard subheader={standard.pie.title}>
+                    <VizPanel height={vizHeight} background="transparent">
+                        <StandardPieChart slices={standard.pie.slices} panelHeight={vizHeight} />
+                    </VizPanel>
+                </VizCard>
+                <VizCard subheader={standard.line.title}>
+                    <VizPanel height={vizHeight} background="transparent">
+                        <StandardLineChart
+                            values={standard.line.values}
+                            times={standard.line.times}
+                            panelHeight={vizHeight}
+                        />
+                    </VizPanel>
+                </VizCard>
+                <VizCard subheader={standard.column.title}>
+                    <VizPanel height={vizHeight} background="transparent">
+                        <StandardColumnChart
+                            values={standard.column.values}
+                            times={standard.column.times}
+                            panelHeight={vizHeight}
+                        />
+                    </VizPanel>
+                </VizCard>
+            </CardGrid>
+
+            <CardGrid columns={3}>
+                {(standard.singles || []).map((feed) => (
+                    <VizCard key={feed.title} subheader={feed.title}>
+                        <VizPanel height={vizHeight} background="transparent">
+                            <StandardSingleValueChart
+                                values={feed.values}
+                                times={feed.times}
+                                unit={feed.title === 'SLA' ? '%' : ''}
+                                panelHeight={vizHeight}
+                            />
                         </VizPanel>
                     </VizCard>
                 ))}
@@ -229,7 +257,7 @@ function ProfileTabContent() {
 
 function MetricTabContent() {
     const [metricModalOpen, setMetricModalOpen] = useState(false);
-    const vizHeight = useVizPanelHeight();
+    const vizHeight = VIZ_HEIGHT;
     const { data, loading, error } = useProfileData('metric', 'all');
     const metrics = Array.isArray(data?.cards) ? data.cards : [];
 
@@ -276,8 +304,12 @@ function MetricTabContent() {
 
             <CardGrid columns={2}>
                 {metrics.map((item) => (
-                    <VizCard key={item.title} title={item.title}>
-                        <VizPanel height={vizHeight}>
+                    <VizCard
+                        key={item.title}
+                        title={item.title}
+                        subheader={item.feed?.subheader}
+                    >
+                        <VizPanel height={vizHeight} background="transparent">
                             <FullBleedChart
                                 feed={item.feed}
                                 unit={item.chart ? 'ms' : ''}
@@ -335,6 +367,11 @@ getUserTheme()
             backgroundColorPage: PAGE_BLUE,
             backgroundColorSection: PAGE_BLUE,
             backgroundColorPopup: PANEL_BLUE,
+            contentColorDefault: '#FFFFFF',
+            contentColorActive: '#FFFFFF',
+            colorText: '#FFFFFF',
+            colorTextDefault: '#FFFFFF',
+            interactiveColorText: '#FFFFFF',
         };
         layout(<ProfilePage />, { theme: themed });
     })
