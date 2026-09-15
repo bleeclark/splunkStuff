@@ -4,6 +4,7 @@
 **Primary URL:** `/app/so_BUI_pickulationts/profile`  
 **Related URL:** `/app/so_BUI_pickulationts/feedback`  
 **Companion TDD:** [`PROFILE-REACT-APP-TDD.md`](./PROFILE-REACT-APP-TDD.md)  
+**File / deploy map:** [`SPLUNK-APP-FILE-STRUCTURE.md`](./SPLUNK-APP-FILE-STRUCTURE.md)  
 **Audience:** Engineering, product, QA  
 
 This document draws the **entire** Profile React architecture: packaging, page shell, **live Splunk REST data only**, Studio replacement, and how filter/actions map to Splunk jobs.
