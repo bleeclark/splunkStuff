@@ -110,27 +110,6 @@ export function ensureProfileResponsiveStyles() {
     document.head.appendChild(style);
 }
 
-/** Compact brand mark for the Profile header (no image asset in the app yet). */
-export function ProfileLogo({ size = 40, ...rest }) {
-    return (
-        <svg
-            width={size}
-            height={size}
-            viewBox="0 0 40 40"
-            role="img"
-            aria-label="Profile logo"
-            {...rest}
-        >
-            <rect width="40" height="40" rx="10" fill="#01417F" />
-            <path
-                d="M10 27V13h7.2c3.4 0 5.5 1.8 5.5 4.5 0 1.8-1 3.2-2.6 3.9L26 27h-4.2l-5-5.2H14.2V27H10zm4.2-8.8h2.8c1.5 0 2.4-.8 2.4-2s-.9-2-2.4-2h-2.8v4z"
-                fill="#FFFFFF"
-            />
-            <circle cx="30" cy="12" r="3" fill="#DFA611" />
-        </svg>
-    );
-}
-
 export function Page({ children, ...rest }) {
     useEffect(() => {
         ensureProfileResponsiveStyles();
@@ -155,7 +134,6 @@ export function PageHeader({ title, ...rest }) {
             }}
             {...rest}
         >
-            <ProfileLogo />
             <h1
                 style={{
                     margin: 0,

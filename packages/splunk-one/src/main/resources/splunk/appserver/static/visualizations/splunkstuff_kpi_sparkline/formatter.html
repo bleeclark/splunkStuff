@@ -168,6 +168,89 @@
         </splunk-radio-input>
     </splunk-control-group>
 </form>
+<form class="splunk-formatter-section" section-label="Text row">
+    <splunk-control-group label="Show text row">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showTextRow" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Shows the latest value of each field. Empty fields are hidden and the rest share the full width.
+    </div>
+    <splunk-control-group label="Text1 label">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text1Label" value="Text1"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text1 field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text1Field" value="text1"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text1 link URL">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text1LinkUrl" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text1 link search">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text1LinkSearch" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text2 label">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text2Label" value="Text2"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text2 field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text2Field" value="text2"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text2 link URL">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text2LinkUrl" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text2 link search">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text2LinkSearch" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text3 label">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text3Label" value="Text3"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text3 field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text3Field" value="text3"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text3 link URL">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text3LinkUrl" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text3 link search">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text3LinkSearch" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        <strong>Link URL</strong>: https://... or /app/..., use <strong>$value$</strong> for the cell's value. Takes priority over Link search.<br/>
+        <strong>Link search</strong>: use <strong>$value$</strong> for the cell's value, e.g. <strong>index=main region="$value$"</strong>
+    </div>
+    <splunk-control-group label="Open links in">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.linkTarget" value="newTab">
+            <option value="newTab">New tab</option>
+            <option value="sameTab">Same tab</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Link search earliest">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.linkEarliest" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Link search latest">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.linkLatest" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Time range for Link search, e.g. <strong>-24h</strong> and <strong>now</strong>. Leave blank for the Search app default.
+    </div>
+</form>
+<form class="splunk-formatter-section" section-label="Info">
+    <splunk-control-group label="Show info icon">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showInfo" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Info text">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.infoText" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Info field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.infoField" value="info"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Info text wins; if blank, the latest value of the <strong>Info field</strong> column is shown.
+    </div>
+</form>
 <form class="splunk-formatter-section" section-label="Targets">
     <splunk-control-group label="Show target line">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.showTarget" value="false">

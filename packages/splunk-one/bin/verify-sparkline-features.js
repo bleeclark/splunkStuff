@@ -89,7 +89,94 @@ function loadKpiSparklineViz() {
         'kpi sparkline must use SVG hover marks'
     );
     assert(src.indexOf('hoverOverlay') === -1, 'kpi sparkline must not use HTML hover overlay');
-    return filePath;
+    assert(src.indexOf('TEXT_ROW_HEIGHT_PX') !== -1, 'kpi sparkline must budget the text row height');
+    assert(src.indexOf('showTextRow') !== -1, 'kpi sparkline must support showTextRow');
+    assert(
+        src.indexOf('bgdhamp-sparkline-value-viz__textRow') !== -1,
+        'kpi sparkline must render textRow class'
+    );
+    assert(src.indexOf('buildCellLink') !== -1, 'kpi sparkline must define buildCellLink');
+    assert(src.indexOf('buildUrlLink') !== -1, 'kpi sparkline must define buildUrlLink');
+    assert(src.indexOf('buildSearchLink') !== -1, 'kpi sparkline must define buildSearchLink');
+    assert(src.indexOf('escapeSplValue') !== -1, 'kpi sparkline must define escapeSplValue');
+    assert(src.indexOf('linkTarget') !== -1, 'kpi sparkline must support linkTarget');
+    assert(src.indexOf('showInfo') !== -1, 'kpi sparkline must support showInfo');
+    assert(src.indexOf("role', 'tooltip'") !== -1, 'info popover must use role=tooltip');
+    assert(src.indexOf('More information') !== -1, 'info button must have an aria-label');
+    return { filePath, src };
+}
+
+/** Evaluate the AMD module with a stub SplunkVisualizationBase to reach linkHelpers. */
+function loadLinkHelpers(src) {
+    let mod = null;
+    const sandbox = {
+        define(deps, factory) {
+            const Base = {
+                COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+                extend(proto) {
+                    function Viz() {}
+                    Viz.prototype = proto;
+                    return Viz;
+                },
+            };
+            mod = factory(Base);
+        },
+        window: {},
+        document: {},
+    };
+    vm.runInNewContext(src, sandbox, { filename: 'kpi_sparkline/visualization.js' });
+    assert(mod && mod.linkHelpers, 'kpi sparkline must expose linkHelpers for tests');
+    return mod.linkHelpers;
+}
+
+function verifyLinkHelpers(h) {
+    const search = h.buildSearchLink('index=main region="$value$"', 'East', 'Region', '-24h', '');
+    assert(
+        search ===
+            '/app/search/search?q=' +
+                encodeURIComponent('index=main region="East"') +
+                '&earliest=' +
+                encodeURIComponent('-24h'),
+        'search link for East: ' + search
+    );
+
+    assert(h.escapeSplValue('say "hi" \\ bye') === 'say \\"hi\\" \\\\ bye', 'escapeSplValue quotes/backslash');
+    const quoted = h.buildSearchLink('x="$value$"', 'a"b', '', '', '');
+    assert(
+        quoted === '/app/search/search?q=' + encodeURIComponent('x="a\\"b"'),
+        'quote in value must be escaped: ' + quoted
+    );
+
+    assert(h.buildUrlLink('/app/x?v=$value$', 'a b', '') === '/app/x?v=a%20b', 'url value must be encoded');
+    assert(
+        h.buildUrlLink('https://example.com/?l=$label$', 'v', 'My Label') === 'https://example.com/?l=My%20Label',
+        'url label must be encoded'
+    );
+    assert(
+        h.buildUrlLink('/app/x?v=$value$', 'a', '', '/en-US') === '/en-US/app/x?v=a',
+        'relative /app/ links pick up the Splunk locale prefix'
+    );
+
+    assert(
+        h.buildCellLink('/app/u?v=$value$', 'index=main', 'East', '', '', '') === '/app/u?v=East',
+        'URL must win over search'
+    );
+
+    assert(h.buildUrlLink('javascript:alert(1)', 'x', '') === '', 'javascript: must be rejected');
+    assert(h.buildUrlLink('//evil.com/$value$', 'x', '') === '', 'protocol-relative // must be rejected');
+    assert(h.buildUrlLink('/\\evil.com', 'x', '') === '', '/\\ host must be rejected');
+    assert(
+        h.buildCellLink('javascript:alert(1)', 'index=main', 'x', '', '', '') ===
+            '/app/search/search?q=' + encodeURIComponent('index=main'),
+        'rejected URL falls back to search'
+    );
+    assert(h.buildCellLink('//evil.com', '', 'x', '', '', '') === '', 'rejected URL with no search is plain text');
+    assert(h.buildCellLink('', '', 'x', '', '', '') === '', 'no templates means plain text');
+
+    const series = { stringFields: { text1: ['old', 'East'], blank: ['x', ''] } };
+    assert(h.lastStringValue(series, 'text1') === 'East', 'lastStringValue uses latest row');
+    assert(h.lastStringValue(series, 'blank') === '', 'blank latest value hides the cell');
+    assert(h.lastStringValue(series, 'missing') === '', 'missing field hides the cell');
 }
 
 function buildFixtureHtml() {
@@ -131,7 +218,8 @@ border:1px solid rgba(255,255,255,.25);border-radius:4px;font-size:12px;font-wei
 }
 
 function main() {
-    loadKpiSparklineViz();
+    const kpi = loadKpiSparklineViz();
+    verifyLinkHelpers(loadLinkHelpers(kpi.src));
 
     const baseCss = fs.readFileSync(
         path.join(

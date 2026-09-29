@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>KPI sparkline text row preview</title>
+<style>
+    body { font-family: 'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #eef0f3; margin: 16px; color: #1a1c20; }
+    h1 { font-size: 16px; margin: 0 0 12px; }
+    .grid { display: grid; grid-template-columns: repeat(2, 380px); gap: 20px 24px; }
+    .card { background: #fff; border: 1px solid #d5d9de; border-radius: 4px; padding: 10px; }
+    .card h2 { font-size: 13px; margin: 0 0 8px; font-weight: 600; }
+    .dashboard-element { width: 100%; }
+    .dashboard-element div { width: 100%; }
+</style>
+</head>
+<body>
+<h1>KPI + sparkline: text row, links, info icon (real visualization.js, stubbed Splunk)</h1>
+<div class="grid" id="grid"></div>
+
+<script>
+    var KpiViz = null;
+    window.define = function (deps, factory) {
+        var Base = {
+            COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+            extend: function (proto) {
+                function Viz(el) { this.el = el; }
+                Viz.prototype = proto;
+                return Viz;
+            },
+        };
+        KpiViz = factory(Base);
+    };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_sparkline/visualization.js"></script>
+<script>
+    var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
+
+    function makeData(extra) {
+        var times = [], values = [], ann = [];
+        var now = Date.now();
+        for (var n = 1; n <= 20; n += 1) {
+            times.push(new Date(now - (20 - n) * 60000).toISOString());
+            values.push(String(28 + ((n * 13) % 52)));
+            ann.push(n % 7 === 0 ? 'note' : '');
+        }
+        var fields = [{ name: '_time' }, { name: 'value' }, { name: 'annotation' }];
+        var columns = [times, values, ann];
+        Object.keys(extra || {}).forEach(function (k) {
+            fields.push({ name: k });
+            var col = [];
+            for (var i = 0; i < 20; i += 1) { col.push(extra[k]); }
+            columns.push(col);
+        });
+        return { rawData: { fields: fields, columns: columns } };
+    }
+
+    function cfg(opts) {
+        var c = {};
+        Object.keys(opts).forEach(function (k) { c[NS + k] = opts[k]; });
+        return c;
+    }
+
+    var scenarios = [
+        {
+            id: 'gallery',
+            title: 'Gallery panel: 3 values, links on East + 1204, info on',
+            data: { text1: 'East', text2: '1204', text3: 'Stable', info: 'Weighted score, last 24h' },
+            config: {
+                precision: '0',
+                text1LinkSearch: '| makeresults | eval region="$value$", clicked_from="KPI sparkline"',
+                text2LinkUrl: '/app/so_BUI_pickulationts/profile?from=$value$',
+                linkEarliest: '-24h',
+                showInfo: 'true',
+            },
+        },
+        {
+            id: 'two',
+            title: '2 values + subheader + badge (halves)',
+            data: { text1: 'East', text2: '1204', info: 'Info from the search column' },
+            config: {
+                precision: '0',
+                subheader: 'Regional score',
+                badgeText: 'Live',
+                text1Label: 'Region',
+                text2Label: 'Events',
+                showInfo: 'true',
+            },
+        },
+        {
+            id: 'one',
+            title: '1 value (fills the whole row)',
+            data: { text1: 'East' },
+            config: { precision: '0', text1Label: 'Region' },
+        },
+        {
+            id: 'none',
+            title: 'No text columns (looks like before)',
+            data: {},
+            config: { precision: '0' },
+        },
+    ];
+
+    var grid = document.getElementById('grid');
+    scenarios.forEach(function (s) {
+        var card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = '<h2>' + s.title + '</h2>';
+        var host = document.createElement('div');
+        host.className = 'dashboard-element';
+        host.id = 'tile-' + s.id;
+        var el = document.createElement('div');
+        host.appendChild(el);
+        card.appendChild(host);
+        grid.appendChild(card);
+        var viz = new KpiViz(el);
+        viz.updateView(makeData(s.data), cfg(s.config));
+    });
+
+    if (/[?&]pin=1/.test(location.search)) {
+        document.querySelector('#tile-gallery .bgdhamp-sparkline-value-viz__info').click();
+    }
+</script>
+</body>
+</html>
