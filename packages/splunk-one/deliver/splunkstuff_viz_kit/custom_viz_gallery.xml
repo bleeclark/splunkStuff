@@ -252,7 +252,8 @@
 | eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
 | eval value = 28 + ((n * 13) % 52)
 | eval annotation=if((n % 7)=0, "note", "")
-| fields _time value annotation
+| eval text1="East", text2="1204", text3="Stable", info="Weighted score, last 24h"
+| fields _time value annotation text1 text2 text3 info
 | sort 0 _time
 | tail 20
                 </query>
@@ -262,6 +263,10 @@
             <viz type="so_BUI_pickulationts.splunkstuff_kpi_sparkline">
                 <search base="gallery_kpi_sparkline_js" />
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.precision">0</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.text1LinkSearch">| makeresults | eval region="$$value$$", clicked_from="KPI sparkline"</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.text2LinkUrl">/app/so_BUI_pickulationts/profile?from=$$value$$</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.linkEarliest">-24h</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showInfo">true</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.majorLabel"></option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.deltaLabel"></option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.badgeText"></option>

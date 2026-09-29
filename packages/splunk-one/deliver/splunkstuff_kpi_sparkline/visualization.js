@@ -5,9 +5,13 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20260824-kpi-no-overlap';
+    var VIZ_BUILD = '20260929-kpi-text-row-badge';
     /** Layout budget: 35px subheader + 137px body = 172px panel default_height. */
     var SUBHEADER_HEIGHT_PX = 35;
+    /** Optional text1..text3 strip between the subheader and the KPI body. */
+    var TEXT_ROW_HEIGHT_PX = 28;
+    var TEXT_ROW_SLOTS = 3;
+    var INFO_ICON_SIZE_PX = 18;
     var BODY_FRAME_HEIGHT_PX = 137;
     var PANEL_DEFAULT_HEIGHT_PX = SUBHEADER_HEIGHT_PX + BODY_FRAME_HEIGHT_PX;
     var SPARK_STRIP_HEIGHT_PX = 36;
@@ -133,6 +137,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         el.style.top = '8px';
         el.style.right = '10px';
         el.style.zIndex = '6';
+        el.style.setProperty('width', 'auto', 'important');
         el.style.maxWidth = '45%';
         el.style.padding = '5px 12px';
         el.style.fontSize = '12px';
@@ -145,6 +150,317 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         el.style.borderRadius = '4px';
         el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.25)';
         el.style.pointerEvents = 'none';
+    }
+
+    function lastStringValue(series, field) {
+        var name = String(field == null ? '' : field).trim();
+        if (!name || !series || !series.stringFields) {
+            return '';
+        }
+        var col = series.stringFields[name];
+        if (!col || !col.length) {
+            return '';
+        }
+        var v = col[col.length - 1];
+        return v == null ? '' : String(v).trim();
+    }
+
+    function fillTemplate(template, value, label) {
+        return String(template)
+            .split('$value$')
+            .join(value)
+            .split('$label$')
+            .join(label);
+    }
+
+    /** SPL double-quoted string escaping so "$value$" stays one quoted token. */
+    function escapeSplValue(v) {
+        return String(v == null ? '' : v)
+            .replace(/\\/g, '\\\\')
+            .replace(/"/g, '\\"');
+    }
+
+    /** Splunk Web path before /app/ (locale and optional root_endpoint), e.g. /en-US. */
+    function splunkPathPrefix(ownerDoc) {
+        var win = ownerDoc && ownerDoc.defaultView;
+        var p = win && win.location ? String(win.location.pathname || '') : '';
+        var idx = p.indexOf('/app/');
+        return idx > 0 ? p.slice(0, idx) : '';
+    }
+
+    function withSplunkPrefix(url, prefix) {
+        if (!prefix) {
+            return url;
+        }
+        if (url.indexOf('/app/') === 0 || url.indexOf('/manager/') === 0) {
+            return prefix + url;
+        }
+        return url;
+    }
+
+    /** Only http(s) or same-origin single-slash paths; blocks javascript:, //host, /\host. */
+    function isSafeUrlTemplate(template) {
+        var t = String(template == null ? '' : template).trim();
+        return /^https?:\/\//i.test(t) || /^\/(?![\/\\])/.test(t);
+    }
+
+    function buildUrlLink(template, value, label, prefix) {
+        var t = String(template == null ? '' : template).trim();
+        if (!t || !isSafeUrlTemplate(t)) {
+            return '';
+        }
+        var url = fillTemplate(
+            t,
+            encodeURIComponent(value == null ? '' : value),
+            encodeURIComponent(label == null ? '' : label)
+        );
+        return withSplunkPrefix(url, prefix || '');
+    }
+
+    function buildSearchLink(template, value, label, earliest, latest, prefix) {
+        var t = String(template == null ? '' : template).trim();
+        if (!t) {
+            return '';
+        }
+        var spl = fillTemplate(t, escapeSplValue(value), escapeSplValue(label));
+        var url = '/app/search/search?q=' + encodeURIComponent(spl);
+        var e = String(earliest == null ? '' : earliest).trim();
+        var l = String(latest == null ? '' : latest).trim();
+        if (e) {
+            url += '&earliest=' + encodeURIComponent(e);
+        }
+        if (l) {
+            url += '&latest=' + encodeURIComponent(l);
+        }
+        return withSplunkPrefix(url, prefix || '');
+    }
+
+    /** Link URL wins over Link search; '' means render plain text. */
+    function buildCellLink(urlTpl, searchTpl, value, label, earliest, latest, prefix) {
+        return (
+            buildUrlLink(urlTpl, value, label, prefix) ||
+            buildSearchLink(searchTpl, value, label, earliest, latest, prefix)
+        );
+    }
+
+    function resolveLinkTarget(raw) {
+        var t = compactToken(raw);
+        return t === 'sametab' || t === 'same' || t === 'self' ? '_self' : '_blank';
+    }
+
+    function styleTextCell(el, isFirst) {
+        el.className = 'bgdhamp-sparkline-value-viz__textCell';
+        el.style.setProperty('flex', '1 1 0', 'important');
+        el.style.setProperty('width', 'auto', 'important');
+        el.style.setProperty('min-width', '0', 'important');
+        el.style.display = 'block';
+        el.style.boxSizing = 'border-box';
+        el.style.padding = '0 8px';
+        el.style.lineHeight = TEXT_ROW_HEIGHT_PX + 'px';
+        el.style.whiteSpace = 'nowrap';
+        el.style.overflow = 'hidden';
+        el.style.textOverflow = 'ellipsis';
+        el.style.textAlign = 'center';
+        el.style.fontSize = '12px';
+        el.style.fontWeight = '500';
+        if (!isFirst) {
+            el.style.borderLeft = '1px solid rgba(255,255,255,0.25)';
+        }
+    }
+
+    function makeLinkCell(ownerDoc, href, target) {
+        var a = ownerDoc.createElement('a');
+        a.setAttribute('href', href);
+        a.setAttribute('target', target);
+        a.setAttribute('rel', 'noopener noreferrer');
+        a.style.setProperty('color', 'inherit', 'important');
+        a.style.setProperty('text-decoration', 'none', 'important');
+        a.style.cursor = 'pointer';
+        function underline(on) {
+            a.style.setProperty('text-decoration', on ? 'underline' : 'none', 'important');
+        }
+        a.addEventListener('mouseenter', function () {
+            underline(true);
+        });
+        a.addEventListener('mouseleave', function () {
+            if (ownerDoc.activeElement !== a) {
+                underline(false);
+            }
+        });
+        a.addEventListener('focus', function () {
+            underline(true);
+            a.style.outline = '2px solid currentColor';
+            a.style.outlineOffset = '-2px';
+        });
+        a.addEventListener('blur', function () {
+            underline(false);
+            a.style.outline = 'none';
+        });
+        return a;
+    }
+
+    var infoPopoverSeq = 0;
+
+    /**
+     * (i) button in the tile's top-right. Hover/focus shows the popover, click pins it,
+     * outside click or Esc closes. Popover is fixed on <body> so the panel's
+     * overflow:hidden can't clip it. Returns a teardown function.
+     */
+    function mountInfoPopover(viz, root, ownerDoc, text, topPx) {
+        var btn = ownerDoc.createElement('button');
+        btn.type = 'button';
+        btn.className = 'bgdhamp-sparkline-value-viz__info';
+        btn.setAttribute('aria-label', 'More information');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.textContent = 'i';
+        btn.style.position = 'absolute';
+        btn.style.top = topPx + 'px';
+        btn.style.right = '8px';
+        btn.style.zIndex = '7';
+        btn.style.width = INFO_ICON_SIZE_PX + 'px';
+        btn.style.height = INFO_ICON_SIZE_PX + 'px';
+        btn.style.padding = '0';
+        btn.style.margin = '0';
+        btn.style.border = '1.5px solid currentColor';
+        btn.style.borderRadius = '50%';
+        btn.style.background = 'rgba(0,0,0,0.2)';
+        btn.style.color = 'inherit';
+        btn.style.font = 'italic 700 11px/1 Georgia, "Times New Roman", serif';
+        btn.style.cursor = 'pointer';
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.boxSizing = 'border-box';
+
+        infoPopoverSeq += 1;
+        var pop = ownerDoc.createElement('div');
+        pop.id = 'bgdhamp-kpi-info-' + infoPopoverSeq;
+        pop.className = 'bgdhamp-sparkline-value-viz__infoPopover';
+        pop.setAttribute('role', 'tooltip');
+        pop.textContent = text;
+        pop.style.display = 'none';
+        pop.style.position = 'fixed';
+        pop.style.zIndex = '2147483646';
+        pop.style.maxWidth = '280px';
+        pop.style.padding = '8px 10px';
+        pop.style.fontSize = '12px';
+        pop.style.lineHeight = '1.4';
+        pop.style.color = '#FFFFFF';
+        pop.style.background = 'rgba(11,31,59,0.96)';
+        pop.style.border = '1px solid rgba(255,255,255,0.25)';
+        pop.style.borderRadius = '4px';
+        pop.style.boxShadow = '0 2px 8px rgba(0,0,0,0.35)';
+        pop.style.whiteSpace = 'pre-wrap';
+        btn.setAttribute('aria-describedby', pop.id);
+
+        var pinned = false;
+
+        function place() {
+            var rect = btn.getBoundingClientRect();
+            var win = ownerDoc.defaultView || window;
+            var vw = win.innerWidth || ownerDoc.documentElement.clientWidth || 0;
+            pop.style.top = Math.round(rect.bottom + 6) + 'px';
+            pop.style.right = Math.max(4, Math.round(vw - rect.right)) + 'px';
+        }
+
+        function show() {
+            var bodyEl = ownerDoc.body || ownerDoc.documentElement;
+            if (bodyEl && pop.parentNode !== bodyEl) {
+                bodyEl.appendChild(pop);
+            }
+            place();
+            pop.style.display = 'block';
+            btn.setAttribute('aria-expanded', 'true');
+            viz._infoOpen = true;
+        }
+
+        function hide() {
+            pop.style.display = 'none';
+            btn.setAttribute('aria-expanded', 'false');
+            viz._infoOpen = false;
+        }
+
+        btn.addEventListener('mouseenter', show);
+        btn.addEventListener('focus', show);
+        btn.addEventListener('mouseleave', function () {
+            if (!pinned) {
+                hide();
+            }
+        });
+        btn.addEventListener('blur', function () {
+            if (!pinned) {
+                hide();
+            }
+        });
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            pinned = !pinned;
+            if (pinned) {
+                show();
+            } else {
+                hide();
+            }
+        });
+
+        function onDocClick(e) {
+            if (!pinned) {
+                return;
+            }
+            var t = e.target;
+            if (t === btn || btn.contains(t) || t === pop || pop.contains(t)) {
+                return;
+            }
+            pinned = false;
+            hide();
+        }
+
+        function onKey(e) {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                if (pop.style.display !== 'none') {
+                    pinned = false;
+                    hide();
+                    btn.focus();
+                }
+            }
+        }
+
+        ownerDoc.addEventListener('click', onDocClick, true);
+        ownerDoc.addEventListener('keydown', onKey, true);
+        root.appendChild(btn);
+
+        return function teardownInfo() {
+            ownerDoc.removeEventListener('click', onDocClick, true);
+            ownerDoc.removeEventListener('keydown', onKey, true);
+            if (pop.parentNode) {
+                pop.parentNode.removeChild(pop);
+            }
+            viz._infoOpen = false;
+        };
+    }
+
+    /**
+     * Cells for text1..text3 whose latest value is non-empty; only these render,
+     * so 1 used cell spans the row, 2 split it in half, 3 in thirds.
+     */
+    function collectTextCells(series, opt) {
+        var cells = [];
+        var i;
+        for (i = 1; i <= TEXT_ROW_SLOTS; i += 1) {
+            var field = String(opt('text' + i + 'Field', 'text' + i) || '').trim();
+            var value = lastStringValue(series, field);
+            if (!value) {
+                continue;
+            }
+            cells.push({
+                slot: i,
+                label: String(opt('text' + i + 'Label', 'Text' + i) || ''),
+                value: value,
+                urlTpl: String(opt('text' + i + 'LinkUrl', '') || ''),
+                searchTpl: String(opt('text' + i + 'LinkSearch', '') || ''),
+            });
+        }
+        return cells;
     }
 
     function fieldsList(rawData) {
@@ -1038,7 +1354,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
     }
 
-    return SplunkVisualizationBase.extend({
+    var KpiSparklineViz = SplunkVisualizationBase.extend({
         getInitialDataParams: function () {
             return {
                 outputMode: SplunkVisualizationBase.COLUMN_MAJOR_OUTPUT_MODE,
@@ -1115,6 +1431,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 this._hoverTooltipEl.parentNode.removeChild(this._hoverTooltipEl);
                 this._hoverTooltipEl = null;
             }
+            if (typeof this._infoCleanup === 'function') {
+                this._infoCleanup();
+                this._infoCleanup = null;
+            }
 
             this.el.innerHTML = '';
             var valueField = String(opt('valueField', 'auto') || 'auto').trim() || 'auto';
@@ -1177,10 +1497,21 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var deltaMode = String(opt('deltaMode', 'absolute') || 'absolute');
             var showSparkline = truthy(opt('showSparkline', 'true')) && values.length >= 2;
             var showSparkArea = truthy(optOr('showSparkArea', 'true'));
+            var textCells = truthy(optOr('showTextRow', 'true')) ? collectTextCells(series, opt) : [];
+            var textRowPx = textCells.length ? TEXT_ROW_HEIGHT_PX : 0;
+            var showInfo = truthy(optOr('showInfo', 'false'));
+            var infoText = '';
+            if (showInfo) {
+                infoText = String(opt('infoText', '') || '').trim();
+                if (!infoText) {
+                    infoText = lastStringValue(series, String(optOr('infoField', 'info') || '').trim());
+                }
+                showInfo = !!infoText;
+            }
             // Cap spark so KPI + delta always keep a readable band above it.
             if (showSparkline) {
                 var reservedAboveSpark =
-                    (subheader ? SUBHEADER_HEIGHT_PX : 0) + HEADLINE_MIN_PX + 12;
+                    (subheader ? SUBHEADER_HEIGHT_PX : 0) + textRowPx + HEADLINE_MIN_PX + 12;
                 var maxSparkForTile = Math.max(12, vizHeightPx - reservedAboveSpark);
                 if (sparkHeightPx > maxSparkForTile) {
                     sparkHeightPx = maxSparkForTile;
@@ -1195,7 +1526,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var showHoverAnnotation = truthy(optOr('showHoverAnnotation', 'true'));
             // In-chart hover text sits above the spark; skip it when that band is too thin
             // (tooltip still shows). Fixes overlap at vizHeight=140 / sparkHeight=70.
-            var bodyBudgetPx = vizHeightPx - (subheader ? SUBHEADER_HEIGHT_PX : 0);
+            var bodyBudgetPx = vizHeightPx - (subheader ? SUBHEADER_HEIGHT_PX : 0) - textRowPx;
             var spaceAboveSparkPx = showSparkline
                 ? bodyBudgetPx - sparkHeightPx - 12
                 : bodyBudgetPx;
@@ -1266,6 +1597,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 badge.textContent = badgeText;
                 badge.setAttribute('title', badgeText);
                 inlineBadgeStyle(badge);
+                if (showInfo) {
+                    badge.style.right = 8 + INFO_ICON_SIZE_PX + 8 + 'px';
+                }
+                if (!subheader && textRowPx) {
+                    badge.style.top = textRowPx + 6 + 'px';
+                }
                 root.appendChild(badge);
             }
 
@@ -1274,7 +1611,68 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 head.className = 'bgdhamp-sparkline-value-viz__header';
                 applySubheaderStyle(head, subheaderStyle, bg, goodColor, textColor);
                 head.textContent = subheader;
+                if (showInfo) {
+                    head.style.paddingRight = 8 + INFO_ICON_SIZE_PX + 8 + 'px';
+                }
                 root.appendChild(head);
+            }
+
+            if (textCells.length) {
+                var textRow = ownerDoc.createElement('div');
+                textRow.className = 'bgdhamp-sparkline-value-viz__textRow';
+                textRow.setAttribute('data-bgdhamp-text-cells', String(textCells.length));
+                textRow.style.display = 'flex';
+                textRow.style.flexDirection = 'row';
+                textRow.style.alignItems = 'stretch';
+                textRow.style.width = '100%';
+                textRow.style.flex = '0 0 ' + TEXT_ROW_HEIGHT_PX + 'px';
+                textRow.style.height = TEXT_ROW_HEIGHT_PX + 'px';
+                textRow.style.minHeight = TEXT_ROW_HEIGHT_PX + 'px';
+                textRow.style.maxHeight = TEXT_ROW_HEIGHT_PX + 'px';
+                textRow.style.boxSizing = 'border-box';
+                textRow.style.overflow = 'hidden';
+                textRow.style.background = 'rgba(0,0,0,0.18)';
+                textRow.style.borderBottom = '1px solid rgba(255,255,255,0.18)';
+                textRow.style.color = textColor;
+                if (showInfo && !subheader) {
+                    textRow.style.paddingRight = 8 + INFO_ICON_SIZE_PX + 4 + 'px';
+                }
+                var linkPrefix = splunkPathPrefix(ownerDoc);
+                var linkTarget = resolveLinkTarget(optOr('linkTarget', 'newTab'));
+                var linkEarliest = String(opt('linkEarliest', '') || '');
+                var linkLatest = String(opt('linkLatest', '') || '');
+                var ci;
+                for (ci = 0; ci < textCells.length; ci += 1) {
+                    var tc = textCells[ci];
+                    var cellText = tc.label ? tc.label + ': ' + tc.value : tc.value;
+                    var href = buildCellLink(
+                        tc.urlTpl,
+                        tc.searchTpl,
+                        tc.value,
+                        tc.label,
+                        linkEarliest,
+                        linkLatest,
+                        linkPrefix
+                    );
+                    var cell = href
+                        ? makeLinkCell(ownerDoc, href, linkTarget)
+                        : ownerDoc.createElement('div');
+                    styleTextCell(cell, ci === 0);
+                    cell.setAttribute('data-bgdhamp-text-slot', String(tc.slot));
+                    cell.textContent = cellText;
+                    cell.setAttribute('title', cellText);
+                    textRow.appendChild(cell);
+                }
+                root.appendChild(textRow);
+            }
+
+            if (showInfo) {
+                var infoTopPx = subheader
+                    ? Math.round((SUBHEADER_HEIGHT_PX - INFO_ICON_SIZE_PX) / 2)
+                    : textCells.length
+                      ? Math.round((TEXT_ROW_HEIGHT_PX - INFO_ICON_SIZE_PX) / 2)
+                      : 6;
+                this._infoCleanup = mountInfoPopover(viz, root, ownerDoc, infoText, infoTopPx);
             }
 
             var body = document.createElement('div');
@@ -1507,7 +1905,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
                     var teardown = [];
                     function onDocPointerMove(e) {
-                        if (!hitTestSpark(e.clientX, e.clientY)) {
+                        if (viz._infoOpen || !hitTestSpark(e.clientX, e.clientY)) {
                             clearSparkHover(svg, tooltip, hoverAnnEl);
                             return;
                         }
@@ -1579,7 +1977,20 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 this._hoverTooltipEl.parentNode.removeChild(this._hoverTooltipEl);
                 this._hoverTooltipEl = null;
             }
+            if (typeof this._infoCleanup === 'function') {
+                this._infoCleanup();
+                this._infoCleanup = null;
+            }
             this.el.innerHTML = '';
         },
     });
+
+    KpiSparklineViz.linkHelpers = {
+        escapeSplValue: escapeSplValue,
+        buildUrlLink: buildUrlLink,
+        buildSearchLink: buildSearchLink,
+        buildCellLink: buildCellLink,
+        lastStringValue: lastStringValue,
+    };
+    return KpiSparklineViz;
 });
