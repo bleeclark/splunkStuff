@@ -5,7 +5,7 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20260929-kpi-text-row-badge';
+    var VIZ_BUILD = '20260930-kpi-text-row-colors';
     /** Layout budget: 35px subheader + 137px body = 172px panel default_height. */
     var SUBHEADER_HEIGHT_PX = 35;
     /** Optional text1..text3 strip between the subheader and the KPI body. */
@@ -248,7 +248,31 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return t === 'sametab' || t === 'same' || t === 'self' ? '_self' : '_blank';
     }
 
-    function styleTextCell(el, isFirst) {
+    /**
+     * "tinted" (default) darkens the tile color so existing panels look unchanged;
+     * "custom" uses the Format menu pickers so the row stands apart from the tile.
+     */
+    function resolveTextRowColors(optOr, tileTextColor) {
+        if (compactToken(optOr('textRowStyle', 'tinted')) !== 'custom') {
+            return {
+                custom: false,
+                bg: 'rgba(0,0,0,0.18)',
+                fg: tileTextColor,
+                divider: 'rgba(255,255,255,0.25)',
+                border: 'rgba(255,255,255,0.18)',
+            };
+        }
+        var divider = sanitizeHexColor(optOr('textRowDividerColor', '#3D5A80'), '#3D5A80');
+        return {
+            custom: true,
+            bg: sanitizeHexColor(optOr('textRowBackground', '#0B1F3B'), '#0B1F3B'),
+            fg: sanitizeHexColor(optOr('textRowTextColor', '#FFFFFF'), '#FFFFFF'),
+            divider: divider,
+            border: divider,
+        };
+    }
+
+    function styleTextCell(el, isFirst, dividerColor) {
         el.className = 'bgdhamp-sparkline-value-viz__textCell';
         el.style.setProperty('flex', '1 1 0', 'important');
         el.style.setProperty('width', 'auto', 'important');
@@ -264,7 +288,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         el.style.fontSize = '12px';
         el.style.fontWeight = '500';
         if (!isFirst) {
-            el.style.borderLeft = '1px solid rgba(255,255,255,0.25)';
+            el.style.borderLeft = '1px solid ' + (dividerColor || 'rgba(255,255,255,0.25)');
         }
     }
 
@@ -306,7 +330,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
      * outside click or Esc closes. Popover is fixed on <body> so the panel's
      * overflow:hidden can't clip it. Returns a teardown function.
      */
-    function mountInfoPopover(viz, root, ownerDoc, text, topPx) {
+    function mountInfoPopover(viz, root, ownerDoc, text, topPx, iconColor) {
         var btn = ownerDoc.createElement('button');
         btn.type = 'button';
         btn.className = 'bgdhamp-sparkline-value-viz__info';
@@ -324,7 +348,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         btn.style.border = '1.5px solid currentColor';
         btn.style.borderRadius = '50%';
         btn.style.background = 'rgba(0,0,0,0.2)';
-        btn.style.color = 'inherit';
+        btn.style.color = iconColor || 'inherit';
         btn.style.font = 'italic 700 11px/1 Georgia, "Times New Roman", serif';
         btn.style.cursor = 'pointer';
         btn.style.display = 'flex';
@@ -1631,9 +1655,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 textRow.style.maxHeight = TEXT_ROW_HEIGHT_PX + 'px';
                 textRow.style.boxSizing = 'border-box';
                 textRow.style.overflow = 'hidden';
-                textRow.style.background = 'rgba(0,0,0,0.18)';
-                textRow.style.borderBottom = '1px solid rgba(255,255,255,0.18)';
-                textRow.style.color = textColor;
+                var textRowColors = resolveTextRowColors(optOr, textColor);
+                textRow.setAttribute('data-bgdhamp-text-style', textRowColors.custom ? 'custom' : 'tinted');
+                textRow.style.setProperty('background', textRowColors.bg, 'important');
+                textRow.style.borderBottom = '1px solid ' + textRowColors.border;
+                textRow.style.setProperty('color', textRowColors.fg, 'important');
                 if (showInfo && !subheader) {
                     textRow.style.paddingRight = 8 + INFO_ICON_SIZE_PX + 4 + 'px';
                 }
@@ -1657,7 +1683,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     var cell = href
                         ? makeLinkCell(ownerDoc, href, linkTarget)
                         : ownerDoc.createElement('div');
-                    styleTextCell(cell, ci === 0);
+                    styleTextCell(cell, ci === 0, textRowColors.divider);
                     cell.setAttribute('data-bgdhamp-text-slot', String(tc.slot));
                     cell.textContent = cellText;
                     cell.setAttribute('title', cellText);
@@ -1672,7 +1698,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     : textCells.length
                       ? Math.round((TEXT_ROW_HEIGHT_PX - INFO_ICON_SIZE_PX) / 2)
                       : 6;
-                this._infoCleanup = mountInfoPopover(viz, root, ownerDoc, infoText, infoTopPx);
+                var infoIconColor = !subheader && textRowColors ? textRowColors.fg : '';
+                this._infoCleanup = mountInfoPopover(viz, root, ownerDoc, infoText, infoTopPx, infoIconColor);
             }
 
             var body = document.createElement('div');

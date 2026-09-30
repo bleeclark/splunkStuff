@@ -178,6 +178,24 @@
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
         Shows the latest value of each field. Empty fields are hidden and the rest share the full width.
     </div>
+    <splunk-control-group label="Text row colors">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.textRowStyle" value="tinted">
+            <option value="tinted">Match tile</option>
+            <option value="custom">Custom</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text row background">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textRowBackground" value="#0B1F3B"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Text row text color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textRowTextColor" value="#FFFFFF"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Text row divider color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textRowDividerColor" value="#3D5A80"></splunk-color-picker>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        The three colors apply when <strong>Text row colors</strong> is <strong>Custom</strong>.
+    </div>
     <splunk-control-group label="Text1 label">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text1Label" value="Text1"></splunk-text-input>
     </splunk-control-group>
