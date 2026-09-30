@@ -101,6 +101,10 @@ function loadKpiSparklineViz() {
     assert(src.indexOf('escapeSplValue') !== -1, 'kpi sparkline must define escapeSplValue');
     assert(src.indexOf('linkTarget') !== -1, 'kpi sparkline must support linkTarget');
     assert(src.indexOf('showInfo') !== -1, 'kpi sparkline must support showInfo');
+    assert(src.indexOf('textRowStyle') !== -1, 'kpi sparkline must support textRowStyle');
+    assert(src.indexOf('textRowBackground') !== -1, 'kpi sparkline must support textRowBackground');
+    assert(src.indexOf('textRowTextColor') !== -1, 'kpi sparkline must support textRowTextColor');
+    assert(src.indexOf('textRowDividerColor') !== -1, 'kpi sparkline must support textRowDividerColor');
     assert(src.indexOf("role', 'tooltip'") !== -1, 'info popover must use role=tooltip');
     assert(src.indexOf('More information') !== -1, 'info button must have an aria-label');
     return { filePath, src };

@@ -267,6 +267,10 @@
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.text2LinkUrl">/app/so_BUI_pickulationts/profile?from=$$value$$</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.linkEarliest">-24h</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.showInfo">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.textRowStyle">custom</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.textRowBackground">#0B1F3B</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.textRowTextColor">#FFFFFF</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.textRowDividerColor">#3D5A80</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.majorLabel"></option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.deltaLabel"></option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.badgeText"></option>

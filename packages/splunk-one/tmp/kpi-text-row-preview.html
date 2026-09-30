@@ -71,6 +71,29 @@
                 text2LinkUrl: '/app/so_BUI_pickulationts/profile?from=$value$',
                 linkEarliest: '-24h',
                 showInfo: 'true',
+                textRowStyle: 'custom',
+                textRowBackground: '#0B1F3B',
+                textRowTextColor: '#FFFFFF',
+                textRowDividerColor: '#3D5A80',
+            },
+        },
+        {
+            id: 'tinted',
+            title: 'Same data, "Match tile" colors (old look)',
+            data: { text1: 'East', text2: '1204', text3: 'Stable', info: 'Weighted score, last 24h' },
+            config: { precision: '0', showInfo: 'true' },
+        },
+        {
+            id: 'custom2',
+            title: 'Custom: white row, dark text, gray dividers',
+            data: { text1: 'East', text2: '1204', text3: 'Stable', info: 'Icon picks up the row text color' },
+            config: {
+                precision: '0',
+                showInfo: 'true',
+                textRowStyle: 'custom',
+                textRowBackground: '#FFFFFF',
+                textRowTextColor: '#0B1F3B',
+                textRowDividerColor: '#C3CBD4',
             },
         },
         {
@@ -84,19 +107,11 @@
                 text1Label: 'Region',
                 text2Label: 'Events',
                 showInfo: 'true',
+                textRowStyle: 'custom',
+                textRowBackground: '#1B3A5C',
+                textRowTextColor: '#FFD166',
+                textRowDividerColor: '#FFD166',
             },
-        },
-        {
-            id: 'one',
-            title: '1 value (fills the whole row)',
-            data: { text1: 'East' },
-            config: { precision: '0', text1Label: 'Region' },
-        },
-        {
-            id: 'none',
-            title: 'No text columns (looks like before)',
-            data: {},
-            config: { precision: '0' },
         },
     ];
 
