@@ -5,7 +5,7 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20260930-kpi-text-row-colors';
+    var VIZ_BUILD = '20261019-kpi-text-field-links';
     /** Layout budget: 35px subheader + 137px body = 172px panel default_height. */
     var SUBHEADER_HEIGHT_PX = 35;
     /** Optional text1..text3 strip between the subheader and the KPI body. */
@@ -463,6 +463,26 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         };
     }
 
+    /** Latest value of the label field wins; a blank field keeps the Format menu label. */
+    function cellLabel(series, labelField, fallbackLabel) {
+        var fromField = lastStringValue(series, labelField);
+        if (fromField) {
+            return fromField;
+        }
+        return String(fallbackLabel == null ? '' : fallbackLabel);
+    }
+
+    /**
+     * Format-menu Link URL wins when it is set and safe.
+     * Otherwise the latest value of the link URL field is used, after the same safety check.
+     */
+    function cellUrl(urlTpl, urlFromField, value, label, prefix) {
+        return (
+            buildUrlLink(urlTpl, value, label, prefix) ||
+            buildUrlLink(urlFromField, value, label, prefix)
+        );
+    }
+
     /**
      * Cells for text1..text3 whose latest value is non-empty; only these render,
      * so 1 used cell spans the row, 2 split it in half, 3 in thirds.
@@ -476,11 +496,18 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (!value) {
                 continue;
             }
+            var labelField = String(opt('text' + i + 'LabelField', '') || '').trim();
+            var urlField = String(opt('text' + i + 'LinkUrlField', '') || '').trim();
             cells.push({
                 slot: i,
-                label: String(opt('text' + i + 'Label', 'Text' + i) || ''),
+                label: cellLabel(
+                    series,
+                    labelField,
+                    String(opt('text' + i + 'Label', 'Text' + i) || '')
+                ),
                 value: value,
                 urlTpl: String(opt('text' + i + 'LinkUrl', '') || ''),
+                urlFromField: lastStringValue(series, urlField),
                 searchTpl: String(opt('text' + i + 'LinkSearch', '') || ''),
             });
         }
@@ -1671,15 +1698,16 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 for (ci = 0; ci < textCells.length; ci += 1) {
                     var tc = textCells[ci];
                     var cellText = tc.label ? tc.label + ': ' + tc.value : tc.value;
-                    var href = buildCellLink(
-                        tc.urlTpl,
-                        tc.searchTpl,
-                        tc.value,
-                        tc.label,
-                        linkEarliest,
-                        linkLatest,
-                        linkPrefix
-                    );
+                    var href =
+                        cellUrl(tc.urlTpl, tc.urlFromField, tc.value, tc.label, linkPrefix) ||
+                        buildSearchLink(
+                            tc.searchTpl,
+                            tc.value,
+                            tc.label,
+                            linkEarliest,
+                            linkLatest,
+                            linkPrefix
+                        );
                     var cell = href
                         ? makeLinkCell(ownerDoc, href, linkTarget)
                         : ownerDoc.createElement('div');
@@ -2018,6 +2046,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         buildSearchLink: buildSearchLink,
         buildCellLink: buildCellLink,
         lastStringValue: lastStringValue,
+        cellLabel: cellLabel,
+        cellUrl: cellUrl,
     };
     return KpiSparklineViz;
 });

@@ -199,11 +199,17 @@
     <splunk-control-group label="Text1 label">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text1Label" value="Text1"></splunk-text-input>
     </splunk-control-group>
+    <splunk-control-group label="Text1 label field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text1LabelField" value=""></splunk-text-input>
+    </splunk-control-group>
     <splunk-control-group label="Text1 field">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text1Field" value="text1"></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="Text1 link URL">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text1LinkUrl" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text1 link URL field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text1LinkUrlField" value=""></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="Text1 link search">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text1LinkSearch" value=""></splunk-text-input>
@@ -211,11 +217,17 @@
     <splunk-control-group label="Text2 label">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text2Label" value="Text2"></splunk-text-input>
     </splunk-control-group>
+    <splunk-control-group label="Text2 label field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text2LabelField" value=""></splunk-text-input>
+    </splunk-control-group>
     <splunk-control-group label="Text2 field">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text2Field" value="text2"></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="Text2 link URL">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text2LinkUrl" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Text2 link URL field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text2LinkUrlField" value=""></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="Text2 link search">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text2LinkSearch" value=""></splunk-text-input>
@@ -223,17 +235,25 @@
     <splunk-control-group label="Text3 label">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text3Label" value="Text3"></splunk-text-input>
     </splunk-control-group>
+    <splunk-control-group label="Text3 label field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text3LabelField" value=""></splunk-text-input>
+    </splunk-control-group>
     <splunk-control-group label="Text3 field">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text3Field" value="text3"></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="Text3 link URL">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text3LinkUrl" value=""></splunk-text-input>
     </splunk-control-group>
+    <splunk-control-group label="Text3 link URL field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.text3LinkUrlField" value=""></splunk-text-input>
+    </splunk-control-group>
     <splunk-control-group label="Text3 link search">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.text3LinkSearch" value=""></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        <strong>Link URL</strong>: https://... or /app/..., use <strong>$value$</strong> for the cell's value. Takes priority over Link search.<br/>
+        <strong>Label field</strong>: search column for the label. Used when its latest value is not empty; otherwise the label above is shown.<br/>
+        <strong>Link URL</strong>: https://... or /app/..., use <strong>$value$</strong> for the cell's value. Takes priority over Link URL field and Link search.<br/>
+        <strong>Link URL field</strong>: search column with a full URL. Used when Link URL is blank.<br/>
         <strong>Link search</strong>: use <strong>$value$</strong> for the cell's value, e.g. <strong>index=main region="$value$"</strong>
     </div>
     <splunk-control-group label="Open links in">

@@ -105,6 +105,10 @@ function loadKpiSparklineViz() {
     assert(src.indexOf('textRowBackground') !== -1, 'kpi sparkline must support textRowBackground');
     assert(src.indexOf('textRowTextColor') !== -1, 'kpi sparkline must support textRowTextColor');
     assert(src.indexOf('textRowDividerColor') !== -1, 'kpi sparkline must support textRowDividerColor');
+    assert(src.indexOf("'LabelField'") !== -1, 'kpi sparkline must read a label field per cell');
+    assert(src.indexOf("'LinkUrlField'") !== -1, 'kpi sparkline must read a link URL field per cell');
+    assert(src.indexOf('function cellLabel') !== -1, 'kpi sparkline must define cellLabel');
+    assert(src.indexOf('function cellUrl') !== -1, 'kpi sparkline must define cellUrl');
     assert(src.indexOf("role', 'tooltip'") !== -1, 'info popover must use role=tooltip');
     assert(src.indexOf('More information') !== -1, 'info button must have an aria-label');
     return { filePath, src };
@@ -177,10 +181,28 @@ function verifyLinkHelpers(h) {
     assert(h.buildCellLink('//evil.com', '', 'x', '', '', '') === '', 'rejected URL with no search is plain text');
     assert(h.buildCellLink('', '', 'x', '', '', '') === '', 'no templates means plain text');
 
-    const series = { stringFields: { text1: ['old', 'East'], blank: ['x', ''] } };
+    const series = { stringFields: { text1: ['old', 'East'], blank: ['x', ''], text1_label: ['Area', 'Region'], text1_url: ['https://old.example/x', 'https://example.com/regions/East'] } };
     assert(h.lastStringValue(series, 'text1') === 'East', 'lastStringValue uses latest row');
     assert(h.lastStringValue(series, 'blank') === '', 'blank latest value hides the cell');
     assert(h.lastStringValue(series, 'missing') === '', 'missing field hides the cell');
+
+    assert(h.cellLabel(series, 'text1_label', 'Text1') === 'Region', 'label field uses the latest value');
+    assert(h.cellLabel(series, '', 'Text1') === 'Text1', 'blank label field keeps the Format menu label');
+    assert(h.cellLabel(series, 'missing', 'Text1') === 'Text1', 'missing label field keeps the Format menu label');
+
+    assert(
+        h.cellUrl('/app/u?v=$value$', 'https://example.com/regions/East', 'East', 'Region', '') === '/app/u?v=East',
+        'Format menu URL must win over the URL field'
+    );
+    assert(
+        h.cellUrl('', 'https://example.com/regions/East', 'East', 'Region', '') === 'https://example.com/regions/East',
+        'URL field is used when Link URL is blank'
+    );
+    assert(
+        h.cellUrl('', 'https://example.com/$value$', 'East', 'Region', '') === 'https://example.com/East',
+        'URL field may still contain $value$'
+    );
+    assert(h.cellUrl('', 'javascript:alert(1)', 'East', 'Region', '') === '', 'unsafe URL field is rejected');
 }
 
 function buildFixtureHtml() {
