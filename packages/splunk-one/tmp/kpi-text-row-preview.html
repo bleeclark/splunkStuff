@@ -63,10 +63,19 @@
     var scenarios = [
         {
             id: 'gallery',
-            title: 'Gallery panel: 3 values, links on East + 1204, info on',
-            data: { text1: 'East', text2: '1204', text3: 'Stable', info: 'Weighted score, last 24h' },
+            title: 'Label and URL from the search: Region: East',
+            data: {
+                text1: 'East',
+                text1_label: 'Region',
+                text1_url: 'https://example.com/regions/East',
+                text2: '1204',
+                text3: 'Stable',
+                info: 'Weighted score, last 24h',
+            },
             config: {
                 precision: '0',
+                text1LabelField: 'text1_label',
+                text1LinkUrlField: 'text1_url',
                 text1LinkSearch: '| makeresults | eval region="$value$", clicked_from="KPI sparkline"',
                 text2LinkUrl: '/app/so_BUI_pickulationts/profile?from=$value$',
                 linkEarliest: '-24h',
@@ -129,6 +138,16 @@
         grid.appendChild(card);
         var viz = new KpiViz(el);
         viz.updateView(makeData(s.data), cfg(s.config));
+        if (s.id === 'gallery') {
+            var link = el.querySelector('a');
+            var note = document.createElement('p');
+            note.style.fontSize = '12px';
+            note.style.margin = '8px 0 0';
+            note.textContent = link
+                ? 'First box: "' + link.textContent + '" → ' + link.getAttribute('href')
+                : 'First box is not a link';
+            card.appendChild(note);
+        }
     });
 
     if (/[?&]pin=1/.test(location.search)) {
