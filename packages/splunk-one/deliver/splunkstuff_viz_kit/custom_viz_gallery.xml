@@ -166,6 +166,33 @@
     </row>
     <row>
         <panel>
+            <title>KPI line - text row and info</title>
+            <option name="height">220</option>
+            <search id="gallery_kpi_line_text">
+                <query>
+| makeresults count=72
+| streamstats count as n
+| eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
+| eval value = 28 + ((n * 13) % 52)
+| eval text1="East", text1_label="Region", urls1="https://example.com/regions/East", text2="1204", text3="Stable", info="Weighted score, last 24h"
+| fields _time value text1 text1_label urls1 text2 text3 info
+| sort 0 _time
+| tail 20
+                </query>
+                <earliest>-4h@h</earliest>
+                <latest>now</latest>
+            </search>
+            <viz type="so_BUI_pickulationts.splunkstuff_kpi_line">
+                <search base="gallery_kpi_line_text" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.showHover">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.text1LabelField">text1_label</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.text1LinkUrlField">urls1</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.showInfo">true</option>
+            </viz>
+        </panel>
+    </row>
+    <row>
+        <panel>
             <title>Data pie - JavaScript</title>
             <search id="gallery_pie_js">
                 <query>

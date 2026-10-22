@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>KPI line text row preview</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css" />
+<style>
+    body { font-family: Helvetica, Arial, sans-serif; background: #eef0f3; margin: 16px; }
+    .card { width: 420px; background: #fff; border: 1px solid #d5d9de; border-radius: 4px; padding: 10px; }
+    h2 { font-size: 13px; margin: 0 0 8px; }
+    .dashboard-element { width: 100%; height: 220px; }
+    .note { font-size: 12px; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<div class="card">
+    <h2>KPI line: text row and info, same search columns as a Splunk line chart</h2>
+    <div class="dashboard-element" id="host"></div>
+    <p class="note" id="note"></p>
+</div>
+<script>
+    var factories = [];
+    window.define = function (deps, factory) {
+        factories.push(factory);
+    };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampTrendColors.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampVizHoverMath.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js"></script>
+<script>
+    var Base = {
+        COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+        extend: function (proto) {
+            function Viz(el) { this.el = el; }
+            Viz.prototype = proto;
+            return Viz;
+        },
+    };
+    var trend = factories[0]();
+    var hover = factories[1]();
+    var Viz = factories[2](Base, trend, hover);
+    var times = [];
+    var values = [];
+    var text1 = [];
+    var labels = [];
+    var urls = [];
+    var text2 = [];
+    var text3 = [];
+    var info = [];
+    var now = Date.now();
+    var n;
+    for (n = 1; n <= 20; n += 1) {
+        times.push(new Date(now - (20 - n) * 60000).toISOString());
+        values.push(String(28 + ((n * 13) % 52)));
+        text1.push('East');
+        labels.push('Region');
+        urls.push('https://example.com/regions/East');
+        text2.push('1204');
+        text3.push('Stable');
+        info.push('Weighted score, last 24h');
+    }
+    var raw = {
+        fields: [
+            { name: '_time' },
+            { name: 'value' },
+            { name: 'text1' },
+            { name: 'text1_label' },
+            { name: 'urls1' },
+            { name: 'text2' },
+            { name: 'text3' },
+            { name: 'info' },
+        ],
+        columns: [times, values, text1, labels, urls, text2, text3, info],
+    };
+    var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+    var config = {};
+    config[NS + 'showHover'] = 'true';
+    config[NS + 'text1LabelField'] = 'text1_label';
+    config[NS + 'text1LinkUrlField'] = 'urls1';
+    config[NS + 'showInfo'] = 'true';
+    var el = document.createElement('div');
+    el.style.width = '400px';
+    el.style.height = '220px';
+    document.getElementById('host').appendChild(el);
+    var viz = new Viz(el);
+    var formatted = viz.formatData(raw);
+    viz.updateView(formatted, config);
+    var link = el.querySelector('a');
+    var infoBtn = el.querySelector('.bgdhamp-kpi-line-viz__info');
+    document.getElementById('note').textContent = link
+        ? 'First box: "' + link.textContent + '" → ' + link.getAttribute('href')
+        : 'Text row did not render';
+    if (infoBtn) {
+        infoBtn.click();
+    }
+</script>
+</body>
+</html>

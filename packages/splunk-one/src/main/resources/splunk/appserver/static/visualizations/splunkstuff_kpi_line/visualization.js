@@ -16,6 +16,10 @@ define([
 ], function (SplunkVisualizationBase, trendColors, hoverMath) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+    var VIZ_BUILD = '20261022-kpi-line-text-row';
+    var TEXT_ROW_HEIGHT_PX = 28;
+    var TEXT_ROW_SLOTS = 3;
+    var INFO_ICON_SIZE_PX = 18;
 
     /** Splunk loads AMD in a browser context; guard for odd embeds. */
     function debugEnabled() {
@@ -149,13 +153,19 @@ define([
     function reorderValuesAndTimesByTime(rawData, valueIdx, timeIdx) {
         var valCol = rawData.columns[valueIdx];
         var n = valCol ? valCol.length : 0;
-        if (!n) return { values: [], times: [] };
+        if (!n) return { values: [], times: [], rowOrder: [] };
         if (timeIdx < 0 || !rawData.columns[timeIdx] || rawData.columns[timeIdx].length !== n) {
+            var plainOrder = [];
+            var pi;
+            for (pi = 0; pi < n; pi += 1) {
+                plainOrder.push(pi);
+            }
             return {
                 values: valCol.map(function (v) {
                     return parseFloat(v, 10);
                 }),
                 times: [],
+                rowOrder: plainOrder,
             };
         }
         var tcol = rawData.columns[timeIdx];
@@ -175,26 +185,212 @@ define([
             times: order.map(function (ri) {
                 return tcol[ri];
             }),
+            rowOrder: order,
         };
     }
 
+    function cellText(cell) {
+        var guard = 0;
+        var raw = cell;
+        while (raw != null && guard < 6) {
+            if (Array.isArray(raw)) {
+                raw = raw.length ? raw[0] : null;
+                guard += 1;
+                continue;
+            }
+            if (typeof raw === 'object' && raw.value != null) {
+                raw = raw.value;
+                guard += 1;
+                continue;
+            }
+            break;
+        }
+        return raw == null ? '' : String(raw).trim();
+    }
+
+    /** Non-numeric columns, in the same time order as the line, so the latest row is last. */
+    function stringFieldsInOrder(rawData, rowOrder, valueIdx) {
+        var out = {};
+        var c;
+        if (!rawData || !rawData.columns || !rowOrder) {
+            return out;
+        }
+        for (c = 0; c < rawData.columns.length; c += 1) {
+            var name = fieldName(rawData.fields, c);
+            if (!name || name === '_time' || c === valueIdx) {
+                continue;
+            }
+            var col = rawData.columns[c] || [];
+            out[name] = rowOrder.map(function (ri) {
+                return cellText(col[ri]);
+            });
+        }
+        return out;
+    }
+
+    function lastStringValue(stringFields, field) {
+        var name = String(field == null ? '' : field).trim();
+        if (!name || !stringFields) {
+            return '';
+        }
+        var col = stringFields[name];
+        if (!col || !col.length) {
+            return '';
+        }
+        return col[col.length - 1] == null ? '' : String(col[col.length - 1]).trim();
+    }
+
+    function fillTemplate(template, value, label) {
+        return String(template)
+            .split('$value$')
+            .join(value)
+            .split('$label$')
+            .join(label);
+    }
+
+    function escapeSplValue(v) {
+        return String(v == null ? '' : v)
+            .replace(/\\/g, '\\\\')
+            .replace(/"/g, '\\"');
+    }
+
+    function splunkPathPrefix(ownerDoc) {
+        var win = ownerDoc && ownerDoc.defaultView;
+        var p = win && win.location ? String(win.location.pathname || '') : '';
+        var idx = p.indexOf('/app/');
+        return idx > 0 ? p.slice(0, idx) : '';
+    }
+
+    function withSplunkPrefix(url, prefix) {
+        if (!prefix) {
+            return url;
+        }
+        if (url.indexOf('/app/') === 0 || url.indexOf('/manager/') === 0) {
+            return prefix + url;
+        }
+        return url;
+    }
+
+    function isSafeUrlTemplate(template) {
+        var t = String(template == null ? '' : template).trim();
+        return /^https?:\/\//i.test(t) || /^\/(?![\/\\])/.test(t);
+    }
+
+    function buildUrlLink(template, value, label, prefix) {
+        var t = String(template == null ? '' : template).trim();
+        if (!t || !isSafeUrlTemplate(t)) {
+            return '';
+        }
+        var url = fillTemplate(
+            t,
+            encodeURIComponent(value == null ? '' : value),
+            encodeURIComponent(label == null ? '' : label)
+        );
+        return withSplunkPrefix(url, prefix || '');
+    }
+
+    function buildSearchLink(template, value, label, earliest, latest, prefix) {
+        var t = String(template == null ? '' : template).trim();
+        if (!t) {
+            return '';
+        }
+        var spl = fillTemplate(t, escapeSplValue(value), escapeSplValue(label));
+        var url = '/app/search/search?q=' + encodeURIComponent(spl);
+        var e = String(earliest == null ? '' : earliest).trim();
+        var l = String(latest == null ? '' : latest).trim();
+        if (e) {
+            url += '&earliest=' + encodeURIComponent(e);
+        }
+        if (l) {
+            url += '&latest=' + encodeURIComponent(l);
+        }
+        return withSplunkPrefix(url, prefix || '');
+    }
+
+    function cellLabel(stringFields, labelField, fallbackLabel) {
+        var fromField = lastStringValue(stringFields, labelField);
+        if (fromField) {
+            return fromField;
+        }
+        return String(fallbackLabel == null ? '' : fallbackLabel);
+    }
+
+    function cellUrl(urlTpl, urlFromField, value, label, prefix) {
+        return (
+            buildUrlLink(urlTpl, value, label, prefix) ||
+            buildUrlLink(urlFromField, value, label, prefix)
+        );
+    }
+
+    function collectTextCells(stringFields, readConfig, config) {
+        var cells = [];
+        var i;
+        if (!readBool(config, 'showTextRow', true)) {
+            return cells;
+        }
+        for (i = 1; i <= TEXT_ROW_SLOTS; i += 1) {
+            var field = String(readConfig(config, 'text' + i + 'Field', 'text' + i) || '').trim();
+            var value = lastStringValue(stringFields, field);
+            if (!value) {
+                continue;
+            }
+            var labelField = String(readConfig(config, 'text' + i + 'LabelField', '') || '').trim();
+            var urlField = String(readConfig(config, 'text' + i + 'LinkUrlField', '') || '').trim();
+            cells.push({
+                slot: i,
+                label: cellLabel(
+                    stringFields,
+                    labelField,
+                    String(readConfig(config, 'text' + i + 'Label', 'Text' + i) || '')
+                ),
+                value: value,
+                urlTpl: String(readConfig(config, 'text' + i + 'LinkUrl', '') || ''),
+                urlFromField: lastStringValue(stringFields, urlField),
+                searchTpl: String(readConfig(config, 'text' + i + 'LinkSearch', '') || ''),
+            });
+        }
+        return cells;
+    }
+
+    function columnIsAllNumeric(rawData, columnIndex) {
+        var name = fieldName(rawData.fields, columnIndex);
+        if (!name || name === '_time') {
+            return false;
+        }
+        var col = rawData.columns[columnIndex];
+        if (!col || col.length === 0) {
+            return false;
+        }
+        var i;
+        for (i = 0; i < col.length; i += 1) {
+            if (!isFinite(parseFloat(col[i], 10))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Prefer the metric column a Splunk line chart would plot (value, count, …).
+     * A numeric text cell such as text2="1204" must stay in the text row.
+     */
     function pickNumericColumnIndex(rawData) {
         if (!rawData || !rawData.columns || !rawData.fields) return -1;
-        var best = -1;
+        var hints = ['value', 'count', 'total', 'amount'];
+        var h;
         var c;
-        for (c = 0; c < rawData.columns.length; c += 1) {
-            if (fieldName(rawData.fields, c) === '_time') continue;
-            var col = rawData.columns[c];
-            if (!col || col.length === 0) continue;
-            var ok = true;
-            var i;
-            for (i = 0; i < col.length; i += 1) {
-                if (!isFinite(parseFloat(col[i], 10))) {
-                    ok = false;
-                    break;
+        for (h = 0; h < hints.length; h += 1) {
+            for (c = 0; c < rawData.columns.length; c += 1) {
+                if (fieldName(rawData.fields, c) === hints[h] && columnIsAllNumeric(rawData, c)) {
+                    return c;
                 }
             }
-            if (ok) best = c;
+        }
+        var best = -1;
+        for (c = 0; c < rawData.columns.length; c += 1) {
+            if (columnIsAllNumeric(rawData, c)) {
+                best = c;
+            }
         }
         return best;
     }
@@ -489,6 +685,186 @@ define([
         }
     }
 
+    function styleTextCell(el, isFirst) {
+        el.className = 'bgdhamp-kpi-line-viz__textCell';
+        el.style.setProperty('flex', '1 1 0', 'important');
+        el.style.setProperty('width', 'auto', 'important');
+        el.style.setProperty('min-width', '0', 'important');
+        el.style.display = 'block';
+        el.style.boxSizing = 'border-box';
+        el.style.padding = '0 8px';
+        el.style.lineHeight = TEXT_ROW_HEIGHT_PX + 'px';
+        el.style.whiteSpace = 'nowrap';
+        el.style.overflow = 'hidden';
+        el.style.textOverflow = 'ellipsis';
+        el.style.textAlign = 'center';
+        el.style.fontSize = '12px';
+        el.style.fontWeight = '500';
+        if (!isFirst) {
+            el.style.borderLeft = '1px solid rgba(255,255,255,0.25)';
+        }
+    }
+
+    function makeLinkCell(ownerDoc, href, target) {
+        var a = ownerDoc.createElement('a');
+        a.setAttribute('href', href);
+        a.setAttribute('target', target);
+        a.setAttribute('rel', 'noopener noreferrer');
+        a.style.setProperty('color', 'inherit', 'important');
+        a.style.setProperty('text-decoration', 'none', 'important');
+        a.style.cursor = 'pointer';
+        a.addEventListener('mouseenter', function () {
+            a.style.setProperty('text-decoration', 'underline', 'important');
+        });
+        a.addEventListener('mouseleave', function () {
+            if (ownerDoc.activeElement !== a) {
+                a.style.setProperty('text-decoration', 'none', 'important');
+            }
+        });
+        a.addEventListener('focus', function () {
+            a.style.setProperty('text-decoration', 'underline', 'important');
+            a.style.outline = '2px solid currentColor';
+            a.style.outlineOffset = '-2px';
+        });
+        a.addEventListener('blur', function () {
+            a.style.setProperty('text-decoration', 'none', 'important');
+            a.style.outline = 'none';
+        });
+        return a;
+    }
+
+    var infoPopoverSeq = 0;
+
+    function mountInfoPopover(viz, root, ownerDoc, text, topPx) {
+        var btn = ownerDoc.createElement('button');
+        btn.type = 'button';
+        btn.className = 'bgdhamp-kpi-line-viz__info';
+        btn.setAttribute('aria-label', 'More information');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.textContent = 'i';
+        btn.style.position = 'absolute';
+        btn.style.top = topPx + 'px';
+        btn.style.right = '8px';
+        btn.style.zIndex = '7';
+        btn.style.width = INFO_ICON_SIZE_PX + 'px';
+        btn.style.height = INFO_ICON_SIZE_PX + 'px';
+        btn.style.padding = '0';
+        btn.style.margin = '0';
+        btn.style.border = '1.5px solid currentColor';
+        btn.style.borderRadius = '50%';
+        btn.style.background = 'rgba(0,0,0,0.2)';
+        btn.style.color = 'inherit';
+        btn.style.font = 'italic 700 11px/1 Georgia, "Times New Roman", serif';
+        btn.style.cursor = 'pointer';
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.boxSizing = 'border-box';
+
+        infoPopoverSeq += 1;
+        var pop = ownerDoc.createElement('div');
+        pop.className = 'bgdhamp-kpi-line-viz__infoPopover';
+        pop.setAttribute('role', 'tooltip');
+        pop.textContent = text;
+        pop.style.display = 'none';
+        pop.style.position = 'fixed';
+        pop.style.zIndex = '2147483646';
+        pop.style.maxWidth = '280px';
+        pop.style.padding = '8px 10px';
+        pop.style.fontSize = '12px';
+        pop.style.lineHeight = '1.4';
+        pop.style.color = '#FFFFFF';
+        pop.style.background = 'rgba(11,31,59,0.96)';
+        pop.style.border = '1px solid rgba(255,255,255,0.25)';
+        pop.style.borderRadius = '4px';
+        pop.style.boxShadow = '0 2px 8px rgba(0,0,0,0.35)';
+        pop.style.whiteSpace = 'pre-wrap';
+
+        var pinned = false;
+
+        function place() {
+            var rect = btn.getBoundingClientRect();
+            var win = ownerDoc.defaultView || window;
+            var vw = win.innerWidth || ownerDoc.documentElement.clientWidth || 0;
+            pop.style.top = Math.round(rect.bottom + 6) + 'px';
+            pop.style.right = Math.max(4, Math.round(vw - rect.right)) + 'px';
+        }
+
+        function show() {
+            var bodyEl = ownerDoc.body || ownerDoc.documentElement;
+            if (bodyEl && pop.parentNode !== bodyEl) {
+                bodyEl.appendChild(pop);
+            }
+            place();
+            pop.style.display = 'block';
+            btn.setAttribute('aria-expanded', 'true');
+            viz._infoOpen = true;
+        }
+
+        function hide() {
+            pop.style.display = 'none';
+            btn.setAttribute('aria-expanded', 'false');
+            viz._infoOpen = false;
+        }
+
+        btn.addEventListener('mouseenter', show);
+        btn.addEventListener('focus', show);
+        btn.addEventListener('mouseleave', function () {
+            if (!pinned) {
+                hide();
+            }
+        });
+        btn.addEventListener('blur', function () {
+            if (!pinned) {
+                hide();
+            }
+        });
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            pinned = !pinned;
+            if (pinned) {
+                show();
+            } else {
+                hide();
+            }
+        });
+
+        function onDocClick(e) {
+            if (!pinned) {
+                return;
+            }
+            var t = e.target;
+            if (t === btn || btn.contains(t) || t === pop || pop.contains(t)) {
+                return;
+            }
+            pinned = false;
+            hide();
+        }
+
+        function onKey(e) {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                if (pop.style.display !== 'none') {
+                    pinned = false;
+                    hide();
+                }
+            }
+        }
+
+        ownerDoc.addEventListener('click', onDocClick, true);
+        ownerDoc.addEventListener('keydown', onKey, true);
+        root.appendChild(btn);
+
+        return function teardownInfo() {
+            ownerDoc.removeEventListener('click', onDocClick, true);
+            ownerDoc.removeEventListener('keydown', onKey, true);
+            if (pop.parentNode) {
+                pop.parentNode.removeChild(pop);
+            }
+            viz._infoOpen = false;
+        };
+    }
+
     log('module loaded');
 
     if (typeof console !== 'undefined' && typeof console.info === 'function') {
@@ -525,6 +901,7 @@ define([
             }
             var tIdx = findTimeColumnIndex(rawData);
             var out = reorderValuesAndTimesByTime(rawData, idx, tIdx);
+            out.stringFields = stringFieldsInOrder(rawData, out.rowOrder, idx);
             log('formatData: valueCol', idx, '_timeCol', tIdx, 'points', out.values ? out.values.length : 0);
             return out;
         },
@@ -535,6 +912,7 @@ define([
         updateView: function (data, config) {
             var t0 = debugEnabled() && typeof performance !== 'undefined' ? performance.now() : 0;
             try {
+            var viz = this;
             if (config == null || typeof config !== 'object') {
                 log('updateView: config missing or non-object — using {}');
                 config = {};
@@ -549,6 +927,10 @@ define([
             if (this._hoverTooltipEl && this._hoverTooltipEl.parentNode) {
                 this._hoverTooltipEl.parentNode.removeChild(this._hoverTooltipEl);
                 this._hoverTooltipEl = null;
+            }
+            if (typeof this._infoCleanup === 'function') {
+                this._infoCleanup();
+                this._infoCleanup = null;
             }
             this.el.innerHTML = '';
 
@@ -640,6 +1022,22 @@ define([
             if (!isFinite(padTopCfg)) padTopCfg = 2;
             if (!isFinite(padBottomCfg)) padBottomCfg = 12;
 
+            var stringFields = (data && data.stringFields) || {};
+            var textCells = collectTextCells(stringFields, readConfig, config);
+            var textRowH = textCells.length ? TEXT_ROW_HEIGHT_PX : 0;
+            var showInfo = readBool(config, 'showInfo', false);
+            var infoText = '';
+            if (showInfo) {
+                infoText = String(readConfig(config, 'infoText', '') || '').trim();
+                if (!infoText) {
+                    infoText = lastStringValue(
+                        stringFields,
+                        String(readConfig(config, 'infoField', 'info') || 'info')
+                    );
+                }
+                showInfo = !!infoText;
+            }
+
             var delta = trendColors.trendDelta(plotValues);
             var trendBg = trendColors.trendBackground(delta, goodColor, badColor);
             trendColors.applyTrendHostStyle(this.el, trendBg, textColor);
@@ -661,7 +1059,7 @@ define([
             var padR = effPadR;
             var padT = effPadT;
             var padB = effPadB;
-            var chartH = Math.max(40, height - subheaderH - majorH);
+            var chartH = Math.max(40, height - subheaderH - majorH - textRowH);
 
             var containerBg = showMajor && colorPlacement === 'top' ? background : trendBg;
             var chartStripBg = showMajor && colorPlacement === 'top' ? background : trendBg;
@@ -687,6 +1085,7 @@ define([
             // --- Root flex column: header → major row → chart strip ---
             var root = ownerDoc.createElement('div');
             root.className = 'bgdhamp-kpi-line-viz';
+            root.setAttribute('data-bgdhamp-viz-build', VIZ_BUILD);
             trendColors.applyTrendSurfaceStyle(root, containerBg);
             root.style.color = textColor;
             root.style.width = '100%';
@@ -698,7 +1097,62 @@ define([
                 var head = ownerDoc.createElement('div');
                 head.className = 'bgdhamp-kpi-line-viz__header';
                 head.textContent = subheader;
+                if (showInfo) {
+                    head.style.paddingRight = 8 + INFO_ICON_SIZE_PX + 8 + 'px';
+                }
                 root.appendChild(head);
+            }
+
+            if (textCells.length) {
+                var textRow = ownerDoc.createElement('div');
+                textRow.className = 'bgdhamp-kpi-line-viz__textRow';
+                textRow.style.display = 'flex';
+                textRow.style.flexDirection = 'row';
+                textRow.style.alignItems = 'stretch';
+                textRow.style.width = '100%';
+                textRow.style.flex = '0 0 ' + TEXT_ROW_HEIGHT_PX + 'px';
+                textRow.style.height = TEXT_ROW_HEIGHT_PX + 'px';
+                textRow.style.boxSizing = 'border-box';
+                textRow.style.overflow = 'hidden';
+                textRow.style.background = 'rgba(0,0,0,0.18)';
+                textRow.style.color = textColor;
+                var linkPrefix = splunkPathPrefix(ownerDoc);
+                var linkTarget =
+                    String(readConfig(config, 'linkTarget', 'newTab') || '')
+                        .replace(/[^a-z0-9]+/gi, '')
+                        .toLowerCase() === 'sametab'
+                        ? '_self'
+                        : '_blank';
+                var linkEarliest = String(readConfig(config, 'linkEarliest', '') || '');
+                var linkLatest = String(readConfig(config, 'linkLatest', '') || '');
+                var ci;
+                for (ci = 0; ci < textCells.length; ci += 1) {
+                    var tc = textCells[ci];
+                    var cellTextLabel = tc.label ? tc.label + ': ' + tc.value : tc.value;
+                    var href =
+                        cellUrl(tc.urlTpl, tc.urlFromField, tc.value, tc.label, linkPrefix) ||
+                        buildSearchLink(
+                            tc.searchTpl,
+                            tc.value,
+                            tc.label,
+                            linkEarliest,
+                            linkLatest,
+                            linkPrefix
+                        );
+                    var cell = href
+                        ? makeLinkCell(ownerDoc, href, linkTarget)
+                        : ownerDoc.createElement('div');
+                    styleTextCell(cell, ci === 0);
+                    cell.textContent = cellTextLabel;
+                    cell.setAttribute('title', cellTextLabel);
+                    textRow.appendChild(cell);
+                }
+                root.appendChild(textRow);
+            }
+
+            if (showInfo) {
+                var infoTopPx = subheader ? 5 : 6;
+                this._infoCleanup = mountInfoPopover(viz, root, ownerDoc, infoText, infoTopPx);
             }
 
             var majorRow = null;
@@ -916,7 +1370,7 @@ define([
             // --- Document-level listeners: Splunk overlays block bubble events on the SVG ---
             if (showHover && n >= 2) {
                 function onDocPointerMove(e) {
-                    if (!hitTestChart(e.clientX, e.clientY)) {
+                    if (viz._infoOpen || !hitTestChart(e.clientX, e.clientY)) {
                         clearHoverOverlay(svg, tooltip, hoverAnnEl);
                         return;
                     }
@@ -1073,6 +1527,10 @@ define([
                 this._hoverTooltipEl.parentNode.removeChild(this._hoverTooltipEl);
             }
             this._hoverTooltipEl = null;
+            if (typeof this._infoCleanup === 'function') {
+                this._infoCleanup();
+                this._infoCleanup = null;
+            }
             this._lastData = null;
             this._lastConfig = null;
             this.el.innerHTML = '';
