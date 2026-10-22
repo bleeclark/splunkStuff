@@ -62,6 +62,13 @@
 
     var scenarios = [
         {
+            id: 'mv',
+            title: 'Multivalue cells: number and line use the first value',
+            multivalue: true,
+            data: {},
+            config: { precision: '0' },
+        },
+        {
             id: 'gallery',
             title: 'Label and URL from the search: Region: East',
             data: {
@@ -137,7 +144,21 @@
         card.appendChild(host);
         grid.appendChild(card);
         var viz = new KpiViz(el);
-        viz.updateView(makeData(s.data), cfg(s.config));
+        var data = makeData(s.data);
+        if (s.multivalue) {
+            data.rawData.columns[1] = data.rawData.columns[1].map(function (v) {
+                return [v, '9999'];
+            });
+        }
+        viz.updateView(data, cfg(s.config));
+        if (s.id === 'mv') {
+            var major = el.querySelector('.bgdhamp-sparkline-value-viz__majorValue');
+            var mvNote = document.createElement('p');
+            mvNote.style.fontSize = '12px';
+            mvNote.style.margin = '8px 0 0';
+            mvNote.textContent = 'Each cell was [number, 9999]. Shown number: ' + (major ? major.textContent : '?');
+            card.appendChild(mvNote);
+        }
         if (s.id === 'gallery') {
             var link = el.querySelector('a');
             var note = document.createElement('p');
