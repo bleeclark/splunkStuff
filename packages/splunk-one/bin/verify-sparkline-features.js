@@ -109,6 +109,7 @@ function loadKpiSparklineViz() {
     assert(src.indexOf("'LinkUrlField'") !== -1, 'kpi sparkline must read a link URL field per cell');
     assert(src.indexOf('function cellLabel') !== -1, 'kpi sparkline must define cellLabel');
     assert(src.indexOf('function cellUrl') !== -1, 'kpi sparkline must define cellUrl');
+    assert(src.indexOf('function firstCellValue') !== -1, 'kpi sparkline must unwrap multivalue cells');
     assert(src.indexOf("role', 'tooltip'") !== -1, 'info popover must use role=tooltip');
     assert(src.indexOf('More information') !== -1, 'info button must have an aria-label');
     return { filePath, src };
@@ -203,6 +204,12 @@ function verifyLinkHelpers(h) {
         'URL field may still contain $value$'
     );
     assert(h.cellUrl('', 'javascript:alert(1)', 'East', 'Region', '') === '', 'unsafe URL field is rejected');
+
+    assert(h.parseNum(['28', '9999']) === 28, 'multivalue cell uses the first number');
+    assert(h.parseNum({ value: ['28', '9999'] }) === 28, 'wrapped multivalue cell uses the first number');
+    assert(h.parseNum([{ value: '28' }, { value: '9999' }]) === 28, 'multivalue objects use the first number');
+    assert(h.parseNum('28') === 28, 'plain number cell is unchanged');
+    assert(Number.isNaN(h.parseNum(['East', '28'])), 'a non-numeric first value is skipped');
 }
 
 function buildFixtureHtml() {

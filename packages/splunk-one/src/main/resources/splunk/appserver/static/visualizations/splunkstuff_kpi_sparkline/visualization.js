@@ -5,7 +5,7 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20261019-kpi-text-field-links';
+    var VIZ_BUILD = '20261022-kpi-mv-first';
     /** Layout budget: 35px subheader + 137px body = 172px panel default_height. */
     var SUBHEADER_HEIGHT_PX = 35;
     /** Optional text1..text3 strip between the subheader and the KPI body. */
@@ -528,14 +528,36 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         if (cell == null) {
             return cell;
         }
-        if (typeof cell === 'object' && cell.value != null) {
+        if (typeof cell === 'object' && cell.value != null && !Array.isArray(cell)) {
             return cell.value;
         }
         return cell;
     }
 
+    /**
+     * Splunk Single Value shows the first item in a multivalue cell.
+     * Walk arrays and {value: ...} wrappers until that first item is plain.
+     */
+    function firstCellValue(raw) {
+        var guard = 0;
+        while (raw != null && guard < 6) {
+            if (Array.isArray(raw)) {
+                raw = raw.length ? raw[0] : null;
+                guard += 1;
+                continue;
+            }
+            if (typeof raw === 'object' && raw.value != null) {
+                raw = raw.value;
+                guard += 1;
+                continue;
+            }
+            break;
+        }
+        return raw;
+    }
+
     function parseNum(cell) {
-        var n = parseFloat(cellValue(cell), 10);
+        var n = parseFloat(firstCellValue(cellValue(cell)), 10);
         return isFinite(n) ? n : NaN;
     }
 
@@ -2048,6 +2070,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         lastStringValue: lastStringValue,
         cellLabel: cellLabel,
         cellUrl: cellUrl,
+        parseNum: parseNum,
     };
     return KpiSparklineViz;
 });
