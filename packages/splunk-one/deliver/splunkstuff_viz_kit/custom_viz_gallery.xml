@@ -290,6 +290,7 @@
             </search>
             <viz type="so_BUI_pickulationts.splunkstuff_kpi_sparkline">
                 <search base="gallery_kpi_sparkline_js" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.valueField">value</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.precision">0</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.text1LabelField">text1_label</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.text1LinkUrlField">text1_url</option>
