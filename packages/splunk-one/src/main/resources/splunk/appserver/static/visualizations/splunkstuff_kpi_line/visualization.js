@@ -16,10 +16,37 @@ define([
 ], function (SplunkVisualizationBase, trendColors, hoverMath) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '20261022-kpi-line-text-row';
+    var VIZ_BUILD = '20261027-kpi-line-value-field';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
+    /** Prefer these names when Format valueField is Auto (_time + metric). */
+    var VALUE_FIELD_HINTS = [
+        'value',
+        'total_count',
+        'count',
+        'total',
+        'amount',
+        'sum',
+        'avg',
+        'metric',
+        'score',
+    ];
+    /** Skip metadata and text-row columns when Auto picks the Y series. */
+    var SKIP_VALUE_FIELDS = {
+        _time: true,
+        _span: true,
+        _spandays: true,
+        _si: true,
+        _serial: true,
+        _cd: true,
+        _indextime: true,
+        linecount: true,
+        text1: true,
+        text2: true,
+        text3: true,
+        info: true,
+    };
 
     /** Splunk loads AMD in a browser context; guard for odd embeds. */
     function debugEnabled() {
@@ -352,9 +379,40 @@ define([
         return cells;
     }
 
+    function normalizeName(name) {
+        return String(name == null ? '' : name)
+            .trim()
+            .toLowerCase();
+    }
+
+    function findFieldIndex(fields, requested) {
+        var wanted = normalizeName(requested);
+        if (!wanted || !fields || !fields.length) {
+            return -1;
+        }
+        var i;
+        for (i = 0; i < fields.length; i += 1) {
+            if (normalizeName(fieldName(fields, i)) === wanted) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function isSkippedValueField(name) {
+        var n = normalizeName(name);
+        if (!n || SKIP_VALUE_FIELDS[n] || n.charAt(0) === '_') {
+            return true;
+        }
+        if (/^text[123]$/.test(n) || /^text[123]_/.test(n) || /^urls?\d*$/.test(n)) {
+            return true;
+        }
+        return false;
+    }
+
     function columnIsAllNumeric(rawData, columnIndex) {
         var name = fieldName(rawData.fields, columnIndex);
-        if (!name || name === '_time') {
+        if (isSkippedValueField(name)) {
             return false;
         }
         var col = rawData.columns[columnIndex];
@@ -371,19 +429,18 @@ define([
     }
 
     /**
-     * Prefer the metric column a Splunk line chart would plot (value, count, …).
-     * A numeric text cell such as text2="1204" must stay in the text row.
+     * Auto: prefer value/count/… then the last all-numeric non-skipped column.
+     * Explicit Format valueField names the Y series; _time remains the X axis.
      */
     function pickNumericColumnIndex(rawData) {
         if (!rawData || !rawData.columns || !rawData.fields) return -1;
-        var hints = ['value', 'count', 'total', 'amount'];
+        var fields = rawData.fields;
         var h;
         var c;
-        for (h = 0; h < hints.length; h += 1) {
-            for (c = 0; c < rawData.columns.length; c += 1) {
-                if (fieldName(rawData.fields, c) === hints[h] && columnIsAllNumeric(rawData, c)) {
-                    return c;
-                }
+        for (h = 0; h < VALUE_FIELD_HINTS.length; h += 1) {
+            var hinted = findFieldIndex(fields, VALUE_FIELD_HINTS[h]);
+            if (hinted >= 0 && columnIsAllNumeric(rawData, hinted)) {
+                return hinted;
             }
         }
         var best = -1;
@@ -393,6 +450,37 @@ define([
             }
         }
         return best;
+    }
+
+    function resolveValueColumnIndex(rawData, valueField) {
+        if (!rawData || !rawData.columns || !rawData.fields) {
+            return -1;
+        }
+        var fields = rawData.fields;
+        var wanted = normalizeName(valueField);
+        if (wanted && wanted !== 'auto') {
+            var explicit = findFieldIndex(fields, valueField);
+            if (explicit >= 0 && fieldName(fields, explicit) !== '_time') {
+                return explicit;
+            }
+            return -1;
+        }
+        return pickNumericColumnIndex(rawData);
+    }
+
+    function buildSeriesFromRaw(rawData, valueField) {
+        if (!rawData || !rawData.columns || rawData.columns.length === 0) {
+            return { values: [], times: [], rowOrder: [], fieldName: '', stringFields: {} };
+        }
+        var idx = resolveValueColumnIndex(rawData, valueField);
+        if (idx < 0) {
+            return { values: [], times: [], rowOrder: [], fieldName: '', stringFields: {} };
+        }
+        var tIdx = findTimeColumnIndex(rawData);
+        var out = reorderValuesAndTimesByTime(rawData, idx, tIdx);
+        out.fieldName = fieldName(rawData.fields, idx);
+        out.stringFields = stringFieldsInOrder(rawData, out.rowOrder, idx);
+        return out;
     }
 
     function buildComparisonValues(values) {
@@ -884,26 +972,38 @@ define([
         },
 
         /**
-         * Column-major input → { values, times } for updateView.
-         * Picks the last all-numeric non-_time column; sorts by _time when present.
+         * Column-major input → series for updateView.
+         * Config valueField is applied in updateView; formatData uses Auto as a baseline.
+         * X axis is _time when present; Y / major number is the resolved value field.
          */
         formatData: function (rawData) {
-            if (!rawData || !rawData.columns || rawData.columns.length === 0) {
+            var safe = rawData && rawData.columns ? rawData : { columns: [], fields: [] };
+            if (!safe.columns.length) {
                 log('formatData: empty columns');
-                return { values: [], times: [] };
+                return { rawData: safe, values: [], times: [], fieldName: '', stringFields: {} };
             }
-            var idx = pickNumericColumnIndex(rawData);
-            if (idx < 0) {
+            var series = buildSeriesFromRaw(safe, 'auto');
+            if (!series.values.length) {
                 log('formatData: no numeric column — VisualizationError');
                 throw new SplunkVisualizationBase.VisualizationError(
-                    'KPI loaded line (BGDHamp) requires at least one all-numeric column (excluding _time).'
+                    'KPI line requires _time (optional) plus one numeric value field. Set Format → Value field, or include a column named value.'
                 );
             }
-            var tIdx = findTimeColumnIndex(rawData);
-            var out = reorderValuesAndTimesByTime(rawData, idx, tIdx);
-            out.stringFields = stringFieldsInOrder(rawData, out.rowOrder, idx);
-            log('formatData: valueCol', idx, '_timeCol', tIdx, 'points', out.values ? out.values.length : 0);
-            return out;
+            log(
+                'formatData: field',
+                series.fieldName,
+                'points',
+                series.values.length,
+                '_time',
+                findTimeColumnIndex(safe) >= 0
+            );
+            return {
+                rawData: safe,
+                values: series.values,
+                times: series.times,
+                fieldName: series.fieldName,
+                stringFields: series.stringFields || {},
+            };
         },
 
         /**
@@ -917,7 +1017,6 @@ define([
                 log('updateView: config missing or non-object — using {}');
                 config = {};
             }
-            log('updateView: start values.length', (data && data.values && data.values.length) || 0);
             this._lastData = data;
             this._lastConfig = config;
             if (typeof this._docHoverCleanup === 'function') {
@@ -936,8 +1035,31 @@ define([
 
             var ownerDoc = (this.el && this.el.ownerDocument) || document;
 
-            var values = (data && data.values) || [];
-            var times = (data && data.times) || [];
+            var valueFieldCustom = String(readConfig(config, 'valueFieldCustom', '') || '').trim();
+            var valueField = valueFieldCustom
+                ? valueFieldCustom
+                : String(readConfig(config, 'valueField', 'auto') || 'auto').trim() || 'auto';
+            var rawData = data && data.rawData ? data.rawData : null;
+            var series =
+                rawData && rawData.columns
+                    ? buildSeriesFromRaw(rawData, valueField)
+                    : {
+                          values: (data && data.values) || [],
+                          times: (data && data.times) || [],
+                          fieldName: (data && data.fieldName) || '',
+                          stringFields: (data && data.stringFields) || {},
+                      };
+            var values = series.values || [];
+            var times = series.times || [];
+            var stringFields = series.stringFields || {};
+            log(
+                'updateView: valueField',
+                valueField,
+                'resolved',
+                series.fieldName || '(none)',
+                'points',
+                values.length
+            );
             var goodColor = sanitizeHexColor(readConfig(config, 'goodColor', '#01417F'), '#01417F');
             var badColor = sanitizeHexColor(readConfig(config, 'badColor', '#DFA611'), '#DFA611');
             var textColor = sanitizeHexColor(readConfig(config, 'textColor', '#FFFFFF'), '#FFFFFF');
@@ -952,7 +1074,9 @@ define([
                 empty.className = 'bgdhamp-kpi-line-viz__err';
                 var defaultEmptyMsg =
                     values.length === 0
-                        ? 'No numeric results to display.'
+                        ? valueField !== 'auto'
+                          ? 'No results for value field "' + valueField + '".'
+                          : 'No numeric results to display. Set Format → Value field to your metric column.'
                         : 'Need at least 2 numeric points for the line chart.';
                 empty.textContent = emptyText || defaultEmptyMsg;
                 this.el.appendChild(empty);
@@ -1022,7 +1146,6 @@ define([
             if (!isFinite(padTopCfg)) padTopCfg = 2;
             if (!isFinite(padBottomCfg)) padBottomCfg = 12;
 
-            var stringFields = (data && data.stringFields) || {};
             var textCells = collectTextCells(stringFields, readConfig, config);
             var textRowH = textCells.length ? TEXT_ROW_HEIGHT_PX : 0;
             var showInfo = readBool(config, 'showInfo', false);

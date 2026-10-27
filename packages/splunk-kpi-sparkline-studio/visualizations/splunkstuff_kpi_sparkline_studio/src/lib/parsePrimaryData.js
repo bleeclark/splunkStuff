@@ -270,6 +270,9 @@ function buildStringFieldsByTime(searchData, valueColumnIndex) {
 function buildSeriesFromPairs(sortedPairs) {
     const valueSeries = [];
     const timeSeries = [];
+    if (!Array.isArray(sortedPairs) || !sortedPairs.length) {
+        return { valueSeries, timeSeries };
+    }
     for (let pairIndex = 0; pairIndex < sortedPairs.length; pairIndex += 1) {
         valueSeries.push(sortedPairs[pairIndex].numericValue);
         timeSeries.push(sortedPairs[pairIndex].timeRaw);
@@ -310,11 +313,13 @@ export function parsePrimarySearchData(searchData, resolvedOptions) {
 
     const sortedPairs = buildTimeSortedValuePairs(searchData, valueColumnIndex);
     const primarySeries = buildSeriesFromPairs(sortedPairs);
+    const valueSeries = Array.isArray(primarySeries.valueSeries) ? primarySeries.valueSeries : [];
+    const timeSeries = Array.isArray(primarySeries.timeSeries) ? primarySeries.timeSeries : [];
     const primary = {
-        valueSeries: primarySeries.valueSeries || [],
-        timeSeries: primarySeries.timeSeries || [],
+        valueSeries,
+        timeSeries,
         valueFieldName: readFieldName(fields, valueColumnIndex),
-        stringFieldsByName: primarySeries.valueSeries.length
+        stringFieldsByName: valueSeries.length
             ? buildStringFieldsByTime(searchData, valueColumnIndex)
             : {},
     };
@@ -382,11 +387,13 @@ function buildTrellisGroups(searchData, valueColumnIndex, splitByFieldName) {
         };
         const sortedPairs = buildTimeSortedValuePairs(subsetData, valueColumnIndex);
         const series = buildSeriesFromPairs(sortedPairs);
-        if (series.valueSeries.length) {
+        const valueSeries = Array.isArray(series.valueSeries) ? series.valueSeries : [];
+        const timeSeries = Array.isArray(series.timeSeries) ? series.timeSeries : [];
+        if (valueSeries.length) {
             trellisGroups.push({
                 categoryLabel: group.categoryLabel,
-                valueSeries: series.valueSeries,
-                timeSeries: series.timeSeries,
+                valueSeries,
+                timeSeries,
                 valueFieldName: readFieldName(fields, valueColumnIndex),
                 stringFieldsByName: buildStringFieldsByTime(subsetData, valueColumnIndex),
             });

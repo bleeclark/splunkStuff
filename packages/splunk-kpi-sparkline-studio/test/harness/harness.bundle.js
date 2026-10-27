@@ -77,7 +77,7 @@ function pickNumericColumnIndex(searchData2, preferredFieldName) {
   }
   let bestColumnIndex = -1;
   for (let columnIndex = 0; columnIndex < searchData2.columns.length; columnIndex += 1) {
-    if (readFieldName(fields, columnIndex) === "_time") {
+    if (readFieldName(fields, columnIndex) === "_time" || readFieldName(fields, columnIndex).charAt(0) === "_") {
       continue;
     }
     const column = searchData2.columns[columnIndex] || [];
@@ -157,6 +157,9 @@ function buildStringFieldsByTime(searchData2, valueColumnIndex) {
 function buildSeriesFromPairs(sortedPairs) {
   const valueSeries = [];
   const timeSeries = [];
+  if (!Array.isArray(sortedPairs) || !sortedPairs.length) {
+    return { valueSeries, timeSeries };
+  }
   for (let pairIndex = 0; pairIndex < sortedPairs.length; pairIndex += 1) {
     valueSeries.push(sortedPairs[pairIndex].numericValue);
     timeSeries.push(sortedPairs[pairIndex].timeRaw);
@@ -173,21 +176,23 @@ function parsePrimarySearchData(searchData2, resolvedOptions) {
   const fields = readFieldsList(searchData2);
   const valueColumnIndex = pickNumericColumnIndex(searchData2, resolvedOptions.majorValueFieldName);
   if (valueColumnIndex < 0) {
-    throw new Error("KPI sparkline needs a numeric column (e.g. value) beside _time.");
+    return {
+      primary: { valueSeries: [], timeSeries: [], valueFieldName: "", stringFieldsByName: {} },
+      trellisGroups: []
+    };
   }
   const sortedPairs = buildTimeSortedValuePairs(searchData2, valueColumnIndex);
   const primarySeries = buildSeriesFromPairs(sortedPairs);
-  if (!primarySeries.valueSeries.length) {
-    throw new Error("KPI sparkline found a value column but no parseable numbers in results.");
-  }
+  const valueSeries = Array.isArray(primarySeries.valueSeries) ? primarySeries.valueSeries : [];
+  const timeSeries = Array.isArray(primarySeries.timeSeries) ? primarySeries.timeSeries : [];
   const primary = {
-    valueSeries: primarySeries.valueSeries,
-    timeSeries: primarySeries.timeSeries,
+    valueSeries,
+    timeSeries,
     valueFieldName: readFieldName(fields, valueColumnIndex),
-    stringFieldsByName: buildStringFieldsByTime(searchData2, valueColumnIndex)
+    stringFieldsByName: valueSeries.length ? buildStringFieldsByTime(searchData2, valueColumnIndex) : {}
   };
   let trellisGroups = [];
-  if (resolvedOptions.splitByLayout === "trellis" && resolvedOptions.trellisSplitByField) {
+  if (primary.valueSeries.length && resolvedOptions.splitByLayout === "trellis" && resolvedOptions.trellisSplitByField) {
     trellisGroups = buildTrellisGroups(searchData2, valueColumnIndex, resolvedOptions.trellisSplitByField);
   }
   return { primary, trellisGroups };
@@ -229,11 +234,13 @@ function buildTrellisGroups(searchData2, valueColumnIndex, splitByFieldName) {
     };
     const sortedPairs = buildTimeSortedValuePairs(subsetData, valueColumnIndex);
     const series = buildSeriesFromPairs(sortedPairs);
-    if (series.valueSeries.length) {
+    const valueSeries = Array.isArray(series.valueSeries) ? series.valueSeries : [];
+    const timeSeries = Array.isArray(series.timeSeries) ? series.timeSeries : [];
+    if (valueSeries.length) {
       trellisGroups.push({
         categoryLabel: group.categoryLabel,
-        valueSeries: series.valueSeries,
-        timeSeries: series.timeSeries,
+        valueSeries,
+        timeSeries,
         valueFieldName: readFieldName(fields, valueColumnIndex),
         stringFieldsByName: buildStringFieldsByTime(subsetData, valueColumnIndex)
       });
@@ -331,7 +338,7 @@ function resolveOptions(rawOptions) {
     // --- Spark scale ---
     sparkScaleMinimum: readOptionString(rawOptions, "sparkMin"),
     sparkScaleMaximum: readOptionString(rawOptions, "sparkMax"),
-    autoScaleSparkline: readOptionBoolean(rawOptions, ["sparkAuto"], false),
+    autoScaleSparkline: readOptionBoolean(rawOptions, ["sparkAuto"], true),
     // --- Trend colors ---
     upTrendColor: readOptionString(rawOptions, "goodColor") || "#01417F",
     downTrendColor: readOptionString(rawOptions, "badColor") || "#DFA611",
@@ -438,7 +445,10 @@ function resolveTrendTileColor(trendDeltaValue, upTrendColor, downTrendColor, in
 
 // visualizations/splunkstuff_kpi_sparkline_studio/src/lib/formatters.js
 function deriveSparkScale(valueSeries, sparkScaleMinimum, sparkScaleMaximum, autoScaleSparkline) {
-  if (parseTruthyOption(autoScaleSparkline)) {
+  let scaleMinimum = parseFloat(sparkScaleMinimum, 10);
+  let scaleMaximum = parseFloat(sparkScaleMaximum, 10);
+  const hasManual = Number.isFinite(scaleMinimum) || Number.isFinite(scaleMaximum);
+  if (parseTruthyOption(autoScaleSparkline) || !hasManual) {
     let dataMinimum = Infinity;
     let dataMaximum = -Infinity;
     for (let pointIndex = 0; pointIndex < valueSeries.length; pointIndex += 1) {
@@ -461,8 +471,6 @@ function deriveSparkScale(valueSeries, sparkScaleMinimum, sparkScaleMaximum, aut
     }
     return { scaleMinimum: dataMinimum, scaleMaximum: dataMaximum };
   }
-  let scaleMinimum = parseFloat(sparkScaleMinimum, 10);
-  let scaleMaximum = parseFloat(sparkScaleMaximum, 10);
   if (!Number.isFinite(scaleMinimum)) {
     scaleMinimum = 0;
   }
@@ -1191,7 +1199,7 @@ function renderKpiSparklineTile(mountElement, seriesData, resolvedOptions, owner
   rootElement.style.color = defaultTextColor;
   rootElement.style.width = "100%";
   rootElement.style.height = "100%";
-  rootElement.style.minHeight = "200px";
+  rootElement.style.minHeight = "0";
   rootElement.style.boxSizing = "border-box";
   rootElement.style.display = "flex";
   rootElement.style.flexDirection = "column";
