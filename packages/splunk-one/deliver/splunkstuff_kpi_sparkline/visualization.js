@@ -5,7 +5,7 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20261022-kpi-mv-first';
+    var VIZ_BUILD = '20261027-kpi-spark-value-field';
     /** Layout budget: 35px subheader + 137px body = 172px panel default_height. */
     var SUBHEADER_HEIGHT_PX = 35;
     /** Optional text1..text3 strip between the subheader and the KPI body. */
@@ -37,7 +37,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         'metric',
         'score',
     ];
-    /** Skip Splunk metadata that looks numeric but is constant (flat sparklines). */
+    /** Skip Splunk metadata and text-row columns when Auto picks the Y series. */
     var SKIP_VALUE_FIELDS = {
         _time: true,
         _span: true,
@@ -47,6 +47,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         _cd: true,
         _indextime: true,
         linecount: true,
+        text1: true,
+        text2: true,
+        text3: true,
+        info: true,
     };
 
     function inlineCaptionStyle(el, textColor) {
@@ -901,7 +905,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
     function isSkippedValueField(name) {
         var n = normalizeName(name);
-        return !n || !!SKIP_VALUE_FIELDS[n] || n.charAt(0) === '_';
+        if (!n || SKIP_VALUE_FIELDS[n] || n.charAt(0) === '_') {
+            return true;
+        }
+        if (/^text[123]$/.test(n) || /^text[123]_/.test(n) || /^urls?\d*$/.test(n)) {
+            return true;
+        }
+        return false;
     }
 
     function pickNumericColumnIndex(rawData) {
@@ -1510,7 +1520,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
 
             this.el.innerHTML = '';
-            var valueField = String(opt('valueField', 'auto') || 'auto').trim() || 'auto';
+            var valueFieldCustom = String(opt('valueFieldCustom', '') || '').trim();
+            var valueField = valueFieldCustom
+                ? valueFieldCustom
+                : String(opt('valueField', 'auto') || 'auto').trim() || 'auto';
             var rawData = data && data.rawData ? data.rawData : null;
             var series =
                 rawData && rawData.columns
@@ -1531,7 +1544,14 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 applyTrendHostStyle(this.el, emptyBg, emptyFg);
                 var empty = document.createElement('div');
                 empty.className = 'bgdhamp-sparkline-value-viz__err';
-                empty.textContent = emptyText;
+                var emptyMsg = emptyText;
+                if (
+                    (!emptyMsg || emptyMsg === 'No numeric results to display.') &&
+                    valueField !== 'auto'
+                ) {
+                    emptyMsg = 'No results for value field "' + valueField + '".';
+                }
+                empty.textContent = emptyMsg;
                 empty.style.padding = '12px';
                 empty.style.fontSize = '12px';
                 empty.style.color = emptyFg;

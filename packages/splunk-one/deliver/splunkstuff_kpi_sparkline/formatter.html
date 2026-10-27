@@ -19,6 +19,14 @@
             <option value="score">score</option>
         </splunk-radio-input>
     </splunk-control-group>
+    <splunk-control-group label="Custom value field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.valueFieldCustom" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        X axis uses <strong>_time</strong> when present. The value field is the major number and the sparkline.
+        <strong>Custom value field</strong> wins when set (exact search column name). Otherwise use the radio, or Auto
+        (prefers value, count, … and skips text1–text3).
+    </div>
 </form>
 <form class="splunk-formatter-section" section-label="Size and spark">
     <splunk-control-group label="Visualization height (px)">

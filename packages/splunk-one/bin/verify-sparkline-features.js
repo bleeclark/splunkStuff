@@ -64,6 +64,8 @@ function loadKpiSparklineViz() {
     assert(src.indexOf('appendIndicatorPair') !== -1, 'kpi sparkline must support indicator pair layout');
     assert(src.indexOf('stringFields') !== -1, 'kpi sparkline must extract stringFields in formatData');
     assert(src.indexOf('valueField') !== -1, 'kpi sparkline must support valueField');
+    assert(src.indexOf('valueFieldCustom') !== -1, 'kpi sparkline must support valueFieldCustom');
+    assert(src.indexOf('text1') !== -1 && src.indexOf('isSkippedValueField') !== -1, 'kpi sparkline Auto must skip text-row fields');
     assert(src.indexOf('buildSeriesFromRaw') !== -1, 'kpi sparkline must soft-build series via buildSeriesFromRaw');
     assert(
         src.indexOf('Sparkline value needs a numeric column') === -1,
