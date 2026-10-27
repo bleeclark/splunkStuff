@@ -184,6 +184,7 @@
             </search>
             <viz type="so_BUI_pickulationts.splunkstuff_kpi_line">
                 <search base="gallery_kpi_line_text" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.valueField">value</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.showHover">true</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.text1LabelField">text1_label</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.text1LinkUrlField">urls1</option>
