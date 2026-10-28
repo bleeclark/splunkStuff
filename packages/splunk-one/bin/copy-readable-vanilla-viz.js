@@ -29,7 +29,7 @@ const VANILLA_VIZ_IDS = [
 const VIZ_SELF_CONTAINED_SHARED = {
     line_single_value: ['bgdhampTrendColors.js'],
     fixed_loaded_line_vanilla: ['bgdhampTrendColors.js', 'bgdhampVizHoverMath.js'],
-    splunkstuff_kpi_line: ['bgdhampTrendColors.js', 'bgdhampVizHoverMath.js'],
+    // splunkstuff_kpi_line: helpers inlined in visualization.js (4-file Classic deliver)
     refactor_viz_manual: ['bgdhampTrendColors.js', 'bgdhampVizHoverMath.js'],
     radial_meter: ['radialMeterArc.js'],
     radial_meter_showcase: ['radialMeterArc.js'],

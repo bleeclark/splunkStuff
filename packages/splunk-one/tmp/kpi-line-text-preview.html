@@ -24,8 +24,6 @@
         factories.push(factory);
     };
 </script>
-<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampTrendColors.js"></script>
-<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampVizHoverMath.js"></script>
 <script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js"></script>
 <script>
     var Base = {
@@ -36,9 +34,7 @@
             return Viz;
         },
     };
-    var trend = factories[0]();
-    var hover = factories[1]();
-    var Viz = factories[2](Base, trend, hover);
+    var Viz = factories[0](Base);
     var times = [];
     var values = [];
     var text1 = [];

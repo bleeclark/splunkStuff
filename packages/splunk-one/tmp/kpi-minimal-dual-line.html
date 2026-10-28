@@ -47,8 +47,6 @@
   var factories = [];
   window.define = function (deps, factory) { factories.push(factory); };
 </script>
-<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampTrendColors.js"></script>
-<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampVizHoverMath.js"></script>
 <script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js"></script>
 <script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js"></script>
 <script>
@@ -61,10 +59,8 @@
       return Viz;
     },
   };
-  var trend = factories[0]();
-  var hover = factories[1]();
-  var LineViz = factories[2](Base, trend, hover);
-  var PieViz = factories[3](Base);
+  var LineViz = factories[0](Base);
+  var PieViz = factories[1](Base);
   var LINE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
   var PIE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
   var now = Date.now();

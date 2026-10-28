@@ -51,6 +51,21 @@
     </splunk-control-group>
 </form>
 
+<form class="splunk-formatter-section" section-label="General (Classic pie)">
+    <splunk-control-group label="Minimum size percent">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.minSlicePercent" value="1">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Classic pie collapse: slices below this percent go into Other (when Other is enabled).
+    </div>
+</form>
+
 <form class="splunk-formatter-section" section-label="Data shaping">
     <splunk-control-group label="Top N slices 0 all">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.topN" value="5">
@@ -71,15 +86,6 @@
     </splunk-control-group>
     <splunk-control-group label="Other bucket label">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.otherLabel" value="Other"></splunk-text-input>
-    </splunk-control-group>
-    <splunk-control-group label="Minimum slice percent">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.minSlicePercent" value="0">
-            <option value="0">0</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="5">5</option>
-            <option value="10">10</option>
-        </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Minimum slice value">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.minSliceValue" value="0">

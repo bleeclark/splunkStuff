@@ -1,11 +1,15 @@
 ## What this is
 
-Splunk dashboard **custom visualization** (readable RequireJS AMD — **not** a Webpack bundle):
+Splunk dashboard **custom visualization** (readable RequireJS AMD — **not** a Webpack bundle).
 
-- `visualization.js` — hand-editable viz logic (`define(['api/SplunkVisualizationBase'], …)`).
-- `formatter.html` — extended format menu (LineChart-style options + legacy fixed_loaded_line parity ).
-- `visualization.css` — tile layout and in-chart hover annotation.
-- `preview.png` — picker thumbnail.
+Classic **4-file** deliver (no separate helper AMD modules):
+
+- `visualization.js` — viz logic with **inlined** trend + hover math (`define(['api/SplunkVisualizationBase'], …)` only)
+- `visualization.css` — tile layout and in-chart hover annotation
+- `formatter.html` — Format menu (Classic line options + Custom extras)
+- `preview.png` — picker thumbnail
+
+Also includes `visualizations.conf.snippet` / this README for packaging — not required at runtime beyond the four assets above.
 
 Splunk folder / viz id: **`splunkstuff_kpi_line`**.
 
@@ -21,15 +25,13 @@ From `packages/splunk-one/`:
 yarn build
 ```
 
-Webpack does **not** overwrite this folder. `yarn build` copies `visualization.js` + `visualization.css` to `deliver/splunkstuff_kpi_line/` and into `stage/` via the readable-vanilla sync.
+Webpack does **not** overwrite this folder. `yarn build` copies the 4 runtime assets to `deliver/splunkstuff_kpi_line/` and into `stage/` via the readable-vanilla sync.
 
-**Per-viz AMD helpers** (same folder as `visualization.js`): `bgdhampTrendColors.js`, `bgdhampVizHoverMath.js` — `yarn build` syncs them from the repo `visualizations/_shared/` tree into this viz directory; copy **`deliver/splunkstuff_kpi_line/`** as a whole for handoff.
-
-**Hover / tooltip:** Uses document-level capture listeners and SVG **xMidYMid meet** math from `bgdhampVizHoverMath.js`. After editing, run `yarn verify:viz-hover` and redeploy; hard-refresh Splunk.
+**Hover / tooltip:** Document-level capture listeners and SVG **xMidYMid meet** math live inside `visualization.js`. After editing, hard-refresh Splunk.
 
 ## Install manually
 
-Merge `visualizations.conf.snippet` into `default/visualizations.conf`, copy this full directory (including `formatter.html` and `preview.png`) under `appserver/static/visualizations/splunkstuff_kpi_line/`, restart Splunk.
+Merge `visualizations.conf.snippet` into `default/visualizations.conf`, copy this directory under `appserver/static/visualizations/splunkstuff_kpi_line/`, restart Splunk.
 
 Dashboard:
 
@@ -39,4 +41,4 @@ Dashboard:
 
 ## Data
 
-Column-major results; uses `_time` when present and the last all-numeric non-`_time` column for the series.
+Column-major results; uses `_time` when present and Auto / Format value field for the series.
