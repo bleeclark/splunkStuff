@@ -785,6 +785,40 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return downIsGood ? downColor : upColor;
     }
 
+    /** Classic Single Value rangeValues + rangeColors → background for a numeric value. */
+    function rangeBackgroundForValue(value, rangeValuesRaw, rangeColorsRaw, fallback) {
+        var bounds = String(rangeValuesRaw == null ? '' : rangeValuesRaw)
+            .split(',')
+            .map(function (part) {
+                return parseFloat(String(part).trim(), 10);
+            })
+            .filter(function (n) {
+                return isFinite(n);
+            })
+            .sort(function (a, b) {
+                return a - b;
+            });
+        var colors = String(rangeColorsRaw == null ? '' : rangeColorsRaw)
+            .split(',')
+            .map(function (part) {
+                return String(part).trim().replace(/^0x/i, '#');
+            })
+            .filter(function (c) {
+                return !!c;
+            });
+        if (!bounds.length || !colors.length || !isFinite(value)) {
+            return fallback;
+        }
+        var idx = 0;
+        var i;
+        for (i = 0; i < bounds.length; i += 1) {
+            if (value >= bounds[i]) {
+                idx = Math.min(i, colors.length - 1);
+            }
+        }
+        return sanitizeHexColor(colors[idx], fallback);
+    }
+
     function applyTrendHostStyle(el, bg, textColor) {
         if (!el) {
             return;
@@ -1584,10 +1618,21 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
             vizHeightPx = Math.max(80, Math.min(800, vizHeightPx));
             var unit = String(opt('unit', '') || '');
-            var subheader = String(opt('subheader', '') || '');
+            var underLabel = String(opt('underLabel', '') || '').trim();
+            var subheader = underLabel || String(opt('subheader', '') || '');
             var precision = opt('precision', '2');
-            var showDelta = truthy(opt('showDelta', 'true')) && values.length >= 2;
+            var showTrendIndicator = truthy(optOr('showTrendIndicator', 'true'));
+            var showDelta =
+                showTrendIndicator && truthy(opt('showDelta', 'true')) && values.length >= 2;
             var deltaMode = String(opt('deltaMode', 'absolute') || 'absolute');
+            var colorBy = String(opt('colorBy', 'trend') || 'trend')
+                .trim()
+                .toLowerCase();
+            var colorMode = String(opt('colorMode', 'block') || 'block')
+                .trim()
+                .toLowerCase();
+            var rangeValuesRaw = opt('rangeValues', '');
+            var rangeColorsRaw = opt('rangeColors', '');
             var showSparkline = truthy(opt('showSparkline', 'true')) && values.length >= 2;
             var showSparkArea = truthy(optOr('showSparkArea', 'true'));
             var textCells = truthy(optOr('showTextRow', 'true')) ? collectTextCells(series, opt) : [];
@@ -1659,6 +1704,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var delta = trendDelta(values);
             var last = values[values.length - 1];
             var bg = trendBackground(delta, goodColor, badColor, invertTrend);
+            if (colorBy === 'value') {
+                bg = rangeBackgroundForValue(last, rangeValuesRaw, rangeColorsRaw, bg);
+            }
+            if (colorMode === 'none') {
+                bg = sanitizeHexColor(opt('background', '#FFFFFF'), '#FFFFFF');
+            }
             applyTrendHostStyle(this.el, bg, textColor);
             applyVizHeight(this.el, vizHeightPx);
             var areaFill = resolveAreaFill(sparkAreaColor);

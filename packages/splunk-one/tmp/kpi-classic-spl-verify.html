@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Classic 9.4 SPL verify — line, sparkline, pie</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_sparkline/visualization.css" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css" />
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Helvetica, Arial, sans-serif; background: #dfe3e8; margin: 0; padding: 20px 24px 48px; color: #1b1c1d; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  .intro { font-size: 12px; color: #555; max-width: 1100px; margin: 0 0 18px; line-height: 1.45; }
+  .case { max-width: 1100px; margin: 0 0 22px; background: #fff; border: 1px solid #b8bec7; border-radius: 3px; padding: 12px; }
+  .case h2 { font-size: 13px; margin: 0 0 4px; }
+  .expect { font-size: 11px; color: #444; margin: 0 0 8px; }
+  pre { margin: 0 0 10px; padding: 8px; background: #222; color: #eee; font-size: 10px; border-radius: 3px; white-space: pre-wrap; }
+  .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .panel { min-width: 0; }
+  .panel label { display: block; font-size: 10px; font-weight: 700; margin: 0 0 4px; color: #334; }
+  .host { height: 200px; border: 1px solid #c5cad3; background: #fff; overflow: hidden; position: relative; }
+  .host-spark { height: 172px; background: #0B1F3B; }
+  .host-pie { height: 240px; }
+  .dashboard-element { position: relative; overflow: hidden; }
+  .na { font-size: 11px; color: #888; padding: 24px 8px; text-align: center; border: 1px dashed #c5cad3; height: 200px; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<h1>Classic 9.4 SPL verify (Auto, no required custom fields)</h1>
+<p class="intro">
+  Each row is a normal Classic result shape. Line / Sparkline / Pie render with Format defaults only
+  (custom annotation/text/info optional). Compare behavior to OOTB Line, Single Value+spark, and Pie.
+</p>
+<div id="cases"></div>
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_sparkline/visualization.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js"></script>
+<script>
+(function () {
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    VisualizationError: function (msg) { this.message = msg; },
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var LineViz = factories[0](Base);
+  var SparkViz = factories[1](Base);
+  var PieViz = factories[2](Base);
+  var LNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var SNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
+  var PNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
+
+  function hours(n) {
+    var now = Date.now(), t = [], i;
+    for (i = 1; i <= n; i += 1) t.push(new Date(now - (n - i) * 3600000).toISOString());
+    return t;
+  }
+  function seq(n, fn) {
+    var a = [], i;
+    for (i = 1; i <= n; i += 1) a.push(String(fn(i)));
+    return a;
+  }
+  function mount(Viz, host, raw, cfg) {
+    host.innerHTML = '';
+    var el = document.createElement('div');
+    el.style.width = '100%';
+    el.style.height = '100%';
+    host.appendChild(el);
+    var viz = new Viz(el);
+    try {
+      var formatted = viz.formatData ? viz.formatData(raw) : { rawData: raw };
+      viz.updateView(formatted, cfg);
+    } catch (err) {
+      el.textContent = (err && err.message) || String(err);
+      el.style.padding = '10px';
+      el.style.fontSize = '11px';
+      el.style.color = '#a00';
+    }
+  }
+
+  var lineBare = {};
+  lineBare[LNS + 'valueField'] = 'auto';
+  lineBare[LNS + 'seriesMode'] = 'auto';
+  lineBare[LNS + 'showMajor'] = 'false';
+  lineBare[LNS + 'showTextRow'] = 'false';
+  lineBare[LNS + 'showInfo'] = 'false';
+  lineBare[LNS + 'comparison'] = 'false';
+  lineBare[LNS + 'showArea'] = 'true';
+  lineBare[LNS + 'showXAxis'] = 'true';
+  lineBare[LNS + 'showLegend'] = 'true';
+  lineBare[LNS + 'nullValueMode'] = 'gaps';
+  lineBare[LNS + 'background'] = '#FFFFFF';
+  lineBare[LNS + 'textColor'] = '#3C444D';
+  lineBare[LNS + 'goodColor'] = '#1E93C6';
+
+  var sparkBare = {};
+  sparkBare[SNS + 'valueField'] = 'auto';
+  sparkBare[SNS + 'showTextRow'] = 'false';
+  sparkBare[SNS + 'showInfo'] = 'false';
+  sparkBare[SNS + 'showTarget'] = 'false';
+  sparkBare[SNS + 'showThresholdBand'] = 'false';
+  sparkBare[SNS + 'showSparkline'] = 'true';
+  sparkBare[SNS + 'showDelta'] = 'true';
+  sparkBare[SNS + 'showTrendIndicator'] = 'true';
+  sparkBare[SNS + 'subheader'] = 'count';
+  sparkBare[SNS + 'badgeText'] = '';
+  sparkBare[SNS + 'vizHeight'] = '172';
+
+  var pieBare = {};
+  pieBare[PNS + 'labelField'] = 'auto';
+  pieBare[PNS + 'valueField'] = 'auto';
+  pieBare[PNS + 'legendPosition'] = 'none';
+  pieBare[PNS + 'showSliceLabels'] = 'true';
+  pieBare[PNS + 'showPercent'] = 'true';
+  pieBare[PNS + 'showValue'] = 'false';
+  pieBare[PNS + 'showRowCount'] = 'false';
+  pieBare[PNS + 'showInspector'] = 'false';
+  pieBare[PNS + 'showDataQuality'] = 'false';
+  pieBare[PNS + 'topN'] = '0';
+  pieBare[PNS + 'minSlicePercent'] = '1';
+  pieBare[PNS + 'background'] = '#FFFFFF';
+  pieBare[PNS + 'textColor'] = '#3C444D';
+
+  var count24 = seq(24, function (i) { return 40 + ((i * 9) % 35); });
+  var sparse = seq(24, function (i) { return (i < 6 || i === 12) ? '' : 30 + ((i * 7) % 40); });
+  var value = seq(24, function (i) { return 55 + ((i * 11) % 40); });
+  var previous = seq(24, function (i) { return 50 + ((i * 7) % 28); });
+  var west = seq(24, function (i) { return 20 + ((i * 5) % 25); });
+  var east = seq(24, function (i) { return 15 + ((i * 3) % 30); });
+  var latency = seq(24, function (i) { return 50 + ((i * 11) % 45); });
+  var noTime = seq(12, function (i) { return i * 3; });
+  var t = hours(24);
+
+  var cases = [
+    {
+      title: '1. Happy path — timechart count',
+      spl: '| timechart span=1h count',
+      expect: 'Line draws series; spark major+delta+spark; pie N/A for pure time series.',
+      line: { fields: [{name:'_time'},{name:'count'}], columns: [t, count24] },
+      spark: { fields: [{name:'_time'},{name:'count'}], columns: [t, count24] },
+      pie: null
+    },
+    {
+      title: '2. Sparse null buckets',
+      spl: '| timechart span=1h count  # early buckets blank',
+      expect: 'Line gaps (nullValueMode=gaps); spark drops non-finite rows.',
+      line: { fields: [{name:'_time'},{name:'count'}], columns: [t, sparse] },
+      spark: { fields: [{name:'_time'},{name:'count'}], columns: [t, sparse] },
+      pie: null
+    },
+    {
+      title: '3. Dual series value + previous',
+      spl: '| timechart span=1h avg(a) as value, avg(b) as previous',
+      expect: 'Line compare overlay when comparison on; spark uses primary Auto field.',
+      lineCfg: function (c) { c[LNS+'comparison']='true'; c[LNS+'compareField']='previous'; return c; },
+      line: { fields: [{name:'_time'},{name:'value'},{name:'previous'}], columns: [t, value, previous] },
+      spark: { fields: [{name:'_time'},{name:'value'},{name:'previous'}], columns: [t, value, previous] },
+      pie: null
+    },
+    {
+      title: '4. Multi metric columns (Auto multi)',
+      spl: '| timechart span=1h avg(a) as value, avg(b) as west, avg(c) as east',
+      expect: 'seriesMode=auto plots extra numerics like Classic multi-series.',
+      line: { fields: [{name:'_time'},{name:'value'},{name:'west'},{name:'east'}], columns: [t, value, west, east] },
+      spark: { fields: [{name:'_time'},{name:'value'},{name:'west'},{name:'east'}], columns: [t, value, west, east] },
+      pie: null
+    },
+    {
+      title: '5. Renamed metric Auto',
+      spl: '| timechart span=1h avg(latency) as latency_ms',
+      expect: 'Auto falls back to last numeric column.',
+      line: { fields: [{name:'_time'},{name:'latency_ms'}], columns: [t, latency] },
+      spark: { fields: [{name:'_time'},{name:'latency_ms'}], columns: [t, latency] },
+      pie: null
+    },
+    {
+      title: '6. No _time — row order X',
+      spl: '| makeresults count=12 | streamstats count as count',
+      expect: 'Line uses row order; spark still shows series.',
+      line: { fields: [{name:'count'}], columns: [noTime] },
+      spark: { fields: [{name:'count'}], columns: [noTime] },
+      pie: null
+    },
+    {
+      title: '7. Single row stats count',
+      spl: '| stats count',
+      expect: 'Spark major only; line empty message (needs ≥2 points).',
+      line: { fields: [{name:'count'}], columns: [['128']] },
+      spark: { fields: [{name:'count'}], columns: [['128']] },
+      pie: null
+    },
+    {
+      title: '8. Pie — stats by category',
+      spl: '| stats count by category',
+      expect: 'Classic pie shape: labels + percents outside.',
+      line: null,
+      spark: null,
+      pie: { fields: [{name:'category'},{name:'count'}], columns: [['East','West','Central','North'],['40','28','18','14']] }
+    },
+    {
+      title: '9. Pie — Top N + Other',
+      spl: '| stats count by host',
+      expect: '8 hosts → Top 5 + OTHER (min size 1%).',
+      pieCfg: function (c) { c[PNS+'topN']='5'; c[PNS+'otherEnabled']='true'; return c; },
+      line: null,
+      spark: null,
+      pie: { fields: [{name:'host'},{name:'count'}], columns: [
+        ['web01','web02','db01','db02','app01','app02','cache01','queue01'],
+        ['120','95','80','55','40','22','15','8']
+      ] }
+    },
+    {
+      title: '10. Custom optional — dual annotate',
+      spl: '| timechart ... | eval annotation=..., annotation_compare=...',
+      expect: 'Annotations work when fields present; not required for normal SPL.',
+      lineCfg: function (c) {
+        c[LNS+'comparison']='true'; c[LNS+'compareField']='previous';
+        c[LNS+'annotationField']='annotation'; c[LNS+'compareAnnotationField']='annotation_compare';
+        c[LNS+'showAnnotationLabels']='true';
+        return c;
+      },
+      line: { fields: [{name:'_time'},{name:'value'},{name:'previous'},{name:'annotation'},{name:'annotation_compare'}],
+        columns: [t, value, previous,
+          seq(24, function(i){ var v=55+((i*11)%40); return v>90?'Spike':''; }),
+          seq(24, function(i){ var p=50+((i*7)%28); return p>72?'SLO risk':''; })
+        ] },
+      spark: null,
+      pie: null
+    }
+  ];
+
+  var root = document.getElementById('cases');
+  cases.forEach(function (c, idx) {
+    var wrap = document.createElement('div');
+    wrap.className = 'case';
+    wrap.innerHTML = '<h2>'+c.title+'</h2><p class="expect">'+c.expect+'</p><pre></pre><div class="cols"></div>';
+    wrap.querySelector('pre').textContent = c.spl;
+    var cols = wrap.querySelector('.cols');
+    function addPanel(kind, raw, cfgBase, cfgMut, hostClass) {
+      var panel = document.createElement('div');
+      panel.className = 'panel';
+      panel.innerHTML = '<label>'+kind+'</label>';
+      if (!raw) {
+        var na = document.createElement('div');
+        na.className = 'na';
+        na.textContent = 'N/A for this SPL shape';
+        panel.appendChild(na);
+        cols.appendChild(panel);
+        return;
+      }
+      var host = document.createElement('div');
+      host.className = 'host ' + (hostClass || '') + (kind === 'Sparkline' ? ' host-spark dashboard-element' : '') + (kind === 'Pie' ? ' host-pie' : '');
+      host.id = 'c'+idx+'-'+kind;
+      panel.appendChild(host);
+      cols.appendChild(panel);
+      var cfg = {};
+      Object.keys(cfgBase).forEach(function (k) { cfg[k] = cfgBase[k]; });
+      if (cfgMut) cfg = cfgMut(cfg);
+      var Viz = kind === 'Line' ? LineViz : kind === 'Sparkline' ? SparkViz : PieViz;
+      mount(Viz, host, raw, cfg);
+    }
+    addPanel('Line', c.line, lineBare, c.lineCfg);
+    addPanel('Sparkline', c.spark, sparkBare, c.sparkCfg);
+    addPanel('Pie', c.pie, pieBare, c.pieCfg);
+    root.appendChild(wrap);
+  });
+})();
+</script>
+</body>
+</html>

@@ -133,15 +133,27 @@
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#0B1F3B"></splunk-color-picker>
     </splunk-control-group>
 </form>
-<form class="splunk-formatter-section" section-label="Headline">
+<form class="splunk-formatter-section" section-label="General (Classic single value)">
+    <splunk-control-group label="Under label">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.underLabel" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Classic Single Value underLabel. If set, overrides Subheader below.
+    </div>
     <splunk-control-group label="Subheader">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.subheader" value=""></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="Unit suffix">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.unit" value=""></splunk-text-input>
     </splunk-control-group>
-    <splunk-control-group label="Decimal precision">
+    <splunk-control-group label="Number precision">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.precision" value="2"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show trend indicator">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showTrendIndicator" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Show delta">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.showDelta" value="true">
@@ -149,14 +161,35 @@
             <option value="false">Off</option>
         </splunk-radio-input>
     </splunk-control-group>
-    <splunk-control-group label="Delta mode">
+    <splunk-control-group label="Trend / delta mode">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.deltaMode" value="absolute">
             <option value="absolute">Absolute</option>
             <option value="percent">Percent</option>
         </splunk-radio-input>
     </splunk-control-group>
+    <splunk-control-group label="Color by">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.colorBy" value="trend">
+            <option value="trend">Trend</option>
+            <option value="value">Value ranges</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Color mode">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.colorMode" value="block">
+            <option value="block">Block background</option>
+            <option value="none">Value only</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Range values comma list">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.rangeValues" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Range colors comma hex list">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.rangeColors" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Classic rangeValues / rangeColors when Color by = Value. Example values: <strong>0,30,70,100</strong>
+    </div>
 </form>
-<form class="splunk-formatter-section" section-label="Annotations from search">
+<form class="splunk-formatter-section" section-label="Custom — annotations from search">
     <splunk-control-group label="Annotation field name">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.annotationField" value="annotation"></splunk-text-input>
     </splunk-control-group>

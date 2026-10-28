@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>OOTB-style dual line + minimal pie</title>
+<title>OOTB-style dual line + Studio pie</title>
 <link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css" />
 <link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css" />
 <style>
@@ -19,9 +19,9 @@
 </style>
 </head>
 <body>
-<h1>Classic-style dual line (annotations + High/Critical) and minimal pie</h1>
+<h1>Classic-style dual line (annotations) and Studio pie</h1>
 <p class="intro">
-  Line: two series over time, High + Critical reference lines, markers from annotation columns, hover both points.
+  Line: two series over time, markers from annotation columns, hover both points.
   Custom KPI chrome off (no major number, no text row, no info). Pie: Studio-style outside labels + percents, legend off.
 </p>
 <div class="grid">
@@ -31,7 +31,7 @@
 | eval annotation=if(value&gt;90,"Spike",""), annotation_compare=if(previous&gt;85,"SLO risk","")
 | fields _time value previous annotation annotation_compare</pre>
     <div class="host" id="line-host"></div>
-    <p class="note">Hover the chart to see both series + annotations. Orange = High, red = Critical.</p>
+    <p class="note">Hover the chart to see both series + annotations.</p>
   </div>
   <div class="card">
     <h2>Pie — Studio-style</h2>
@@ -44,8 +44,6 @@
   var factories = [];
   window.define = function (deps, factory) { factories.push(factory); };
 </script>
-<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampTrendColors.js"></script>
-<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampVizHoverMath.js"></script>
 <script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js"></script>
 <script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js"></script>
 <script>
@@ -58,10 +56,8 @@
       return Viz;
     },
   };
-  var trend = factories[0]();
-  var hover = factories[1]();
-  var LineViz = factories[2](Base, trend, hover);
-  var PieViz = factories[3](Base);
+  var LineViz = factories[0](Base);
+  var PieViz = factories[1](Base);
   var LNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
   var PNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
   var now = Date.now();
@@ -104,8 +100,6 @@
   lineCfg[LNS + 'annotationField'] = 'annotation';
   lineCfg[LNS + 'compareAnnotationField'] = 'annotation_compare';
   lineCfg[LNS + 'showAnnotationLabels'] = 'true';
-  lineCfg[LNS + 'highLine'] = '80';
-  lineCfg[LNS + 'criticalLine'] = '95';
   lineCfg[LNS + 'min'] = '0';
   lineCfg[LNS + 'max'] = '120';
 

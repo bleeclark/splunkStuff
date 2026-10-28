@@ -9,14 +9,14 @@
  *   window.SPLUNKSTUFF_KPI_LINE_DEBUG = true;
  * then hard-refresh. Logs are prefixed with [splunkstuff_kpi_line].
  */
-define([
-    'api/SplunkVisualizationBase',
-    './bgdhampTrendColors',
-    './bgdhampVizHoverMath',
-], function (SplunkVisualizationBase, trendColors, hoverMath) {
+/**
+ * Single-file AMD deliver: trend + hover math are inlined below so this viz only
+ * needs the Classic 4-file set (visualization.js, visualization.css, formatter.html, preview.png).
+ */
+define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '20261028-kpi-line-annotations';
+    var VIZ_BUILD = '20261028-kpi-line-selfcontained';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
@@ -125,22 +125,135 @@ define([
         return fallback;
     }
 
-    /**
-     * Older bgdhampTrendColors module may lack repaintTrendTile; mirror the
-     * current implementation so panels still render until per-viz helper is refreshed.
-     */
+    /* --- Inlined former ./bgdhampTrendColors (no separate AMD file) --- */
+    var trendColors = (function () {
+        function trendDelta(values) {
+            if (!values || !values.length) {
+                return NaN;
+            }
+            var len = values.length;
+            var last = Number(values[len - 1]);
+            var prev = len > 1 ? Number(values[len - 2]) : last;
+            if (!isFinite(last) || !isFinite(prev)) {
+                return NaN;
+            }
+            return last - prev;
+        }
+        function trendBackground(delta, upColor, downColor) {
+            var isUp = isFinite(delta) ? delta >= 0 : true;
+            return isUp ? upColor : downColor;
+        }
+        function applyTrendSurfaceStyle(el, bg) {
+            if (!el) {
+                return;
+            }
+            el.style.backgroundColor = bg;
+            el.style.setProperty('background-color', bg, 'important');
+        }
+        function applyTrendHostStyle(el, bg, textColor) {
+            if (!el) {
+                return;
+            }
+            el.style.position = 'relative';
+            applyTrendSurfaceStyle(el, bg);
+            el.style.setProperty('background', bg, 'important');
+            el.style.color = textColor;
+            el.style.overflow = 'hidden';
+            el.style.width = '100%';
+            el.style.height = '100%';
+            el.style.minHeight = '100%';
+            el.style.boxSizing = 'border-box';
+            el.style.pointerEvents = 'auto';
+        }
+        function repaintTrendTile(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
+            applyTrendHostStyle(hostEl, bg, textColor);
+            if (rootEl) {
+                applyTrendSurfaceStyle(rootEl, bg);
+            }
+            if (majorEl) {
+                applyTrendSurfaceStyle(majorEl, bg);
+            }
+            if (chartEl) {
+                applyTrendSurfaceStyle(chartEl, bg);
+            }
+            var p = hostEl ? hostEl.parentElement : null;
+            var depth = 0;
+            while (p && depth < 4) {
+                applyTrendSurfaceStyle(p, bg);
+                p = p.parentElement;
+                depth += 1;
+            }
+        }
+        return {
+            trendDelta: trendDelta,
+            trendBackground: trendBackground,
+            applyTrendSurfaceStyle: applyTrendSurfaceStyle,
+            applyTrendHostStyle: applyTrendHostStyle,
+            repaintTrendTile: repaintTrendTile,
+        };
+    })();
+
+    /* --- Inlined former ./bgdhampVizHoverMath (no separate AMD file) --- */
+    var hoverMath = (function () {
+        function clampNum(v, lo, hi) {
+            return Math.max(lo, Math.min(hi, v));
+        }
+        function viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH) {
+            var rect =
+                rectSource && typeof rectSource.getBoundingClientRect === 'function'
+                    ? rectSource.getBoundingClientRect()
+                    : rectSource;
+            if (
+                !rect ||
+                !rect.width ||
+                !rect.height ||
+                !isFinite(userW) ||
+                !isFinite(userH) ||
+                userW <= 0 ||
+                userH <= 0
+            ) {
+                return null;
+            }
+            var scale = Math.min(rect.width / userW, rect.height / userH);
+            var offX = rect.left + (rect.width - scale * userW) / 2;
+            var offY = rect.top + (rect.height - scale * userH) / 2;
+            return {
+                x: (clientX - offX) / scale,
+                y: (clientY - offY) / scale,
+            };
+        }
+        function seriesIndexFromPointerMeet(
+            clientX,
+            clientY,
+            rectSource,
+            userW,
+            userH,
+            padLeft,
+            padRight,
+            pointCount
+        ) {
+            var mapped = viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH);
+            if (!mapped || pointCount < 2) {
+                return null;
+            }
+            var innerW = Math.max(1, userW - padLeft - padRight);
+            var xStep = pointCount > 1 ? innerW / (pointCount - 1) : innerW;
+            return clampNum(Math.round((mapped.x - padLeft) / xStep), 0, pointCount - 1);
+        }
+        return {
+            seriesIndexFromPointerMeet: seriesIndexFromPointerMeet,
+        };
+    })();
+
     function repaintTrendTileCompat(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
+        if (typeof trendColors.repaintTrendTile === 'function') {
+            trendColors.repaintTrendTile(hostEl, rootEl, chartEl, majorEl, bg, textColor);
+            return;
+        }
         trendColors.applyTrendHostStyle(hostEl, bg, textColor);
         if (rootEl) trendColors.applyTrendSurfaceStyle(rootEl, bg);
         if (majorEl) trendColors.applyTrendSurfaceStyle(majorEl, bg);
         if (chartEl) trendColors.applyTrendSurfaceStyle(chartEl, bg);
-        var p = hostEl ? hostEl.parentElement : null;
-        var depth = 0;
-        while (p && depth < 4) {
-            trendColors.applyTrendSurfaceStyle(p, bg);
-            p = p.parentElement;
-            depth += 1;
-        }
     }
 
     /** Splunk dashboard wrappers often set pointer-events:none on viz hosts; don't stop early. */
@@ -620,16 +733,29 @@ define([
         return Math.max(lo, Math.min(hi, v));
     }
 
+    /** NaN-safe SMA: only finite samples contribute; gaps stay NaN. */
     function sma(values, windowSize) {
         var w = Math.max(1, Math.floor(Number(windowSize) || 1));
         if (w <= 1) return values.slice();
         var out = [];
-        var sum = 0;
         var i;
+        var j;
         for (i = 0; i < values.length; i += 1) {
-            sum += values[i];
-            if (i >= w) sum -= values[i - w];
-            out.push(sum / Math.min(i + 1, w));
+            if (!isFinite(Number(values[i]))) {
+                out.push(NaN);
+                continue;
+            }
+            var sum = 0;
+            var count = 0;
+            var start = Math.max(0, i - w + 1);
+            for (j = start; j <= i; j += 1) {
+                var sample = Number(values[j]);
+                if (isFinite(sample)) {
+                    sum += sample;
+                    count += 1;
+                }
+            }
+            out.push(count ? sum / count : NaN);
         }
         return out;
     }
@@ -652,7 +778,11 @@ define([
         return { values: vOut, times: tOut };
     }
 
-    function buildPath(values, width, height, padL, padR, padT, padB, vmin, vmax) {
+    /**
+     * nullMode: gaps (break line), zero (treat null as 0), connect (skip nulls, keep stroke).
+     */
+    function buildPath(values, width, height, padL, padR, padT, padB, vmin, vmax, nullMode) {
+        var mode = nullMode === 'zero' || nullMode === 'connect' ? nullMode : 'gaps';
         var iw = Math.max(1, width - padL - padR);
         var ih = Math.max(1, height - padT - padB);
         var n = values.length;
@@ -665,8 +795,14 @@ define([
         for (i = 0; i < n; i += 1) {
             var v = Number(values[i]);
             if (!isFinite(v)) {
-                penUp = true;
-                continue;
+                if (mode === 'zero') {
+                    v = 0;
+                } else if (mode === 'connect') {
+                    continue;
+                } else {
+                    penUp = true;
+                    continue;
+                }
             }
             var ratio = clamp((v - vmin) / (vmax - vmin), 0, 1);
             var x = padL + i * xStep;
@@ -678,31 +814,77 @@ define([
         return plotted >= 2 ? parts.join(' ') : '';
     }
 
-    function buildAreaPath(values, width, height, padL, padR, padT, padB, vmin, vmax) {
-        var line = buildPath(values, width, height, padL, padR, padT, padB, vmin, vmax);
-        if (!line) {
-            return '';
+    /** Area fill per contiguous finite segment so null gaps do not poison the path. */
+    function buildAreaPath(values, width, height, padL, padR, padT, padB, vmin, vmax, nullMode) {
+        var mode = nullMode === 'zero' || nullMode === 'connect' ? nullMode : 'gaps';
+        if (mode !== 'gaps') {
+            var line = buildPath(values, width, height, padL, padR, padT, padB, vmin, vmax, mode);
+            if (!line) {
+                return '';
+            }
+            var nAll = values.length;
+            var iwAll = Math.max(1, width - padL - padR);
+            var xStepAll = nAll > 1 ? iwAll / (nAll - 1) : 0;
+            var lastX = padL + (nAll - 1) * xStepAll;
+            var baselineY = height - padB;
+            return (
+                line +
+                ' L' +
+                lastX.toFixed(1) +
+                ' ' +
+                baselineY.toFixed(1) +
+                ' L' +
+                padL.toFixed(1) +
+                ' ' +
+                baselineY.toFixed(1) +
+                ' Z'
+            );
         }
-        var n = values.length;
         var iw = Math.max(1, width - padL - padR);
+        var ih = Math.max(1, height - padT - padB);
+        var n = values.length;
+        if (n < 2) return '';
         var xStep = iw / (n - 1);
-        var lastX = padL + (n - 1) * xStep;
         var baselineY = height - padB;
-        return (
-            line +
-            ' L' +
-            lastX.toFixed(1) +
-            ' ' +
-            baselineY.toFixed(1) +
-            ' L' +
-            padL.toFixed(1) +
-            ' ' +
-            baselineY.toFixed(1) +
-            ' Z'
-        );
+        var parts = [];
+        var seg = [];
+        var i;
+        function flushSeg() {
+            if (seg.length < 2) {
+                seg = [];
+                return;
+            }
+            var s;
+            var firstX = padL + seg[0].i * xStep;
+            var lastSegX = padL + seg[seg.length - 1].i * xStep;
+            for (s = 0; s < seg.length; s += 1) {
+                parts.push(
+                    (s === 0 ? 'M' : 'L') +
+                        (padL + seg[s].i * xStep).toFixed(1) +
+                        ' ' +
+                        seg[s].y.toFixed(1)
+                );
+            }
+            parts.push('L' + lastSegX.toFixed(1) + ' ' + baselineY.toFixed(1));
+            parts.push('L' + firstX.toFixed(1) + ' ' + baselineY.toFixed(1));
+            parts.push('Z');
+            seg = [];
+        }
+        for (i = 0; i < n; i += 1) {
+            var v = Number(values[i]);
+            if (!isFinite(v)) {
+                flushSeg();
+                continue;
+            }
+            var ratio = clamp((v - vmin) / (vmax - vmin), 0, 1);
+            seg.push({ i: i, y: padT + ih - ratio * ih });
+        }
+        flushSeg();
+        return parts.join(' ');
     }
 
-    function buildBetweenPath(primaryValues, compareValues, width, height, padL, padR, padT, padB, vmin, vmax) {
+    function buildBetweenPath(primaryValues, compareValues, width, height, padL, padR, padT, padB, vmin, vmax, nullMode) {
+        var mode = nullMode === 'zero' || nullMode === 'connect' ? nullMode : 'gaps';
         var n = Math.min(primaryValues.length, compareValues.length);
         if (n < 2) {
             return '';
@@ -712,15 +894,44 @@ define([
         var xStep = iw / (n - 1);
         var parts = [];
         var i;
+        function resolveV(raw) {
+            var v = Number(raw);
+            if (isFinite(v)) {
+                return v;
+            }
+            return mode === 'zero' ? 0 : NaN;
+        }
         function yAt(v) {
-            var ratio = clamp((Number(v) - vmin) / (vmax - vmin), 0, 1);
+            var ratio = clamp((v - vmin) / (vmax - vmin), 0, 1);
             return padT + ih - ratio * ih;
         }
+        var top = [];
+        var bottom = [];
         for (i = 0; i < n; i += 1) {
-            parts.push((i === 0 ? 'M' : 'L') + (padL + i * xStep).toFixed(1) + ' ' + yAt(primaryValues[i]).toFixed(1));
+            var pv = resolveV(primaryValues[i]);
+            var cv = resolveV(compareValues[i]);
+            if (!isFinite(pv) || !isFinite(cv)) {
+                if (mode === 'connect') {
+                    continue;
+                }
+                if (top.length >= 2) {
+                    break;
+                }
+                top = [];
+                bottom = [];
+                continue;
+            }
+            top.push({ x: padL + i * xStep, y: yAt(pv) });
+            bottom.push({ x: padL + i * xStep, y: yAt(cv) });
         }
-        for (i = n - 1; i >= 0; i -= 1) {
-            parts.push('L' + (padL + i * xStep).toFixed(1) + ' ' + yAt(compareValues[i]).toFixed(1));
+        if (top.length < 2) {
+            return '';
+        }
+        for (i = 0; i < top.length; i += 1) {
+            parts.push((i === 0 ? 'M' : 'L') + top[i].x.toFixed(1) + ' ' + top[i].y.toFixed(1));
+        }
+        for (i = bottom.length - 1; i >= 0; i -= 1) {
+            parts.push('L' + bottom[i].x.toFixed(1) + ' ' + bottom[i].y.toFixed(1));
         }
         parts.push('Z');
         return parts.join(' ');
@@ -1049,32 +1260,6 @@ define([
         }
     }
 
-    function appendRefLine(svg, ownerDoc, y, width, padL, padR, stroke, dash, label) {
-        if (!isFinite(y)) {
-            return;
-        }
-        var line = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', String(padL));
-        line.setAttribute('x2', String(width - padR));
-        line.setAttribute('y1', String(y));
-        line.setAttribute('y2', String(y));
-        line.setAttribute('stroke', stroke);
-        line.setAttribute('stroke-width', '1.5');
-        if (dash) {
-            line.setAttribute('stroke-dasharray', dash);
-        }
-        svg.appendChild(line);
-        if (label) {
-            var text = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', String(padL + 2));
-            text.setAttribute('y', String(Math.max(10, y - 3)));
-            text.setAttribute('fill', stroke);
-            text.setAttribute('font-size', '9');
-            text.textContent = label;
-            svg.appendChild(text);
-        }
-    }
-
     function styleTextCell(el, isFirst) {
         el.className = 'bgdhamp-kpi-line-viz__textCell';
         el.style.setProperty('flex', '1 1 0', 'important');
@@ -1286,10 +1471,9 @@ define([
             }
             var series = buildSeriesFromRaw(safe, 'auto');
             if (!series.values.length) {
-                log('formatData: no numeric column — VisualizationError');
-                throw new SplunkVisualizationBase.VisualizationError(
-                    'KPI line requires _time (optional) plus one numeric value field. Set Format → Value field, or include a column named value.'
-                );
+                // Classic OOTB shows empty panel — soft-fail instead of VisualizationError.
+                log('formatData: no numeric column — soft empty');
+                return { rawData: safe, values: [], times: [], fieldName: '', stringFields: {} };
             }
             log(
                 'formatData: field',
@@ -1388,13 +1572,27 @@ define([
             var smoothing = String(readConfig(config, 'smoothing', 'none')).toLowerCase();
             var smaWindow = readInt(config, 'smaWindow', 3);
             var maxPoints = readInt(config, 'maxPoints', 0);
-            var seriesMode = String(readConfig(config, 'seriesMode', 'single') || 'single')
+            var seriesModeRaw = String(readConfig(config, 'seriesMode', 'auto') || 'auto')
                 .trim()
                 .toLowerCase();
-            if (seriesMode !== 'multi') {
-                seriesMode = 'single';
+            var seriesMode = seriesModeRaw === 'multi' ? 'multi' : seriesModeRaw === 'single' ? 'single' : 'auto';
+            var nullValueMode = String(readConfig(config, 'nullValueMode', 'gaps') || 'gaps')
+                .trim()
+                .toLowerCase();
+            if (nullValueMode !== 'zero' && nullValueMode !== 'connect') {
+                nullValueMode = 'gaps';
             }
+            var showMarkers = readBool(config, 'showMarkers', false);
+            var showLegend = readBool(config, 'showLegend', true);
+            var chartStyle = String(readConfig(config, 'chartStyle', '') || '')
+                .trim()
+                .toLowerCase();
             var showArea = readBool(config, 'showArea', false);
+            if (chartStyle === 'area') {
+                showArea = true;
+            } else if (chartStyle === 'line') {
+                showArea = false;
+            }
             var shadeBetween = readBool(config, 'shadeBetween', false);
             var areaColor = sanitizeCssColor(
                 readConfig(config, 'areaColor', 'rgba(255,255,255,0.22)'),
@@ -1414,21 +1612,6 @@ define([
                 readConfig(config, 'compareAnnotationField', 'annotation_compare') || ''
             ).trim();
             var showAnnotationLabels = readBool(config, 'showAnnotationLabels', false);
-            var highLineRaw = readConfig(config, 'highLine', '');
-            var criticalLineRaw = readConfig(config, 'criticalLine', '');
-            var highLine =
-                highLineRaw === '' || highLineRaw == null ? null : readFloat(config, 'highLine', NaN);
-            var criticalLine =
-                criticalLineRaw === '' || criticalLineRaw == null
-                    ? null
-                    : readFloat(config, 'criticalLine', NaN);
-            if (!isFinite(highLine)) {
-                highLine = null;
-            }
-            if (!isFinite(criticalLine)) {
-                criticalLine = null;
-            }
-
             var primaryColumnIndex =
                 rawData && series.columnIndex != null
                     ? series.columnIndex
@@ -1458,6 +1641,13 @@ define([
                         cmpValues = sma(cmpValues, smaWindow);
                     }
                 }
+            }
+
+            if (seriesMode === 'auto' && rawData && primaryColumnIndex >= 0) {
+                seriesMode =
+                    listMultiSeriesColumns(rawData, primaryColumnIndex).length > 0 ? 'multi' : 'single';
+            } else if (seriesMode !== 'multi') {
+                seriesMode = 'single';
             }
 
             var extraSeries = [];
@@ -1506,19 +1696,13 @@ define([
             }
 
             var scale = bounds(readConfig(config, 'min', 0), readConfig(config, 'max', 100));
-            if (seriesMode === 'multi' || cmpValues || highLine != null || criticalLine != null) {
+            if (seriesMode === 'multi' || cmpValues) {
                 var fitArrays = [plotValues];
                 if (cmpValues) {
                     fitArrays.push(cmpValues);
                 }
                 for (mi = 0; mi < extraSeries.length; mi += 1) {
                     fitArrays.push(extraSeries[mi].values);
-                }
-                if (highLine != null) {
-                    fitArrays.push([highLine]);
-                }
-                if (criticalLine != null) {
-                    fitArrays.push([criticalLine]);
                 }
                 scale = fitScaleToSeries(scale, fitArrays);
             }
@@ -1808,33 +1992,6 @@ define([
                 svg.appendChild(tLine);
             }
 
-            if (highLine != null) {
-                appendRefLine(
-                    svg,
-                    ownerDoc,
-                    yFor(highLine),
-                    width,
-                    padL,
-                    padR,
-                    classicChart ? '#F1813F' : '#FFB020',
-                    '5 4',
-                    'High ' + highLine
-                );
-            }
-            if (criticalLine != null) {
-                appendRefLine(
-                    svg,
-                    ownerDoc,
-                    yFor(criticalLine),
-                    width,
-                    padL,
-                    padR,
-                    classicChart ? '#DC4E41' : '#FF6B6B',
-                    '2 3',
-                    'Critical ' + criticalLine
-                );
-            }
-
             if (showArea) {
                 var areaD = buildAreaPath(
                     plotValues,
@@ -1845,7 +2002,8 @@ define([
                     padT,
                     padB,
                     scale.min,
-                    scale.max
+                    scale.max,
+                    nullValueMode
                 );
                 if (areaD) {
                     var areaPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1868,7 +2026,8 @@ define([
                     padT,
                     padB,
                     scale.min,
-                    scale.max
+                    scale.max,
+                    nullValueMode
                 );
                 if (betweenD) {
                     var betweenPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1893,7 +2052,8 @@ define([
                     padT,
                     padB,
                     scale.min,
-                    scale.max
+                    scale.max,
+                    nullValueMode
                 );
                 if (extraD) {
                     var extraPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1919,7 +2079,8 @@ define([
                     padT,
                     padB,
                     scale.min,
-                    scale.max
+                    scale.max,
+                    nullValueMode
                 );
                 if (cmpD) {
                     cmpPath.setAttribute('d', cmpD);
@@ -1947,7 +2108,8 @@ define([
                 padT,
                 padB,
                 scale.min,
-                scale.max
+                scale.max,
+                nullValueMode
             );
             if (mainD) {
                 var mainPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1961,6 +2123,29 @@ define([
                     name: series.fieldName || valueField || 'value',
                     color: stroke,
                 });
+            }
+
+            if (showMarkers && plotValues.length) {
+                var nMark = plotValues.length;
+                var xStepMark = nMark > 1 ? Math.max(1, width - padL - padR) / (nMark - 1) : 0;
+                var miMark;
+                for (miMark = 0; miMark < nMark; miMark += 1) {
+                    var mv = Number(plotValues[miMark]);
+                    if (!isFinite(mv) && nullValueMode !== 'zero') {
+                        continue;
+                    }
+                    if (!isFinite(mv) && nullValueMode === 'zero') {
+                        mv = 0;
+                    }
+                    var mDot = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    mDot.setAttribute('cx', (padL + miMark * xStepMark).toFixed(1));
+                    mDot.setAttribute('cy', yFor(mv).toFixed(1));
+                    mDot.setAttribute('r', '2.5');
+                    mDot.setAttribute('fill', stroke);
+                    mDot.setAttribute('stroke', classicChart ? '#fff' : 'rgba(0,0,0,0.25)');
+                    mDot.setAttribute('stroke-width', '1');
+                    svg.appendChild(mDot);
+                }
             }
 
             appendAnnotationMarks(
@@ -2185,7 +2370,7 @@ define([
             enableAncestorPointerEvents(this.el);
 
             chartWrap.appendChild(svg);
-            if (legendItems.length > 1) {
+            if (showLegend && legendItems.length > 1) {
                 var legend = ownerDoc.createElement('div');
                 legend.className = 'bgdhamp-kpi-line-viz__legend';
                 var li;

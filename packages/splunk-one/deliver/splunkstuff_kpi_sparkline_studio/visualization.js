@@ -135,7 +135,8 @@ function pickNumericColumnIndex(searchData, preferredFieldName) {
   }
   let bestColumnIndex = -1;
   for (let columnIndex = 0; columnIndex < searchData.columns.length; columnIndex += 1) {
-    if (readFieldName(fields, columnIndex) === "_time" || readFieldName(fields, columnIndex).charAt(0) === "_") {
+    const fieldName = String(readFieldName(fields, columnIndex) || "");
+    if (fieldName.charAt(0) === "_") {
       continue;
     }
     const column = searchData.columns[columnIndex] || [];

@@ -124,15 +124,44 @@
     </div>
 </form>
 
+<form class="splunk-formatter-section" section-label="General (Classic line)">
+    <splunk-control-group label="Chart style">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.chartStyle" value="line">
+            <option value="line">Line</option>
+            <option value="area">Area</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Null value mode">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.nullValueMode" value="gaps">
+            <option value="gaps">Gaps</option>
+            <option value="zero">Zero</option>
+            <option value="connect">Connect</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show markers">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showMarkers" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show legend">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showLegend" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+</form>
+
 <form class="splunk-formatter-section" section-label="Series and fill">
     <splunk-control-group label="Series mode">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.seriesMode" value="single">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.seriesMode" value="auto">
+            <option value="auto">Auto (Classic-like)</option>
             <option value="single">Single KPI</option>
             <option value="multi">Multi series</option>
         </splunk-radio-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        <strong>Multi</strong> plots extra numeric columns (up to 8) like a Classic line chart. Value field still drives the major number.
+        <strong>Auto</strong> turns on multi when extra numeric columns exist (up to 8), like Classic timechart-by. Value field still drives the major number.
     </div>
     <splunk-control-group label="Show area under primary">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.showArea" value="false">
@@ -151,7 +180,7 @@
     </splunk-control-group>
 </form>
 
-<form class="splunk-formatter-section" section-label="Comparison and thresholds">
+<form class="splunk-formatter-section" section-label="Custom — comparison">
     <splunk-control-group label="Comparison overlay">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.comparison" value="false">
             <option value="true">On</option>
@@ -192,15 +221,6 @@
             <option value="false">Off</option>
         </splunk-radio-input>
     </splunk-control-group>
-    <splunk-control-group label="High reference line">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.highLine" value=""></splunk-text-input>
-    </splunk-control-group>
-    <splunk-control-group label="Critical reference line">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.criticalLine" value=""></splunk-text-input>
-    </splunk-control-group>
-    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Optional constant Y lines (e.g. High 80, Critical 95). Leave blank to hide.
-    </div>
     <splunk-control-group label="Thresholds + target band">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.threshold" value="false"></splunk-text-input>
     </splunk-control-group>
@@ -284,7 +304,7 @@
     </splunk-control-group>
 </form>
 
-<form class="splunk-formatter-section" section-label="Text row">
+<form class="splunk-formatter-section" section-label="Custom — text row">
     <splunk-control-group label="Show text row">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.showTextRow" value="true">
             <option value="true">On</option>
@@ -364,7 +384,7 @@
         <splunk-text-input name="{{VIZ_NAMESPACE}}.linkLatest" value=""></splunk-text-input>
     </splunk-control-group>
 </form>
-<form class="splunk-formatter-section" section-label="Info">
+<form class="splunk-formatter-section" section-label="Custom — info">
     <splunk-control-group label="Show info icon">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.showInfo" value="false">
             <option value="true">On</option>

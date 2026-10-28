@@ -265,7 +265,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             topN: Math.floor(readNumber(config, 'topN', 5, 0, 1000)),
             otherEnabled: readBool(config, 'otherEnabled', true),
             otherLabel: readString(config, 'otherLabel', 'Other') || 'Other',
-            minSlicePercent: readNumber(config, 'minSlicePercent', 0, 0, 100),
+            /** Classic pie “minimum size” — collapse slices below this percent into Other. */
+            minSlicePercent: readNumber(config, 'minSlicePercent', 1, 0, 100),
             minSliceValue: readNumber(config, 'minSliceValue', 0, 0, Number.POSITIVE_INFINITY),
             sortMode: readString(config, 'sortMode', 'value-desc') || 'value-desc',
             showPercent: readBool(config, 'showPercent', true),

@@ -174,8 +174,6 @@
   var factories = [];
   window.define = function (deps, factory) { factories.push(factory); };
 </script>
-<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampTrendColors.js"></script>
-<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampVizHoverMath.js"></script>
 <script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js"></script>
 <script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_sparkline/visualization.js"></script>
 <script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js"></script>
@@ -191,11 +189,9 @@
     },
   };
 
-  var trend = factories[0]();
-  var hover = factories[1]();
-  var LineViz = factories[2](Base, trend, hover);
-  var SparkViz = factories[3](Base);
-  var PieViz = factories[4](Base);
+  var LineViz = factories[0](Base);
+  var SparkViz = factories[1](Base);
+  var PieViz = factories[2](Base);
 
   var LNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
   var SNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
