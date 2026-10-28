@@ -1049,32 +1049,6 @@ define([
         }
     }
 
-    function appendRefLine(svg, ownerDoc, y, width, padL, padR, stroke, dash, label) {
-        if (!isFinite(y)) {
-            return;
-        }
-        var line = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', String(padL));
-        line.setAttribute('x2', String(width - padR));
-        line.setAttribute('y1', String(y));
-        line.setAttribute('y2', String(y));
-        line.setAttribute('stroke', stroke);
-        line.setAttribute('stroke-width', '1.5');
-        if (dash) {
-            line.setAttribute('stroke-dasharray', dash);
-        }
-        svg.appendChild(line);
-        if (label) {
-            var text = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', String(padL + 2));
-            text.setAttribute('y', String(Math.max(10, y - 3)));
-            text.setAttribute('fill', stroke);
-            text.setAttribute('font-size', '9');
-            text.textContent = label;
-            svg.appendChild(text);
-        }
-    }
-
     function styleTextCell(el, isFirst) {
         el.className = 'bgdhamp-kpi-line-viz__textCell';
         el.style.setProperty('flex', '1 1 0', 'important');
@@ -1414,21 +1388,6 @@ define([
                 readConfig(config, 'compareAnnotationField', 'annotation_compare') || ''
             ).trim();
             var showAnnotationLabels = readBool(config, 'showAnnotationLabels', false);
-            var highLineRaw = readConfig(config, 'highLine', '');
-            var criticalLineRaw = readConfig(config, 'criticalLine', '');
-            var highLine =
-                highLineRaw === '' || highLineRaw == null ? null : readFloat(config, 'highLine', NaN);
-            var criticalLine =
-                criticalLineRaw === '' || criticalLineRaw == null
-                    ? null
-                    : readFloat(config, 'criticalLine', NaN);
-            if (!isFinite(highLine)) {
-                highLine = null;
-            }
-            if (!isFinite(criticalLine)) {
-                criticalLine = null;
-            }
-
             var primaryColumnIndex =
                 rawData && series.columnIndex != null
                     ? series.columnIndex
@@ -1506,19 +1465,13 @@ define([
             }
 
             var scale = bounds(readConfig(config, 'min', 0), readConfig(config, 'max', 100));
-            if (seriesMode === 'multi' || cmpValues || highLine != null || criticalLine != null) {
+            if (seriesMode === 'multi' || cmpValues) {
                 var fitArrays = [plotValues];
                 if (cmpValues) {
                     fitArrays.push(cmpValues);
                 }
                 for (mi = 0; mi < extraSeries.length; mi += 1) {
                     fitArrays.push(extraSeries[mi].values);
-                }
-                if (highLine != null) {
-                    fitArrays.push([highLine]);
-                }
-                if (criticalLine != null) {
-                    fitArrays.push([criticalLine]);
                 }
                 scale = fitScaleToSeries(scale, fitArrays);
             }
@@ -1806,33 +1759,6 @@ define([
                 tLine.setAttribute('stroke-width', '1');
                 tLine.setAttribute('stroke-dasharray', '4 3');
                 svg.appendChild(tLine);
-            }
-
-            if (highLine != null) {
-                appendRefLine(
-                    svg,
-                    ownerDoc,
-                    yFor(highLine),
-                    width,
-                    padL,
-                    padR,
-                    classicChart ? '#F1813F' : '#FFB020',
-                    '5 4',
-                    'High ' + highLine
-                );
-            }
-            if (criticalLine != null) {
-                appendRefLine(
-                    svg,
-                    ownerDoc,
-                    yFor(criticalLine),
-                    width,
-                    padL,
-                    padR,
-                    classicChart ? '#DC4E41' : '#FF6B6B',
-                    '2 3',
-                    'Critical ' + criticalLine
-                );
             }
 
             if (showArea) {
