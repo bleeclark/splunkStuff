@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Minimal dual-line (OOTB-like) + pie</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css" />
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; background: #e8eaed; margin: 16px; color: #1b1c1d; }
+  h1 { font-size: 16px; margin: 0 0 8px; }
+  h2 { font-size: 13px; margin: 0 0 6px; }
+  .intro { font-size: 13px; color: #444; max-width: 900px; margin: 0 0 14px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 960px; }
+  .card { background: #fff; border: 1px solid #c9ced6; border-radius: 4px; padding: 10px 12px; }
+  pre { margin: 0 0 8px; padding: 8px; background: #0b1f3b; color: #e8eef7; font-size: 11px; border-radius: 3px; white-space: pre-wrap; }
+  .host { height: 240px; border: 1px solid #d5d9de; }
+  .note { font-size: 12px; margin-top: 8px; color: #333; }
+  code { background: #f0f2f5; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<h1>Minimal charts — custom tools off</h1>
+<p class="intro">
+  Same vizs as Splunk 9.4 Classic custom line/pie, with Format set like a regular Splunk chart:
+  no text row, no info icon, no major KPI number on the line (chart-only).
+  Two time series use <code>value</code> + <code>previous</code>.
+  Point annotations from an SPL column are on the <strong>sparkline</strong> today; the KPI line has hover + anomalies, not full marker annotations yet.
+</p>
+<div class="grid">
+  <div class="card">
+    <h2>Line — two series, minimal</h2>
+    <pre>| timechart span=1h avg(latency) as value, avg(slo) as previous
+| fields _time value previous</pre>
+    <div class="host" id="line-host"></div>
+    <p class="note" id="line-note"></p>
+  </div>
+  <div class="card">
+    <h2>Pie — traditional minimal</h2>
+    <pre>| stats count as value by category
+| fields category value</pre>
+    <div class="host" id="pie-host"></div>
+    <p class="note" id="pie-note"></p>
+  </div>
+</div>
+
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampTrendColors.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampVizHoverMath.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js"></script>
+<script>
+(function () {
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var trend = factories[0]();
+  var hover = factories[1]();
+  var LineViz = factories[2](Base, trend, hover);
+  var PieViz = factories[3](Base);
+  var LINE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var PIE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
+  var now = Date.now();
+
+  function times(n) {
+    var out = [];
+    var i;
+    for (i = 1; i <= n; i += 1) {
+      out.push(new Date(now - (n - i) * 3600000).toISOString());
+    }
+    return out;
+  }
+  function nums(n, fn) {
+    var out = [];
+    var i;
+    for (i = 1; i <= n; i += 1) out.push(String(fn(i)));
+    return out;
+  }
+
+  // --- Minimal dual line ---
+  var lineRaw = {
+    fields: [{ name: '_time' }, { name: 'value' }, { name: 'previous' }],
+    columns: [
+      times(18),
+      nums(18, function (i) { return 40 + ((i * 7) % 28); }),
+      nums(18, function (i) { return 36 + ((i * 5) % 20); }),
+    ],
+  };
+  var lineCfg = {};
+  lineCfg[LINE_NS + 'valueField'] = 'value';
+  lineCfg[LINE_NS + 'comparison'] = 'true';
+  lineCfg[LINE_NS + 'compareField'] = 'previous';
+  lineCfg[LINE_NS + 'showArea'] = 'true';
+  lineCfg[LINE_NS + 'shadeBetween'] = 'true';
+  lineCfg[LINE_NS + 'showMajor'] = 'false';
+  lineCfg[LINE_NS + 'showTextRow'] = 'false';
+  lineCfg[LINE_NS + 'showInfo'] = 'false';
+  lineCfg[LINE_NS + 'showHover'] = 'true';
+  lineCfg[LINE_NS + 'colorPlacement'] = 'top';
+  lineCfg[LINE_NS + 'background'] = '#0B1F3B';
+
+  var lineEl = document.createElement('div');
+  lineEl.style.width = '100%';
+  lineEl.style.height = '100%';
+  document.getElementById('line-host').appendChild(lineEl);
+  var lineViz = new LineViz(lineEl);
+  lineViz.updateView(lineViz.formatData(lineRaw), lineCfg);
+  document.getElementById('line-note').textContent =
+    'Format: showMajor=false, showTextRow=false, showInfo=false, comparison + previous + area. Chart-only dual line.';
+
+  // --- Minimal pie ---
+  var pieRaw = {
+    fields: [{ name: 'category' }, { name: 'value' }],
+    columns: [
+      ['East', 'West', 'Central', 'North'],
+      ['40', '28', '18', '14'],
+    ],
+  };
+  var pieCfg = {};
+  pieCfg[PIE_NS + 'labelField'] = 'category';
+  pieCfg[PIE_NS + 'valueField'] = 'value';
+  pieCfg[PIE_NS + 'innerRadius'] = '0';
+  pieCfg[PIE_NS + 'legendPosition'] = 'right';
+  pieCfg[PIE_NS + 'showInspector'] = 'false';
+  pieCfg[PIE_NS + 'showDataQuality'] = 'false';
+  pieCfg[PIE_NS + 'showSliceLabels'] = 'false';
+  pieCfg[PIE_NS + 'showTooltip'] = 'true';
+
+  var pieEl = document.createElement('div');
+  pieEl.style.width = '100%';
+  pieEl.style.height = '100%';
+  document.getElementById('pie-host').appendChild(pieEl);
+  var pieViz = new PieViz(pieEl);
+  pieViz.updateView(pieViz.formatData(pieRaw), pieCfg);
+  document.getElementById('pie-note').textContent =
+    'Format: solid pie, legend right, inspector off — regular Classic look.';
+})();
+</script>
+</body>
+</html>

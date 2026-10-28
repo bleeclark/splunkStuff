@@ -269,25 +269,27 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             minSliceValue: readNumber(config, 'minSliceValue', 0, 0, Number.POSITIVE_INFINITY),
             sortMode: readString(config, 'sortMode', 'value-desc') || 'value-desc',
             showPercent: readBool(config, 'showPercent', true),
-            showValue: readBool(config, 'showValue', true),
-            showRowCount: readBool(config, 'showRowCount', true),
-            showCompare: readBool(config, 'showCompare', true),
-            showDataQuality: readBool(config, 'showDataQuality', true),
+            showValue: readBool(config, 'showValue', false),
+            showRowCount: readBool(config, 'showRowCount', false),
+            showCompare: readBool(config, 'showCompare', false),
+            showDataQuality: readBool(config, 'showDataQuality', false),
             showTooltip: readBool(config, 'showTooltip', true),
-            showInspector: readBool(config, 'showInspector', true),
+            showInspector: readBool(config, 'showInspector', false),
             showOtherBreakdown: readBool(config, 'showOtherBreakdown', true),
-            showSliceLabels: readBool(config, 'showSliceLabels', false),
+            /** Studio default: labels around the pie (legend off). */
+            showSliceLabels: readBool(config, 'showSliceLabels', true),
             sliceLabelMinPercent: readNumber(config, 'sliceLabelMinPercent', 0, 0, 100),
             title: String(readConfig(config, 'title', '') || ''),
             emptyMessage: readString(config, 'emptyMessage', 'No data to display.') || 'No data to display.',
-            background: safeColor(readConfig(config, 'background', '#1B2A41'), '#1B2A41'),
-            textColor: safeColor(readConfig(config, 'textColor', '#FFFFFF'), '#FFFFFF'),
+            background: safeColor(readConfig(config, 'background', '#FFFFFF'), '#FFFFFF'),
+            textColor: safeColor(readConfig(config, 'textColor', '#3C444D'), '#3C444D'),
             palettePreset: palettePreset,
             palette: parsePalette(readConfig(config, 'palette', ''), palettePreset),
             colorMap: parseColorMap(readConfig(config, 'colorMap', '')),
             otherColor: safeColor(readConfig(config, 'otherColor', '#8B9BB4'), '#8B9BB4'),
+            /** 0 = solid Classic / Studio pie; Format can still enable a donut hole. */
             innerRadius: readNumber(config, 'innerRadius', 0, 0, 82),
-            legendPosition: readString(config, 'legendPosition', 'right') || 'right',
+            legendPosition: readString(config, 'legendPosition', 'none') || 'none',
             drilldown: readBool(config, 'drilldown', false),
             drilldownAction: readString(config, 'drilldownAction', 'tokens') || 'tokens',
             drilldownQuery:
@@ -807,15 +809,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return text.slice(0, Math.max(0, limit - 3)) + '...';
     }
 
-    function calloutLabelText(slice, opts) {
-        var label = truncateText(slice.label, 30);
-        if (opts.showPercent) {
-            return label + ', ' + pctText(slice.percent, 1);
-        }
+    function calloutSecondaryText(slice, opts) {
+        var parts = [];
         if (opts.showValue) {
-            return label + ', ' + valueText(slice.value);
+            parts.push(valueText(slice.value));
         }
-        return label;
+        if (opts.showPercent) {
+            parts.push(pctText(slice.percent, 1));
+        }
+        return parts.join(' · ');
     }
 
     function distributeCalloutYs(items, minY, maxY, gap) {
@@ -852,9 +854,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         var left = [];
         var right = [];
         var callouts = [];
-        var minY = 20;
-        var maxY = geometry.height - 20;
-        var gap = 15;
+        var minY = 18;
+        var maxY = geometry.height - 18;
+        var gap = opts.showPercent || opts.showValue ? 22 : 16;
         var i;
 
         for (i = 0; i < slices.length; i += 1) {
@@ -870,7 +872,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 idx: i,
                 angle: angle,
                 side: side,
-                targetY: geometry.cy + Math.sin(angle) * (geometry.outerR + 28),
+                targetY: geometry.cy + Math.sin(angle) * (geometry.outerR + 34),
             };
             if (side === 'right') {
                 right.push(item);
@@ -887,12 +889,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 var edgeX = geometry.cx + cos * (geometry.outerR + 2);
                 var edgeY = geometry.cy + sin * (geometry.outerR + 2);
                 var isRight = item.side === 'right';
-                var labelX = isRight ? geometry.width - 160 : 160;
-                var elbowX = isRight ? labelX - 14 : labelX + 14;
-                var anchorX = isRight ? labelX - 4 : labelX + 4;
+                var labelX = isRight ? geometry.width - 12 : 12;
+                var midX = geometry.cx + cos * (geometry.outerR + 18);
+                var elbowX = isRight ? labelX - 8 : labelX + 8;
+                var secondary = calloutSecondaryText(slices[item.idx], opts);
                 var group = createSvgEl('g');
                 var line = createSvgEl('polyline');
                 var text = createSvgEl('text');
+                var nameTspan = createSvgEl('tspan');
+                var valueTspan;
 
                 group.setAttribute('class', 'bgdhamp-pie-chart-viz__callout');
                 group.setAttribute('tabindex', '0');
@@ -905,22 +910,34 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                         ',' +
                         edgeY.toFixed(2) +
                         ' ' +
-                        elbowX.toFixed(2) +
+                        midX.toFixed(2) +
                         ',' +
                         item.y.toFixed(2) +
                         ' ' +
-                        anchorX.toFixed(2) +
+                        elbowX.toFixed(2) +
                         ',' +
                         item.y.toFixed(2)
                 );
 
                 text.setAttribute('class', 'bgdhamp-pie-chart-viz__callout-text');
                 text.setAttribute('x', String(labelX));
-                text.setAttribute('y', String(item.y));
-                text.setAttribute('text-anchor', isRight ? 'start' : 'end');
+                text.setAttribute('y', String(secondary ? item.y - 6 : item.y));
+                text.setAttribute('text-anchor', isRight ? 'end' : 'start');
                 text.setAttribute('fill', opts.textColor);
-                text.setAttribute('stroke', opts.background);
-                text.textContent = calloutLabelText(slices[item.idx], opts);
+
+                nameTspan.setAttribute('x', String(labelX));
+                nameTspan.setAttribute('dy', '0');
+                nameTspan.textContent = truncateText(slices[item.idx].label, 28);
+                text.appendChild(nameTspan);
+
+                if (secondary) {
+                    valueTspan = createSvgEl('tspan');
+                    valueTspan.setAttribute('class', 'bgdhamp-pie-chart-viz__callout-value');
+                    valueTspan.setAttribute('x', String(labelX));
+                    valueTspan.setAttribute('dy', '12');
+                    valueTspan.textContent = secondary;
+                    text.appendChild(valueTspan);
+                }
 
                 group.appendChild(line);
                 group.appendChild(text);
@@ -977,10 +994,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         tooltip.appendChild(title);
         addMetric(tooltip, 'Value', valueText(slice.value));
         addMetric(tooltip, 'Percent', pctText(slice.percent, 1));
-        if (slice.rank !== null) {
-            addMetric(tooltip, 'Rank', '#' + slice.rank);
+        if (opts.showRowCount) {
+            addMetric(tooltip, 'Rows', valueText(slice.rowCount));
         }
-        addMetric(tooltip, 'Rows', valueText(slice.rowCount));
         if (opts.showCompare && slice.compareValue !== null) {
             addMetric(tooltip, 'Compare', valueText(slice.compareValue));
             addMetric(tooltip, 'Delta', compareText(slice));
@@ -1239,7 +1255,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
             var svg = createSvgEl('svg');
             var geometry = opts.showSliceLabels
-                ? { width: 520, height: 280, cx: 260, cy: 140, outerR: 76 }
+                ? { width: 520, height: 300, cx: 260, cy: 150, outerR: 92 }
                 : { width: 200, height: 200, cx: 100, cy: 100, outerR: 88 };
             svg.setAttribute('viewBox', '0 0 ' + geometry.width + ' ' + geometry.height);
             svg.setAttribute('width', '100%');

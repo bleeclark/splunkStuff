@@ -109,13 +109,13 @@
         </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Show slice inspector">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showInspector" value="true">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showInspector" value="false">
             <option value="true">On</option>
             <option value="false">Off</option>
         </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Show data quality banner">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showDataQuality" value="true">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showDataQuality" value="false">
             <option value="true">On</option>
             <option value="false">Off</option>
         </splunk-radio-input>
@@ -136,7 +136,7 @@
         <splunk-text-input name="{{VIZ_NAMESPACE}}.emptyMessage" value="No data to display."></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="Show values">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showValue" value="true">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showValue" value="false">
             <option value="true">On</option>
             <option value="false">Off</option>
         </splunk-radio-input>
@@ -148,19 +148,19 @@
         </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Show row counts">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showRowCount" value="true">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showRowCount" value="false">
             <option value="true">On</option>
             <option value="false">Off</option>
         </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Show compare delta">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showCompare" value="true">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showCompare" value="false">
             <option value="true">On</option>
             <option value="false">Off</option>
         </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Show outside slice labels">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showSliceLabels" value="false">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showSliceLabels" value="true">
             <option value="true">On</option>
             <option value="false">Off</option>
         </splunk-radio-input>
@@ -178,10 +178,10 @@
 
 <form class="splunk-formatter-section" section-label="Appearance">
     <splunk-control-group label="Background">
-        <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#1B2A41"></splunk-color-picker>
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#FFFFFF"></splunk-color-picker>
     </splunk-control-group>
     <splunk-control-group label="Text color">
-        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#3C444D"></splunk-color-picker>
     </splunk-control-group>
     <splunk-control-group label="Palette preset">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.palettePreset" value="splunk">
@@ -211,12 +211,12 @@
         </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Legend position">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.legendPosition" value="right">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.legendPosition" value="none">
+            <option value="none">Hidden</option>
             <option value="right">Right</option>
             <option value="left">Left</option>
             <option value="top">Top</option>
             <option value="bottom">Bottom</option>
-            <option value="none">Hidden</option>
         </splunk-radio-input>
     </splunk-control-group>
 </form>

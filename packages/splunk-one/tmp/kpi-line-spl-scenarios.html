@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>KPI line — SPL scenarios</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css" />
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; background: #e8eaed; margin: 16px; color: #1b1c1d; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  .intro { font-size: 13px; color: #444; margin: 0 0 16px; max-width: 920px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 980px; }
+  .card { background: #fff; border: 1px solid #c9ced6; border-radius: 4px; padding: 10px 12px 12px; }
+  .card h2 { font-size: 13px; margin: 0 0 4px; }
+  .meta { font-size: 11px; color: #555; margin: 0 0 8px; }
+  .meta code { background: #f0f2f5; padding: 1px 4px; border-radius: 3px; }
+  pre.spl {
+    margin: 0 0 8px; padding: 8px; background: #0b1f3b; color: #e8eef7; font-size: 11px;
+    line-height: 1.35; border-radius: 3px; overflow-x: auto; white-space: pre-wrap;
+  }
+  .host { width: 100%; height: 200px; border: 1px solid #d5d9de; border-radius: 2px; overflow: hidden; }
+  .note { font-size: 11px; margin: 8px 0 0; color: #333; }
+  .ok { color: #0a6; }
+  .warn { color: #a60; }
+</style>
+</head>
+<body>
+<h1>splunkstuff_kpi_line — how different SPL shapes map</h1>
+<p style="font-size:13px;margin:0 0 10px;">
+  <a href="/tmp/kpi-line-spl-scenarios.html">Line chart scenarios</a>
+  &nbsp;·&nbsp;
+  <a href="/tmp/kpi-pie-spl-scenarios.html">Pie chart scenarios</a>
+</p>
+<p class="intro">
+  X axis uses <strong>_time</strong> when present. Y / major number uses Format
+  <strong>Value field</strong> (or Custom). Extra columns feed the text row / info.
+  Each tile below is the same viz with different search columns.
+</p>
+<div class="grid" id="grid"></div>
+
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampTrendColors.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampVizHoverMath.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js"></script>
+<script>
+(function () {
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var trend = factories[0]();
+  var hover = factories[1]();
+  var Viz = factories[2](Base, trend, hover);
+  var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var now = Date.now();
+
+  function series(n, fn) {
+    var out = [];
+    var i;
+    for (i = 1; i <= n; i += 1) out.push(fn(i));
+    return out;
+  }
+  function times(n) {
+    return series(n, function (i) {
+      return new Date(now - (n - i) * 60000).toISOString();
+    });
+  }
+  function cfg(opts) {
+    var c = {};
+    var k;
+    c[NS + 'showHover'] = 'true';
+    c[NS + 'showMajor'] = 'true';
+    for (k in opts) {
+      if (Object.prototype.hasOwnProperty.call(opts, k)) c[NS + k] = opts[k];
+    }
+    return c;
+  }
+  function rawFrom(fields, columns) {
+    return {
+      fields: fields.map(function (name) { return { name: name }; }),
+      columns: columns,
+    };
+  }
+
+  var scenarios = [
+    {
+      title: '1. Classic timechart → value',
+      format: 'Value field = value',
+      spl:
+'| timechart span=1m avg(latency) as value\n' +
+'| fields _time value',
+      raw: rawFrom(
+        ['_time', 'value'],
+        [
+          times(16),
+          series(16, function (i) { return String(40 + ((i * 7) % 30)); }),
+        ]
+      ),
+      config: cfg({ valueField: 'value' }),
+      expect: 'Line + major number from value; no text row.',
+    },
+    {
+      title: '2. Dual line + area shade',
+      format: 'comparison + previous + showArea + shadeBetween',
+      spl:
+'| timechart span=1m avg(latency) as value, avg(baseline) as previous\n' +
+'| fields _time value previous',
+      raw: rawFrom(
+        ['_time', 'value', 'previous'],
+        [
+          times(16),
+          series(16, function (i) { return String(40 + ((i * 7) % 30)); }),
+          series(16, function (i) { return String(34 + ((i * 5) % 22)); }),
+        ]
+      ),
+      config: cfg({
+        valueField: 'value',
+        comparison: 'true',
+        compareField: 'previous',
+        showArea: 'true',
+        shadeBetween: 'true',
+      }),
+      expect: 'Primary solid + compare dashed; area under primary and shade between.',
+    },
+    {
+      title: '3. Custom metric name → score',
+      format: 'Custom value field = score',
+      spl:
+'| timechart span=1m avg(risk) as score\n' +
+'| fields _time score',
+      raw: rawFrom(
+        ['_time', 'score'],
+        [
+          times(16),
+          series(16, function (i) { return String(55 + ((i * 5) % 25)); }),
+        ]
+      ),
+      config: cfg({ valueFieldCustom: 'score' }),
+      expect: 'Custom field name wins over the radio list.',
+    },
+    {
+      title: '4. Auto pick when value exists',
+      format: 'Value field = Auto',
+      spl:
+'| timechart span=1m avg(x) as value\n' +
+'| eval text2="9999"\n' +
+'| fields _time value text2',
+      raw: rawFrom(
+        ['_time', 'value', 'text2'],
+        [
+          times(16),
+          series(16, function (i) { return String(20 + ((i * 9) % 35)); }),
+          series(16, function () { return '9999'; }),
+        ]
+      ),
+      config: cfg({ valueField: 'auto', showTextRow: 'true' }),
+      expect: 'Auto prefers value; numeric text2 stays in the text row.',
+    },
+    {
+      title: '5. Text row + links + info',
+      format: 'value + text/label/url/info fields',
+      spl:
+'| timechart span=1m avg(metric) as value\n' +
+'| eval text1="East", text1_label="Region",\n' +
+'       urls1="https://example.com/east",\n' +
+'       text2="1204", text3="Stable",\n' +
+'       info="Weighted score, last 24h"\n' +
+'| fields _time value text1 text1_label urls1 text2 text3 info',
+      raw: rawFrom(
+        ['_time', 'value', 'text1', 'text1_label', 'urls1', 'text2', 'text3', 'info'],
+        [
+          times(16),
+          series(16, function (i) { return String(28 + ((i * 13) % 52)); }),
+          series(16, function () { return 'East'; }),
+          series(16, function () { return 'Region'; }),
+          series(16, function () { return 'https://example.com/east'; }),
+          series(16, function () { return '1204'; }),
+          series(16, function () { return 'Stable'; }),
+          series(16, function () { return 'Weighted score, last 24h'; }),
+        ]
+      ),
+      config: cfg({
+        valueField: 'value',
+        text1LabelField: 'text1_label',
+        text1LinkUrlField: 'urls1',
+        showInfo: 'true',
+      }),
+      expect: 'Same columns a Splunk line chart would ignore become the text strip + info.',
+      openInfo: true,
+    },
+    {
+      title: '6. Multi series mode',
+      format: 'seriesMode=multi',
+      spl:
+'| timechart span=1m avg(a) as value, avg(b) as west, avg(c) as east\n' +
+'| fields _time value west east',
+      raw: rawFrom(
+        ['_time', 'value', 'west', 'east'],
+        [
+          times(16),
+          series(16, function (i) { return String(30 + ((i * 6) % 20)); }),
+          series(16, function (i) { return String(18 + ((i * 4) % 16)); }),
+          series(16, function (i) { return String(24 + ((i * 5) % 18)); }),
+        ]
+      ),
+      config: cfg({ valueField: 'value', seriesMode: 'multi', showArea: 'true' }),
+      expect: 'Extra numeric columns plot as additional lines with a legend.',
+    },
+  ];
+
+  var grid = document.getElementById('grid');
+  scenarios.forEach(function (s, idx) {
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML =
+      '<h2>' + s.title + '</h2>' +
+      '<p class="meta">Format: <code>' + s.format + '</code></p>' +
+      '<pre class="spl">' + s.spl + '</pre>' +
+      '<div class="host" id="host-' + idx + '"></div>' +
+      '<p class="note" id="note-' + idx + '"></p>';
+    grid.appendChild(card);
+
+    var host = document.getElementById('host-' + idx);
+    var el = document.createElement('div');
+    el.style.width = '100%';
+    el.style.height = '100%';
+    host.appendChild(el);
+
+    try {
+      var viz = new Viz(el);
+      var formatted = viz.formatData(s.raw);
+      viz.updateView(formatted, s.config);
+      var major = el.querySelector('.bgdhamp-kpi-line-viz__majorValue, .bgdhamp-kpi-line-viz__major');
+      var textCells = el.querySelectorAll('.bgdhamp-kpi-line-viz__textCell, .bgdhamp-kpi-line-viz__textRow a, .bgdhamp-kpi-line-viz__textRow span');
+      var note = document.getElementById('note-' + idx);
+      note.innerHTML =
+        '<span class="ok">Rendered.</span> ' +
+        s.expect +
+        (formatted && formatted.fieldName
+          ? ' Resolved field: <code>' + (formatted.fieldName || '(from config)') + '</code>.'
+          : '');
+      if (s.openInfo) {
+        var btn = el.querySelector('.bgdhamp-kpi-line-viz__info');
+        if (btn) btn.click();
+      }
+    } catch (err) {
+      document.getElementById('note-' + idx).innerHTML =
+        '<span class="warn">Error:</span> ' + String(err && err.message ? err.message : err);
+    }
+  });
+})();
+</script>
+</body>
+</html>

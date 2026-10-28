@@ -16,10 +16,11 @@ define([
 ], function (SplunkVisualizationBase, trendColors, hoverMath) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '20261027-kpi-line-value-field';
+    var VIZ_BUILD = '20261028-kpi-line-annotations';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
+    var MAX_MULTI_SERIES = 8;
     /** Prefer these names when Format valueField is Auto (_time + metric). */
     var VALUE_FIELD_HINTS = [
         'value',
@@ -31,6 +32,17 @@ define([
         'avg',
         'metric',
         'score',
+    ];
+    var COMPARE_FIELD_HINTS = ['previous', 'prior', 'baseline', 'compare', 'target', 'last', 'prev'];
+    var SERIES_PALETTE = [
+        '#FFFFFF',
+        '#7EB6FF',
+        '#DFA611',
+        '#5CC05C',
+        '#F47A22',
+        '#9B6BFF',
+        '#00A9D4',
+        '#E85B79',
     ];
     /** Skip metadata and text-row columns when Auto picks the Y series. */
     var SKIP_VALUE_FIELDS = {
@@ -410,7 +422,8 @@ define([
         return false;
     }
 
-    function columnIsAllNumeric(rawData, columnIndex) {
+    /** True when a column has at least one finite number (OOTB timecharts often have null gaps). */
+    function columnHasNumber(rawData, columnIndex) {
         var name = fieldName(rawData.fields, columnIndex);
         if (isSkippedValueField(name)) {
             return false;
@@ -421,16 +434,16 @@ define([
         }
         var i;
         for (i = 0; i < col.length; i += 1) {
-            if (!isFinite(parseFloat(col[i], 10))) {
-                return false;
+            if (isFinite(parseFloat(col[i], 10))) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     /**
-     * Auto: prefer value/count/… then the last all-numeric non-skipped column.
-     * Explicit Format valueField names the Y series; _time remains the X axis.
+     * Auto: prefer value/count/… then the last numeric non-skipped column.
+     * Allows sparse/null buckets like OOTB line charts. Explicit Format valueField still wins.
      */
     function pickNumericColumnIndex(rawData) {
         if (!rawData || !rawData.columns || !rawData.fields) return -1;
@@ -439,13 +452,13 @@ define([
         var c;
         for (h = 0; h < VALUE_FIELD_HINTS.length; h += 1) {
             var hinted = findFieldIndex(fields, VALUE_FIELD_HINTS[h]);
-            if (hinted >= 0 && columnIsAllNumeric(rawData, hinted)) {
+            if (hinted >= 0 && columnHasNumber(rawData, hinted)) {
                 return hinted;
             }
         }
         var best = -1;
         for (c = 0; c < rawData.columns.length; c += 1) {
-            if (columnIsAllNumeric(rawData, c)) {
+            if (columnHasNumber(rawData, c)) {
                 best = c;
             }
         }
@@ -479,16 +492,128 @@ define([
         var tIdx = findTimeColumnIndex(rawData);
         var out = reorderValuesAndTimesByTime(rawData, idx, tIdx);
         out.fieldName = fieldName(rawData.fields, idx);
+        out.columnIndex = idx;
         out.stringFields = stringFieldsInOrder(rawData, out.rowOrder, idx);
         return out;
     }
 
-    function buildComparisonValues(values) {
-        return values.map(function (v, i) {
-            var base = parseFloat(v, 10);
-            var wiggle = i % 2 === 0 ? -6 : 4;
-            return isFinite(base) ? base + wiggle : base;
+    function valuesFromColumnInOrder(rawData, columnIndex, rowOrder) {
+        var col = rawData && rawData.columns && rawData.columns[columnIndex];
+        if (!col || !rowOrder || !rowOrder.length) {
+            return [];
+        }
+        return rowOrder.map(function (ri) {
+            return parseFloat(col[ri], 10);
         });
+    }
+
+    function resolveCompareColumnIndex(rawData, compareField, primaryIdx) {
+        if (!rawData || !rawData.columns || !rawData.fields) {
+            return -1;
+        }
+        var wanted = normalizeName(compareField);
+        if (!wanted || wanted === 'none' || wanted === 'auto') {
+            var h;
+            for (h = 0; h < COMPARE_FIELD_HINTS.length; h += 1) {
+                var hinted = findFieldIndex(rawData.fields, COMPARE_FIELD_HINTS[h]);
+                if (hinted >= 0 && hinted !== primaryIdx && columnHasNumber(rawData, hinted)) {
+                    return hinted;
+                }
+            }
+            return -1;
+        }
+        var explicit = findFieldIndex(rawData.fields, compareField);
+        if (explicit >= 0 && explicit !== primaryIdx && fieldName(rawData.fields, explicit) !== '_time') {
+            return explicit;
+        }
+        return -1;
+    }
+
+    function listMultiSeriesColumns(rawData, primaryIdx) {
+        var out = [];
+        if (!rawData || !rawData.columns || !rawData.fields) {
+            return out;
+        }
+        var c;
+        for (c = 0; c < rawData.columns.length; c += 1) {
+            if (c === primaryIdx) {
+                continue;
+            }
+            if (!columnHasNumber(rawData, c)) {
+                continue;
+            }
+            out.push({ index: c, name: fieldName(rawData.fields, c) });
+            if (out.length >= MAX_MULTI_SERIES - 1) {
+                break;
+            }
+        }
+        return out;
+    }
+
+    function downsampleAligned(values, times, maxPoints) {
+        var cap = Math.floor(Number(maxPoints) || 0);
+        if (!cap || !values || values.length <= cap) {
+            return { values: values || [], times: times || [], indices: null };
+        }
+        var stride = Math.ceil(values.length / cap);
+        var vOut = [];
+        var tOut = [];
+        var indices = [];
+        var i;
+        for (i = 0; i < values.length; i += stride) {
+            vOut.push(values[i]);
+            tOut.push(times[i]);
+            indices.push(i);
+        }
+        if (indices[indices.length - 1] !== values.length - 1) {
+            vOut.push(values[values.length - 1]);
+            tOut.push(times[times.length - 1]);
+            indices.push(values.length - 1);
+        }
+        return { values: vOut, times: tOut, indices: indices };
+    }
+
+    function pickAligned(values, indices) {
+        if (!indices || !values) {
+            return values || [];
+        }
+        return indices.map(function (i) {
+            return values[i];
+        });
+    }
+
+    function fitScaleToSeries(scale, seriesArrays) {
+        var lo = scale.min;
+        var hi = scale.max;
+        var s;
+        var i;
+        var v;
+        var saw = false;
+        for (s = 0; s < seriesArrays.length; s += 1) {
+            var arr = seriesArrays[s] || [];
+            for (i = 0; i < arr.length; i += 1) {
+                v = Number(arr[i]);
+                if (!isFinite(v)) {
+                    continue;
+                }
+                if (!saw) {
+                    lo = v;
+                    hi = v;
+                    saw = true;
+                } else {
+                    if (v < lo) lo = v;
+                    if (v > hi) hi = v;
+                }
+            }
+        }
+        if (!saw) {
+            return scale;
+        }
+        if (!(hi > lo)) {
+            hi = lo + 1;
+        }
+        var pad = (hi - lo) * 0.05;
+        return { min: lo - pad, max: hi + pad };
     }
 
     function clamp(v, lo, hi) {
@@ -535,14 +660,69 @@ define([
         var xStep = iw / (n - 1);
         var parts = [];
         var i;
+        var penUp = true;
+        var plotted = 0;
         for (i = 0; i < n; i += 1) {
             var v = Number(values[i]);
-            var ratio = (v - vmin) / (vmax - vmin);
-            ratio = clamp(ratio, 0, 1);
+            if (!isFinite(v)) {
+                penUp = true;
+                continue;
+            }
+            var ratio = clamp((v - vmin) / (vmax - vmin), 0, 1);
             var x = padL + i * xStep;
             var y = padT + ih - ratio * ih;
-            parts.push((i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1));
+            parts.push((penUp ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1));
+            penUp = false;
+            plotted += 1;
         }
+        return plotted >= 2 ? parts.join(' ') : '';
+    }
+
+    function buildAreaPath(values, width, height, padL, padR, padT, padB, vmin, vmax) {
+        var line = buildPath(values, width, height, padL, padR, padT, padB, vmin, vmax);
+        if (!line) {
+            return '';
+        }
+        var n = values.length;
+        var iw = Math.max(1, width - padL - padR);
+        var xStep = iw / (n - 1);
+        var lastX = padL + (n - 1) * xStep;
+        var baselineY = height - padB;
+        return (
+            line +
+            ' L' +
+            lastX.toFixed(1) +
+            ' ' +
+            baselineY.toFixed(1) +
+            ' L' +
+            padL.toFixed(1) +
+            ' ' +
+            baselineY.toFixed(1) +
+            ' Z'
+        );
+    }
+
+    function buildBetweenPath(primaryValues, compareValues, width, height, padL, padR, padT, padB, vmin, vmax) {
+        var n = Math.min(primaryValues.length, compareValues.length);
+        if (n < 2) {
+            return '';
+        }
+        var iw = Math.max(1, width - padL - padR);
+        var ih = Math.max(1, height - padT - padB);
+        var xStep = iw / (n - 1);
+        var parts = [];
+        var i;
+        function yAt(v) {
+            var ratio = clamp((Number(v) - vmin) / (vmax - vmin), 0, 1);
+            return padT + ih - ratio * ih;
+        }
+        for (i = 0; i < n; i += 1) {
+            parts.push((i === 0 ? 'M' : 'L') + (padL + i * xStep).toFixed(1) + ' ' + yAt(primaryValues[i]).toFixed(1));
+        }
+        for (i = n - 1; i >= 0; i -= 1) {
+            parts.push('L' + (padL + i * xStep).toFixed(1) + ' ' + yAt(compareValues[i]).toFixed(1));
+        }
+        parts.push('Z');
         return parts.join(' ');
     }
 
@@ -692,6 +872,14 @@ define([
         var norm = opts.norm;
         var unit = opts.unit;
         var width = opts.width;
+        var guideStroke = opts.guideStroke || 'rgba(255,255,255,0.22)';
+        var primaryName = opts.primaryName || 'value';
+        var cmpValues = opts.cmpValues;
+        var cmpStroke = opts.cmpStroke || '#7EB6FF';
+        var cmpName = opts.cmpName || 'compare';
+        var yFor = opts.yFor;
+        var annotations = opts.annotations || [];
+        var compareAnnotations = opts.compareAnnotations || [];
 
         var svgDoc = svg.ownerDocument || ownerDoc;
 
@@ -706,35 +894,61 @@ define([
         line.setAttribute('x2', hx.toFixed(1));
         line.setAttribute('y1', String(padT));
         line.setAttribute('y2', String(chartH - padB));
-        line.setAttribute('stroke', 'rgba(255,255,255,0.22)');
+        line.setAttribute('stroke', guideStroke);
         line.setAttribute('stroke-width', '1');
         g.appendChild(line);
 
-        var dot = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        dot.setAttribute('cx', hx.toFixed(1));
-        dot.setAttribute('cy', hy.toFixed(1));
-        dot.setAttribute('r', '4');
-        dot.setAttribute('fill', stroke);
-        dot.setAttribute('stroke', 'rgba(0,0,0,0.35)');
-        dot.setAttribute('stroke-width', '1');
-        g.appendChild(dot);
+        function addHoverDot(cy, fill) {
+            if (!isFinite(cy)) {
+                return;
+            }
+            var dot = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            dot.setAttribute('cx', hx.toFixed(1));
+            dot.setAttribute('cy', cy.toFixed(1));
+            dot.setAttribute('r', '4');
+            dot.setAttribute('fill', fill);
+            dot.setAttribute('stroke', 'rgba(0,0,0,0.35)');
+            dot.setAttribute('stroke-width', '1');
+            g.appendChild(dot);
+        }
+
+        addHoverDot(hy, stroke);
+        if (cmpValues && typeof yFor === 'function' && isFinite(cmpValues[idx])) {
+            addHoverDot(yFor(cmpValues[idx]), cmpStroke);
+        }
 
         svg.appendChild(g);
 
         var v = plotValues[idx];
         var timeLabel = formatHoverTime(times, norm.ms, idx, norm.timeLike);
         var valueLabel = formatHoverValue(v, unit);
+        var cmpLabel =
+            cmpValues && isFinite(cmpValues[idx]) ? formatHoverValue(cmpValues[idx], unit) : '';
+        var primaryAnn = annotations[idx] ? String(annotations[idx]).trim() : '';
+        var compareAnn = compareAnnotations[idx] ? String(compareAnnotations[idx]).trim() : '';
 
         tooltip.innerHTML = '';
-        var valEl = ownerDoc.createElement('div');
-        valEl.className = 'bgdhamp-kpi-line-viz__tooltipValue';
-        valEl.textContent = valueLabel;
-        tooltip.appendChild(valEl);
+        function addTipLine(text, className) {
+            if (!text) {
+                return;
+            }
+            var el = ownerDoc.createElement('div');
+            el.className = className || 'bgdhamp-kpi-line-viz__tooltipTime';
+            el.textContent = text;
+            tooltip.appendChild(el);
+        }
+        addTipLine(primaryName + ': ' + valueLabel, 'bgdhamp-kpi-line-viz__tooltipValue');
+        if (primaryAnn) {
+            addTipLine(primaryAnn, 'bgdhamp-kpi-line-viz__tooltipAnn');
+        }
+        if (cmpLabel) {
+            addTipLine(cmpName + ': ' + cmpLabel, 'bgdhamp-kpi-line-viz__tooltipValue');
+        }
+        if (compareAnn) {
+            addTipLine(compareAnn, 'bgdhamp-kpi-line-viz__tooltipAnn');
+        }
         if (timeLabel) {
-            var timeEl = ownerDoc.createElement('div');
-            timeEl.className = 'bgdhamp-kpi-line-viz__tooltipTime';
-            timeEl.textContent = timeLabel;
-            tooltip.appendChild(timeEl);
+            addTipLine(timeLabel, 'bgdhamp-kpi-line-viz__tooltipTime');
         }
 
         tooltip.style.display = 'block';
@@ -766,10 +980,98 @@ define([
 
         if (opts.showHoverAnnotation && opts.hoverAnnEl) {
             var ann = opts.hoverAnnEl;
-            var annParts = [valueLabel];
-            if (timeLabel) annParts.push(timeLabel);
+            var annParts = [primaryName + ' ' + valueLabel];
+            if (cmpLabel) {
+                annParts.push(cmpName + ' ' + cmpLabel);
+            }
+            if (primaryAnn) {
+                annParts.push(primaryAnn);
+            }
+            if (compareAnn) {
+                annParts.push(compareAnn);
+            }
+            if (timeLabel) {
+                annParts.push(timeLabel);
+            }
             ann.textContent = annParts.join(' \u2014 ');
             ann.style.display = 'block';
+        }
+    }
+
+    function annotationColumn(stringFields, fieldNameKey, len) {
+        var out = [];
+        var i;
+        var name = String(fieldNameKey || '').trim();
+        var col = name && stringFields ? stringFields[name] : null;
+        for (i = 0; i < len; i += 1) {
+            out.push(col && col[i] != null ? String(col[i]).trim() : '');
+        }
+        return out;
+    }
+
+    function appendAnnotationMarks(svg, ownerDoc, values, annotations, width, chartH, padL, padR, padT, padB, scale, color, showLabels) {
+        if (!values || !annotations || values.length < 2) {
+            return;
+        }
+        var n = values.length;
+        var iw = Math.max(1, width - padL - padR);
+        var ih = Math.max(1, chartH - padT - padB);
+        var xStep = iw / (n - 1);
+        var i;
+        for (i = 0; i < n; i += 1) {
+            var label = annotations[i] ? String(annotations[i]).trim() : '';
+            if (!label || !isFinite(values[i])) {
+                continue;
+            }
+            var x = padL + i * xStep;
+            var ratio = clamp((Number(values[i]) - scale.min) / (scale.max - scale.min), 0, 1);
+            var y = padT + ih - ratio * ih;
+            var mark = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            mark.setAttribute('class', 'bgdhamp-kpi-line-viz__annMark');
+            mark.setAttribute('cx', x.toFixed(1));
+            mark.setAttribute('cy', y.toFixed(1));
+            mark.setAttribute('r', '3.5');
+            mark.setAttribute('fill', color);
+            mark.setAttribute('stroke', '#fff');
+            mark.setAttribute('stroke-width', '1');
+            svg.appendChild(mark);
+            if (showLabels) {
+                var text = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('class', 'bgdhamp-kpi-line-viz__annLabel');
+                text.setAttribute('x', x.toFixed(1));
+                text.setAttribute('y', Math.max(10, y - 8).toFixed(1));
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', color);
+                text.setAttribute('font-size', '9');
+                text.textContent = label.length > 18 ? label.slice(0, 16) + '…' : label;
+                svg.appendChild(text);
+            }
+        }
+    }
+
+    function appendRefLine(svg, ownerDoc, y, width, padL, padR, stroke, dash, label) {
+        if (!isFinite(y)) {
+            return;
+        }
+        var line = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', String(padL));
+        line.setAttribute('x2', String(width - padR));
+        line.setAttribute('y1', String(y));
+        line.setAttribute('y2', String(y));
+        line.setAttribute('stroke', stroke);
+        line.setAttribute('stroke-width', '1.5');
+        if (dash) {
+            line.setAttribute('stroke-dasharray', dash);
+        }
+        svg.appendChild(line);
+        if (label) {
+            var text = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', String(padL + 2));
+            text.setAttribute('y', String(Math.max(10, y - 3)));
+            text.setAttribute('fill', stroke);
+            text.setAttribute('font-size', '9');
+            text.textContent = label;
+            svg.appendChild(text);
         }
     }
 
@@ -1086,21 +1388,145 @@ define([
             var smoothing = String(readConfig(config, 'smoothing', 'none')).toLowerCase();
             var smaWindow = readInt(config, 'smaWindow', 3);
             var maxPoints = readInt(config, 'maxPoints', 0);
+            var seriesMode = String(readConfig(config, 'seriesMode', 'single') || 'single')
+                .trim()
+                .toLowerCase();
+            if (seriesMode !== 'multi') {
+                seriesMode = 'single';
+            }
+            var showArea = readBool(config, 'showArea', false);
+            var shadeBetween = readBool(config, 'shadeBetween', false);
+            var areaColor = sanitizeCssColor(
+                readConfig(config, 'areaColor', 'rgba(255,255,255,0.22)'),
+                'rgba(255,255,255,0.22)'
+            );
+            var compareStroke = sanitizeHexColor(
+                readConfig(config, 'compareStroke', '#7EB6FF'),
+                '#7EB6FF'
+            );
+            var comparison = readBool(config, 'comparison', false);
+            var compareFieldCustom = String(readConfig(config, 'compareFieldCustom', '') || '').trim();
+            var compareField = compareFieldCustom
+                ? compareFieldCustom
+                : String(readConfig(config, 'compareField', 'auto') || 'auto').trim() || 'auto';
+            var annotationField = String(readConfig(config, 'annotationField', 'annotation') || '').trim();
+            var compareAnnotationField = String(
+                readConfig(config, 'compareAnnotationField', 'annotation_compare') || ''
+            ).trim();
+            var showAnnotationLabels = readBool(config, 'showAnnotationLabels', false);
+            var highLineRaw = readConfig(config, 'highLine', '');
+            var criticalLineRaw = readConfig(config, 'criticalLine', '');
+            var highLine =
+                highLineRaw === '' || highLineRaw == null ? null : readFloat(config, 'highLine', NaN);
+            var criticalLine =
+                criticalLineRaw === '' || criticalLineRaw == null
+                    ? null
+                    : readFloat(config, 'criticalLine', NaN);
+            if (!isFinite(highLine)) {
+                highLine = null;
+            }
+            if (!isFinite(criticalLine)) {
+                criticalLine = null;
+            }
+
+            var primaryColumnIndex =
+                rawData && series.columnIndex != null
+                    ? series.columnIndex
+                    : resolveValueColumnIndex(rawData || { columns: [], fields: [] }, valueField);
+            var rowOrder =
+                (series && series.rowOrder) ||
+                (function () {
+                    var order = [];
+                    var ri;
+                    for (ri = 0; ri < values.length; ri += 1) {
+                        order.push(ri);
+                    }
+                    return order;
+                })();
+
             var plotValues = values.slice();
             if (smoothing === 'sma') plotValues = sma(plotValues, smaWindow);
-            var ds = downsample(plotValues, times, maxPoints);
+
+            var cmpValues = null;
+            var compareFieldName = '';
+            if (comparison && rawData && primaryColumnIndex >= 0) {
+                var cmpIdx = resolveCompareColumnIndex(rawData, compareField, primaryColumnIndex);
+                if (cmpIdx >= 0) {
+                    cmpValues = valuesFromColumnInOrder(rawData, cmpIdx, rowOrder);
+                    compareFieldName = fieldName(rawData.fields, cmpIdx);
+                    if (smoothing === 'sma') {
+                        cmpValues = sma(cmpValues, smaWindow);
+                    }
+                }
+            }
+
+            var extraSeries = [];
+            if (seriesMode === 'multi' && rawData && primaryColumnIndex >= 0) {
+                var multiCols = listMultiSeriesColumns(rawData, primaryColumnIndex);
+                var mi;
+                for (mi = 0; mi < multiCols.length; mi += 1) {
+                    if (compareFieldName && multiCols[mi].name === compareFieldName) {
+                        continue;
+                    }
+                    var multiVals = valuesFromColumnInOrder(rawData, multiCols[mi].index, rowOrder);
+                    if (smoothing === 'sma') {
+                        multiVals = sma(multiVals, smaWindow);
+                    }
+                    extraSeries.push({ name: multiCols[mi].name, values: multiVals });
+                }
+            }
+
+            var ds = downsampleAligned(plotValues, times, maxPoints);
             plotValues = ds.values;
             times = ds.times;
+            if (cmpValues && ds.indices) {
+                cmpValues = pickAligned(cmpValues, ds.indices);
+            } else if (cmpValues && cmpValues.length !== plotValues.length) {
+                cmpValues = cmpValues.slice(0, plotValues.length);
+            }
+            for (mi = 0; mi < extraSeries.length; mi += 1) {
+                if (ds.indices) {
+                    extraSeries[mi].values = pickAligned(extraSeries[mi].values, ds.indices);
+                } else if (extraSeries[mi].values.length !== plotValues.length) {
+                    extraSeries[mi].values = extraSeries[mi].values.slice(0, plotValues.length);
+                }
+            }
 
-            var comparison = readBool(config, 'comparison', false);
-            var cmpValues = null;
-            if (comparison) {
-                cmpValues = buildComparisonValues(plotValues);
-                if (smoothing === 'sma') cmpValues = sma(cmpValues, smaWindow);
+            var annotationsFull = annotationColumn(stringFields, annotationField, values.length);
+            var compareAnnotationsFull = annotationColumn(
+                stringFields,
+                compareAnnotationField,
+                values.length
+            );
+            var annotations = annotationsFull;
+            var compareAnnotations = compareAnnotationsFull;
+            if (ds.indices) {
+                annotations = pickAligned(annotationsFull, ds.indices);
+                compareAnnotations = pickAligned(compareAnnotationsFull, ds.indices);
             }
 
             var scale = bounds(readConfig(config, 'min', 0), readConfig(config, 'max', 100));
-            var stroke = sanitizeHexColor(readConfig(config, 'stroke', '#FFFFFF'), '#FFFFFF');
+            if (seriesMode === 'multi' || cmpValues || highLine != null || criticalLine != null) {
+                var fitArrays = [plotValues];
+                if (cmpValues) {
+                    fitArrays.push(cmpValues);
+                }
+                for (mi = 0; mi < extraSeries.length; mi += 1) {
+                    fitArrays.push(extraSeries[mi].values);
+                }
+                if (highLine != null) {
+                    fitArrays.push([highLine]);
+                }
+                if (criticalLine != null) {
+                    fitArrays.push([criticalLine]);
+                }
+                scale = fitScaleToSeries(scale, fitArrays);
+            }
+            var strokeRaw = readConfig(config, 'stroke', null);
+            var stroke = sanitizeHexColor(
+                strokeRaw != null && String(strokeRaw).trim() !== '' ? strokeRaw : '#FFFFFF',
+                '#FFFFFF'
+            );
             var unit = String(readConfig(config, 'unit', '') || '');
             var subheader = String(readConfig(config, 'subheader', '') || '');
             var useThreshold = readBool(config, 'threshold', false);
@@ -1184,8 +1610,17 @@ define([
             var padB = effPadB;
             var chartH = Math.max(40, height - subheaderH - majorH - textRowH);
 
-            var containerBg = showMajor && colorPlacement === 'top' ? background : trendBg;
-            var chartStripBg = showMajor && colorPlacement === 'top' ? background : trendBg;
+            // Chart-only (no major row) uses Format background — Classic-like panels stay light/neutral.
+            var containerBg =
+                !showMajor || colorPlacement === 'top' ? background : trendBg;
+            var chartStripBg =
+                !showMajor || colorPlacement === 'top' ? background : trendBg;
+            var classicChart = !showMajor;
+            var guideStroke = classicChart ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.22)';
+            // Chart-only on light panels: default white stroke is invisible — use goodColor like OOTB.
+            if (classicChart && (strokeRaw == null || String(strokeRaw).trim() === '')) {
+                stroke = goodColor;
+            }
 
             log(
                 'layout:',
@@ -1373,6 +1808,106 @@ define([
                 svg.appendChild(tLine);
             }
 
+            if (highLine != null) {
+                appendRefLine(
+                    svg,
+                    ownerDoc,
+                    yFor(highLine),
+                    width,
+                    padL,
+                    padR,
+                    classicChart ? '#F1813F' : '#FFB020',
+                    '5 4',
+                    'High ' + highLine
+                );
+            }
+            if (criticalLine != null) {
+                appendRefLine(
+                    svg,
+                    ownerDoc,
+                    yFor(criticalLine),
+                    width,
+                    padL,
+                    padR,
+                    classicChart ? '#DC4E41' : '#FF6B6B',
+                    '2 3',
+                    'Critical ' + criticalLine
+                );
+            }
+
+            if (showArea) {
+                var areaD = buildAreaPath(
+                    plotValues,
+                    width,
+                    chartH,
+                    padL,
+                    padR,
+                    padT,
+                    padB,
+                    scale.min,
+                    scale.max
+                );
+                if (areaD) {
+                    var areaPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    areaPath.setAttribute('class', 'bgdhamp-kpi-line-viz__area');
+                    areaPath.setAttribute('d', areaD);
+                    areaPath.setAttribute('fill', areaColor);
+                    areaPath.setAttribute('stroke', 'none');
+                    svg.appendChild(areaPath);
+                }
+            }
+
+            if (shadeBetween && cmpValues) {
+                var betweenD = buildBetweenPath(
+                    plotValues,
+                    cmpValues,
+                    width,
+                    chartH,
+                    padL,
+                    padR,
+                    padT,
+                    padB,
+                    scale.min,
+                    scale.max
+                );
+                if (betweenD) {
+                    var betweenPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    betweenPath.setAttribute('class', 'bgdhamp-kpi-line-viz__shadeBetween');
+                    betweenPath.setAttribute('d', betweenD);
+                    betweenPath.setAttribute('fill', 'rgba(126,182,255,0.22)');
+                    betweenPath.setAttribute('stroke', 'none');
+                    svg.appendChild(betweenPath);
+                }
+            }
+
+            var legendItems = [];
+            var ei;
+            for (ei = 0; ei < extraSeries.length; ei += 1) {
+                var extraColor = SERIES_PALETTE[(ei + 2) % SERIES_PALETTE.length];
+                var extraD = buildPath(
+                    extraSeries[ei].values,
+                    width,
+                    chartH,
+                    padL,
+                    padR,
+                    padT,
+                    padB,
+                    scale.min,
+                    scale.max
+                );
+                if (extraD) {
+                    var extraPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    extraPath.setAttribute('d', extraD);
+                    extraPath.setAttribute('fill', 'none');
+                    extraPath.setAttribute('stroke', extraColor);
+                    extraPath.setAttribute('stroke-width', String(Math.max(1, strokeWidth - 0.5)));
+                    extraPath.setAttribute('stroke-opacity', '0.85');
+                    extraPath.setAttribute('vector-effect', 'non-scaling-stroke');
+                    svg.appendChild(extraPath);
+                    legendItems.push({ name: extraSeries[ei].name, color: extraColor });
+                }
+            }
+
             if (cmpValues) {
                 var cmpPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
                 var cmpD = buildPath(
@@ -1389,11 +1924,17 @@ define([
                 if (cmpD) {
                     cmpPath.setAttribute('d', cmpD);
                     cmpPath.setAttribute('fill', 'none');
-                    cmpPath.setAttribute('stroke', 'rgba(255,255,255,0.65)');
+                    cmpPath.setAttribute('stroke', compareStroke);
                     cmpPath.setAttribute('stroke-width', String(strokeWidth));
                     cmpPath.setAttribute('stroke-dasharray', '6 4');
-                    cmpPath.setAttribute('stroke-opacity', '0.55');
+                    cmpPath.setAttribute('stroke-opacity', '0.9');
+                    cmpPath.setAttribute('vector-effect', 'non-scaling-stroke');
                     svg.appendChild(cmpPath);
+                    legendItems.unshift({
+                        name: compareFieldName || 'compare',
+                        color: compareStroke,
+                        dashed: true,
+                    });
                 }
             }
 
@@ -1416,6 +1957,43 @@ define([
                 mainPath.setAttribute('stroke-width', String(strokeWidth));
                 mainPath.setAttribute('vector-effect', 'non-scaling-stroke');
                 svg.appendChild(mainPath);
+                legendItems.unshift({
+                    name: series.fieldName || valueField || 'value',
+                    color: stroke,
+                });
+            }
+
+            appendAnnotationMarks(
+                svg,
+                ownerDoc,
+                plotValues,
+                annotations,
+                width,
+                chartH,
+                padL,
+                padR,
+                padT,
+                padB,
+                scale,
+                stroke,
+                showAnnotationLabels
+            );
+            if (cmpValues) {
+                appendAnnotationMarks(
+                    svg,
+                    ownerDoc,
+                    cmpValues,
+                    compareAnnotations,
+                    width,
+                    chartH,
+                    padL,
+                    padR,
+                    padT,
+                    padB,
+                    scale,
+                    compareStroke,
+                    showAnnotationLabels
+                );
             }
 
             var n = plotValues.length;
@@ -1443,7 +2021,10 @@ define([
                     var tick = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'text');
                     tick.setAttribute('x', tx.toFixed(1));
                     tick.setAttribute('y', String(chartH - 2));
-                    tick.setAttribute('fill', 'rgba(255,255,255,0.55)');
+                    tick.setAttribute(
+                        'fill',
+                        classicChart ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)'
+                    );
                     tick.setAttribute('font-size', '9');
                     tick.setAttribute('text-anchor', 'middle');
                     var label = isFinite(norm.ms[idx])
@@ -1531,6 +2112,14 @@ define([
                         clientY: e.clientY,
                         showHoverAnnotation: showHoverAnnotation,
                         hoverAnnEl: hoverAnnEl,
+                        guideStroke: guideStroke,
+                        primaryName: series.fieldName || valueField || 'value',
+                        cmpValues: cmpValues,
+                        cmpStroke: compareStroke,
+                        cmpName: compareFieldName || 'compare',
+                        yFor: yFor,
+                        annotations: annotations,
+                        compareAnnotations: compareAnnotations,
                     });
                 }
                 teardownDoc.push(function () {
@@ -1596,6 +2185,31 @@ define([
             enableAncestorPointerEvents(this.el);
 
             chartWrap.appendChild(svg);
+            if (legendItems.length > 1) {
+                var legend = ownerDoc.createElement('div');
+                legend.className = 'bgdhamp-kpi-line-viz__legend';
+                var li;
+                for (li = 0; li < legendItems.length; li += 1) {
+                    var row = ownerDoc.createElement('div');
+                    row.className = 'bgdhamp-kpi-line-viz__legendRow';
+                    var swatch = ownerDoc.createElement('span');
+                    swatch.className = 'bgdhamp-kpi-line-viz__legendSwatch';
+                    swatch.style.background = legendItems[li].color;
+                    if (legendItems[li].dashed) {
+                        swatch.style.background =
+                            'repeating-linear-gradient(90deg,' +
+                            legendItems[li].color +
+                            ' 0 4px, transparent 4px 7px)';
+                    }
+                    var lab = ownerDoc.createElement('span');
+                    lab.className = 'bgdhamp-kpi-line-viz__legendLabel';
+                    lab.textContent = legendItems[li].name;
+                    row.appendChild(swatch);
+                    row.appendChild(lab);
+                    legend.appendChild(row);
+                }
+                chartWrap.appendChild(legend);
+            }
             if (hoverAnnEl) {
                 chartWrap.appendChild(hoverAnnEl);
             }

@@ -174,8 +174,9 @@
 | streamstats count as n
 | eval _time = relative_time(now(), "-" . (n - 1) . "m@m")
 | eval value = 28 + ((n * 13) % 52)
+| eval previous = 22 + ((n * 9) % 40)
 | eval text1="East", text1_label="Region", urls1="https://example.com/regions/East", text2="1204", text3="Stable", info="Weighted score, last 24h"
-| fields _time value text1 text1_label urls1 text2 text3 info
+| fields _time value previous text1 text1_label urls1 text2 text3 info
 | sort 0 _time
 | tail 20
                 </query>
@@ -185,6 +186,10 @@
             <viz type="so_BUI_pickulationts.splunkstuff_kpi_line">
                 <search base="gallery_kpi_line_text" />
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.valueField">value</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.comparison">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.compareField">previous</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.showArea">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.shadeBetween">true</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.showHover">true</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.text1LabelField">text1_label</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.text1LinkUrlField">urls1</option>
@@ -194,7 +199,7 @@
     </row>
     <row>
         <panel>
-            <title>Data pie - JavaScript</title>
+            <title>Data pie - Classic style</title>
             <search id="gallery_pie_js">
                 <query>
 | makeresults count=18
@@ -212,26 +217,23 @@
                 <search base="gallery_pie_js" />
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.labelField">category</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.valueField">value</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.compareField">previous</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.colorField">color</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.topN">5</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.otherEnabled">true</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.otherLabel">Other</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.minSlicePercent">2</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.palettePreset">splunk</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showPercent">true</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showDataQuality">true</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showInspector">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showValue">false</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showRowCount">false</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showDataQuality">false</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showInspector">false</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showTooltip">true</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showOtherBreakdown">true</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showSliceLabels">true</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.sliceLabelMinPercent">1</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.innerRadius">44</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.innerRadius">0</option>
                 <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.legendPosition">none</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.drilldown">true</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.drilldownAction">tokens</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.tokenPrefix">pie</option>
-                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.title">Top contributors + callouts</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.background">#FFFFFF</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.textColor">#3C444D</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.title">Contribution by category</option>
             </viz>
             <table>
                 <title>Data</title>
@@ -239,6 +241,25 @@
                 <option name="count">20</option>
                 <option name="drilldown">none</option>
             </table>
+        </panel>
+        <panel>
+            <title>Data pie - Inspector donut</title>
+            <option name="height">320</option>
+            <viz type="so_BUI_pickulationts.splunkstuff_pie_chart">
+                <search base="gallery_pie_js" />
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.labelField">category</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.valueField">value</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.compareField">previous</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.colorField">color</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.topN">5</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.otherEnabled">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showInspector">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showDataQuality">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.showSliceLabels">true</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.innerRadius">44</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.legendPosition">none</option>
+                <option name="display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.title">Top contributors + callouts</option>
+            </viz>
         </panel>
         <panel>
             <title>Data pie - React</title>
