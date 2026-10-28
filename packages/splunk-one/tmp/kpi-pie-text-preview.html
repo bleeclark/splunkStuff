@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Pie chart text row + info preview</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css" />
+<style>
+    body { font-family: Helvetica, Arial, sans-serif; background: #eef0f3; margin: 16px; }
+    .card { width: 480px; background: #fff; border: 1px solid #d5d9de; border-radius: 4px; padding: 10px; }
+    h2 { font-size: 13px; margin: 0 0 8px; }
+    .dashboard-element { width: 100%; height: 320px; }
+    .note { font-size: 12px; margin: 8px 0 0; color: #3C444D; }
+</style>
+</head>
+<body>
+<div class="card">
+    <h2>Pie: text row + info (same Format contract as line / sparkline)</h2>
+    <div class="dashboard-element" id="host"></div>
+    <p class="note" id="note"></p>
+</div>
+<script>
+    var factories = [];
+    window.define = function (deps, factory) {
+        factories.push(factory);
+    };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js"></script>
+<script>
+    var Base = {
+        COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+        extend: function (proto) {
+            function Viz(el) { this.el = el; }
+            Viz.prototype = proto;
+            return Viz;
+        },
+    };
+    var Viz = factories[0](Base);
+    var raw = {
+        fields: [
+            { name: 'category' },
+            { name: 'count' },
+            { name: 'text1' },
+            { name: 'text1_label' },
+            { name: 'urls1' },
+            { name: 'text2' },
+            { name: 'text3' },
+            { name: 'info' },
+        ],
+        columns: [
+            ['Critical', 'High', 'Medium', 'Low'],
+            ['42', '88', '156', '310'],
+            ['East', 'East', 'East', 'East'],
+            ['Region', 'Region', 'Region', 'Region'],
+            [
+                'https://example.com/regions/East',
+                'https://example.com/regions/East',
+                'https://example.com/regions/East',
+                'https://example.com/regions/East',
+            ],
+            ['1204', '1204', '1204', '1204'],
+            ['Stable', 'Stable', 'Stable', 'Stable'],
+            [
+                'Risk volume by severity — last 24h',
+                'Risk volume by severity — last 24h',
+                'Risk volume by severity — last 24h',
+                'Risk volume by severity — last 24h',
+            ],
+        ],
+    };
+    var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
+    var config = {};
+    config[NS + 'labelField'] = 'category';
+    config[NS + 'valueField'] = 'count';
+    config[NS + 'title'] = 'Findings by severity';
+    config[NS + 'showSliceLabels'] = 'true';
+    config[NS + 'legendPosition'] = 'none';
+    config[NS + 'showTextRow'] = 'true';
+    config[NS + 'text1LabelField'] = 'text1_label';
+    config[NS + 'text1LinkUrlField'] = 'urls1';
+    config[NS + 'showInfo'] = 'true';
+    var el = document.createElement('div');
+    el.style.width = '460px';
+    el.style.height = '300px';
+    document.getElementById('host').appendChild(el);
+    var viz = new Viz(el);
+    viz.updateView(viz.formatData(raw), config);
+    var link = el.querySelector('a.bgdhamp-pie-chart-viz__textCell, .bgdhamp-pie-chart-viz__textRow a');
+    var cells = el.querySelectorAll('.bgdhamp-pie-chart-viz__textCell');
+    var infoBtn = el.querySelector('.bgdhamp-pie-chart-viz__info');
+    var bits = [];
+    bits.push(cells.length ? 'Text cells: ' + cells.length : 'Text row missing');
+    if (link) {
+        bits.push('First link: "' + link.textContent + '" → ' + link.getAttribute('href'));
+    }
+    bits.push(infoBtn ? 'Info icon present' : 'Info icon missing');
+    document.getElementById('note').textContent = bits.join(' · ');
+    if (infoBtn) {
+        infoBtn.click();
+    }
+</script>
+</body>
+</html>
