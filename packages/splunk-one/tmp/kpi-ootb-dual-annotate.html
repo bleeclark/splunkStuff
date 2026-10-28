@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>OOTB-style dual line + minimal pie</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css" />
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; background: #dfe3e8; margin: 16px; color: #1b1c1d; }
+  h1 { font-size: 16px; margin: 0 0 6px; }
+  h2 { font-size: 13px; margin: 0 0 6px; }
+  .intro { font-size: 12px; color: #444; max-width: 960px; margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 14px; max-width: 980px; }
+  .card { background: #fff; border: 1px solid #b8bec7; border-radius: 3px; padding: 10px 12px; }
+  pre { margin: 0 0 8px; padding: 8px; background: #222; color: #eee; font-size: 10px; border-radius: 3px; white-space: pre-wrap; }
+  .host { height: 280px; border: 1px solid #c5cad3; background: #fff; }
+  #pie-host { height: 320px; }
+  .note { font-size: 11px; margin-top: 8px; color: #333; }
+</style>
+</head>
+<body>
+<h1>Classic-style dual line (annotations + High/Critical) and minimal pie</h1>
+<p class="intro">
+  Line: two series over time, High + Critical reference lines, markers from annotation columns, hover both points.
+  Custom KPI chrome off (no major number, no text row, no info). Pie: Studio-style outside labels + percents, legend off.
+</p>
+<div class="grid">
+  <div class="card">
+    <h2>Line — actual vs baseline</h2>
+    <pre>| timechart span=1h avg(latency) as value, avg(slo) as previous
+| eval annotation=if(value&gt;90,"Spike",""), annotation_compare=if(previous&gt;85,"SLO risk","")
+| fields _time value previous annotation annotation_compare</pre>
+    <div class="host" id="line-host"></div>
+    <p class="note">Hover the chart to see both series + annotations. Orange = High, red = Critical.</p>
+  </div>
+  <div class="card">
+    <h2>Pie — Studio-style</h2>
+    <pre>| stats count as value by category</pre>
+    <div class="host" id="pie-host"></div>
+    <p class="note">Outside labels + percents, legend off — same layout as Studio default.</p>
+  </div>
+</div>
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampTrendColors.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampVizHoverMath.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js"></script>
+<script>
+(function () {
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var trend = factories[0]();
+  var hover = factories[1]();
+  var LineViz = factories[2](Base, trend, hover);
+  var PieViz = factories[3](Base);
+  var LNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var PNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
+  var now = Date.now();
+  var n = 24;
+  var times = [];
+  var value = [];
+  var previous = [];
+  var annotation = [];
+  var annotation_compare = [];
+  var i;
+  for (i = 1; i <= n; i += 1) {
+    times.push(new Date(now - (n - i) * 3600000).toISOString());
+    var v = 55 + ((i * 11) % 40) + (i === 8 || i === 17 ? 35 : 0);
+    var p = 50 + ((i * 7) % 28);
+    value.push(String(v));
+    previous.push(String(p));
+    annotation.push(v > 90 ? 'Spike' : '');
+    annotation_compare.push(p > 70 ? 'SLO risk' : '');
+  }
+
+  var lineCfg = {};
+  lineCfg[LNS + 'valueField'] = 'value';
+  lineCfg[LNS + 'comparison'] = 'true';
+  lineCfg[LNS + 'compareField'] = 'previous';
+  lineCfg[LNS + 'showArea'] = 'true';
+  lineCfg[LNS + 'shadeBetween'] = 'false';
+  lineCfg[LNS + 'areaColor'] = 'rgba(30,147,198,0.18)';
+  lineCfg[LNS + 'showMajor'] = 'false';
+  lineCfg[LNS + 'showTextRow'] = 'false';
+  lineCfg[LNS + 'showInfo'] = 'false';
+  lineCfg[LNS + 'showHover'] = 'true';
+  lineCfg[LNS + 'showHoverAnnotation'] = 'true';
+  lineCfg[LNS + 'showXAxis'] = 'true';
+  lineCfg[LNS + 'background'] = '#FFFFFF';
+  lineCfg[LNS + 'textColor'] = '#333333';
+  lineCfg[LNS + 'stroke'] = '#1E93C6';
+  lineCfg[LNS + 'compareStroke'] = '#F1813F';
+  lineCfg[LNS + 'goodColor'] = '#FFFFFF';
+  lineCfg[LNS + 'badColor'] = '#FFFFFF';
+  lineCfg[LNS + 'annotationField'] = 'annotation';
+  lineCfg[LNS + 'compareAnnotationField'] = 'annotation_compare';
+  lineCfg[LNS + 'showAnnotationLabels'] = 'true';
+  lineCfg[LNS + 'highLine'] = '80';
+  lineCfg[LNS + 'criticalLine'] = '95';
+  lineCfg[LNS + 'min'] = '0';
+  lineCfg[LNS + 'max'] = '120';
+
+  var lineEl = document.createElement('div');
+  lineEl.style.width = '100%';
+  lineEl.style.height = '100%';
+  document.getElementById('line-host').appendChild(lineEl);
+  var lineViz = new LineViz(lineEl);
+  lineViz.updateView(
+    lineViz.formatData({
+      fields: [
+        { name: '_time' },
+        { name: 'value' },
+        { name: 'previous' },
+        { name: 'annotation' },
+        { name: 'annotation_compare' },
+      ],
+      columns: [times, value, previous, annotation, annotation_compare],
+    }),
+    lineCfg
+  );
+
+  var pieCfg = {};
+  pieCfg[PNS + 'labelField'] = 'category';
+  pieCfg[PNS + 'valueField'] = 'value';
+  pieCfg[PNS + 'innerRadius'] = '0';
+  pieCfg[PNS + 'legendPosition'] = 'none';
+  pieCfg[PNS + 'showInspector'] = 'false';
+  pieCfg[PNS + 'showDataQuality'] = 'false';
+  pieCfg[PNS + 'showSliceLabels'] = 'true';
+  pieCfg[PNS + 'showValue'] = 'false';
+  pieCfg[PNS + 'showPercent'] = 'true';
+  pieCfg[PNS + 'showRowCount'] = 'false';
+  pieCfg[PNS + 'showCompare'] = 'false';
+  pieCfg[PNS + 'showTooltip'] = 'true';
+  pieCfg[PNS + 'background'] = '#FFFFFF';
+  pieCfg[PNS + 'textColor'] = '#3C444D';
+
+  var pieEl = document.createElement('div');
+  pieEl.style.width = '100%';
+  pieEl.style.height = '100%';
+  document.getElementById('pie-host').appendChild(pieEl);
+  var pieViz = new PieViz(pieEl);
+  pieViz.updateView(
+    pieViz.formatData({
+      fields: [{ name: 'category' }, { name: 'value' }],
+      columns: [
+        ['East', 'West', 'Central', 'North'],
+        ['40', '28', '18', '14'],
+      ],
+    }),
+    pieCfg
+  );
+})();
+</script>
+</body>
+</html>

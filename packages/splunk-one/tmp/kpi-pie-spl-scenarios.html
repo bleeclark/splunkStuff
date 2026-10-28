@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>KPI pie — SPL scenarios</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css" />
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; background: #e8eaed; margin: 16px; color: #1b1c1d; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  .intro { font-size: 13px; color: #444; margin: 0 0 16px; max-width: 980px; }
+  .nav { font-size: 13px; margin: 0 0 14px; }
+  .nav a { margin-right: 12px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 980px; }
+  .card { background: #fff; border: 1px solid #c9ced6; border-radius: 4px; padding: 10px 12px 12px; }
+  .card h2 { font-size: 13px; margin: 0 0 4px; }
+  .meta { font-size: 11px; color: #555; margin: 0 0 8px; }
+  .meta code { background: #f0f2f5; padding: 1px 4px; border-radius: 3px; }
+  pre.spl {
+    margin: 0 0 8px; padding: 8px; background: #0b1f3b; color: #e8eef7; font-size: 11px;
+    line-height: 1.35; border-radius: 3px; white-space: pre-wrap;
+  }
+  .host { width: 100%; height: 240px; border: 1px solid #d5d9de; border-radius: 2px; overflow: hidden; }
+  .note { font-size: 11px; margin: 8px 0 0; color: #333; }
+  .ok { color: #0a6; }
+  .warn { color: #a60; }
+</style>
+</head>
+<body>
+<h1>splunkstuff_pie_chart — how different SPL shapes map</h1>
+<p class="nav">
+  <a href="/tmp/kpi-line-spl-scenarios.html">Line chart scenarios</a>
+  <a href="/tmp/kpi-pie-spl-scenarios.html">Pie chart scenarios</a>
+</p>
+<p class="intro">
+  Format picks <strong>Label field</strong> (slice name) and <strong>Value field</strong> (slice size).
+  Optional <strong>Compare</strong> and <strong>Color</strong> fields. Auto prefers common names.
+</p>
+<div class="grid" id="grid"></div>
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js"></script>
+<script>
+(function () {
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var Viz = factories[0](Base);
+  var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
+
+  function cfg(opts) {
+    var c = {};
+    var k;
+    for (k in opts) {
+      if (Object.prototype.hasOwnProperty.call(opts, k)) c[NS + k] = opts[k];
+    }
+    return c;
+  }
+  function rawFrom(fields, columns) {
+    return {
+      fields: fields.map(function (name) { return { name: name }; }),
+      columns: columns,
+    };
+  }
+
+  var scenarios = [
+    {
+      title: '1. Classic stats by category → value',
+      format: 'labelField=category, valueField=value',
+      spl:
+'| stats count as value by category\n' +
+'| fields category value',
+      raw: rawFrom(
+        ['category', 'value'],
+        [
+          ['East', 'West', 'Central', 'North'],
+          ['40', '28', '18', '14'],
+        ]
+      ),
+      config: cfg({
+        labelField: 'category',
+        valueField: 'value',
+        innerRadius: '0',
+        legendPosition: 'right',
+        showInspector: 'false',
+        showSliceLabels: 'false',
+      }),
+      expect: 'Traditional solid pie + right legend (Classic defaults).',
+    },
+    {
+      title: '2. Count by sourcetype',
+      format: 'labelField=sourcetype, valueField=count',
+      spl:
+'| stats count by sourcetype\n' +
+'| fields sourcetype count',
+      raw: rawFrom(
+        ['sourcetype', 'count'],
+        [
+          ['access_combined', 'splunkd', 'linux_secure', 'scheduler'],
+          ['120', '80', '45', '30'],
+        ]
+      ),
+      config: cfg({ labelField: 'sourcetype', valueField: 'count' }),
+      expect: 'Uses count as the numeric field.',
+    },
+    {
+      title: '3. Auto fields (label + value hints)',
+      format: 'labelField=auto, valueField=auto',
+      spl:
+'| stats sum(bytes) as total by host\n' +
+'| fields host total',
+      raw: rawFrom(
+        ['host', 'total'],
+        [
+          ['web-01', 'web-02', 'db-01'],
+          ['500', '350', '200'],
+        ]
+      ),
+      config: cfg({ labelField: 'auto', valueField: 'auto' }),
+      expect: 'Auto picks host as label and total as value.',
+    },
+    {
+      title: '4. Compare field (previous)',
+      format: 'value + previous',
+      spl:
+'| stats count as value, sum(prev) as previous by status\n' +
+'| fields status value previous',
+      raw: rawFrom(
+        ['status', 'value', 'previous'],
+        [
+          ['ok', 'warn', 'error'],
+          ['70', '20', '10'],
+          ['60', '25', '15'],
+        ]
+      ),
+      config: cfg({ labelField: 'status', valueField: 'value', compareField: 'previous' }),
+      expect: 'Compare field available for delta / inspector UI.',
+    },
+    {
+      title: '5. Per-slice color field',
+      format: 'colorField=color',
+      spl:
+'| stats count as value by label\n' +
+'| eval color=case(label="A","#01417F",label="B","#DFA611",true(),"#5CC05C")\n' +
+'| fields label value color',
+      raw: rawFrom(
+        ['label', 'value', 'color'],
+        [
+          ['A', 'B', 'C'],
+          ['50', '30', '20'],
+          ['#01417F', '#DFA611', '#5CC05C'],
+        ]
+      ),
+      config: cfg({ labelField: 'label', valueField: 'value', colorField: 'color' }),
+      expect: 'Slice colors come from the color column.',
+    },
+    {
+      title: '6. Explicit value when two numbers exist',
+      format: 'valueField=amount (ignore count)',
+      spl:
+'| stats count, sum(cost) as amount by name\n' +
+'| fields name count amount',
+      raw: rawFrom(
+        ['name', 'count', 'amount'],
+        [
+          ['Alpha', 'Beta', 'Gamma'],
+          ['9', '9', '9'],
+          ['100', '250', '75'],
+        ]
+      ),
+      config: cfg({ labelField: 'name', valueField: 'amount' }),
+      expect: 'Forces amount so constant count does not flatten the pie.',
+    },
+  ];
+
+  var grid = document.getElementById('grid');
+  scenarios.forEach(function (s, idx) {
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML =
+      '<h2>' + s.title + '</h2>' +
+      '<p class="meta">Format: <code>' + s.format + '</code></p>' +
+      '<pre class="spl">' + s.spl + '</pre>' +
+      '<div class="host" id="host-' + idx + '"></div>' +
+      '<p class="note" id="note-' + idx + '"></p>';
+    grid.appendChild(card);
+
+    var host = document.getElementById('host-' + idx);
+    var el = document.createElement('div');
+    el.style.width = '100%';
+    el.style.height = '100%';
+    host.appendChild(el);
+    try {
+      var viz = new Viz(el);
+      var formatted = viz.formatData(s.raw);
+      viz.updateView(formatted, s.config);
+      document.getElementById('note-' + idx).innerHTML =
+        '<span class="ok">Rendered.</span> ' + s.expect;
+    } catch (err) {
+      document.getElementById('note-' + idx).innerHTML =
+        '<span class="warn">Error:</span> ' + String(err && err.message ? err.message : err);
+    }
+  });
+})();
+</script>
+</body>
+</html>

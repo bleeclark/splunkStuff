@@ -77,6 +77,7 @@ function readFieldName(fields, columnIndex) {
     if (field != null && field.name != null) {
         return String(field.name);
     }
+    // Always a string so callers can safely use charAt / === without null checks.
     return '';
 }
 
@@ -150,7 +151,9 @@ function pickNumericColumnIndex(searchData, preferredFieldName) {
     }
     let bestColumnIndex = -1;
     for (let columnIndex = 0; columnIndex < searchData.columns.length; columnIndex += 1) {
-        if (readFieldName(fields, columnIndex) === '_time' || readFieldName(fields, columnIndex).charAt(0) === '_') {
+        // Always coerce — never call string methods on a raw readFieldName() result.
+        const fieldName = String(readFieldName(fields, columnIndex) || '');
+        if (fieldName.charAt(0) === '_') {
             continue;
         }
         const column = searchData.columns[columnIndex] || [];

@@ -79,9 +79,9 @@
 }
 
 .bgdhamp-pie-chart-viz__pie--slice-labels {
-    width: min(62%, 430px);
-    min-width: 300px;
-    aspect-ratio: 13 / 7;
+    width: min(92%, 520px);
+    min-width: 280px;
+    aspect-ratio: 26 / 15;
 }
 
 .bgdhamp-pie-chart-viz--legend-top .bgdhamp-pie-chart-viz__pie,
@@ -140,17 +140,20 @@
     fill: none;
     stroke: currentColor;
     stroke-width: 1;
-    opacity: 0.34;
+    opacity: 0.28;
 }
 
 .bgdhamp-pie-chart-viz__callout-text {
     fill: currentColor;
-    font-size: 9.5px;
-    font-weight: 650;
+    font-size: 11px;
+    font-weight: 600;
     dominant-baseline: middle;
-    paint-order: stroke;
-    stroke-width: 3px;
-    stroke-linejoin: round;
+}
+
+.bgdhamp-pie-chart-viz__callout-value {
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 0.78;
 }
 
 .bgdhamp-pie-chart-viz__callout--dim {
@@ -227,7 +230,7 @@
 .bgdhamp-pie-chart-viz__legend-row:hover,
 .bgdhamp-pie-chart-viz__legend-row:focus,
 .bgdhamp-pie-chart-viz__legend-row--active {
-    background: rgba(255, 255, 255, 0.13);
+    background: rgba(60, 68, 77, 0.08);
     outline: none;
 }
 
@@ -268,16 +271,16 @@
 .bgdhamp-pie-chart-viz__tooltip {
     position: absolute;
     z-index: 20;
-    min-width: 170px;
-    max-width: 260px;
-    padding: 9px 10px;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    background: rgba(14, 20, 31, 0.95);
-    color: #ffffff;
-    border-radius: 4px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    min-width: 140px;
+    max-width: 240px;
+    padding: 8px 10px;
+    border: 1px solid rgba(60, 68, 77, 0.18);
+    background: #ffffff;
+    color: #3c444d;
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
     pointer-events: none;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.35;
     will-change: left, top;
 }
@@ -290,7 +293,7 @@
 .bgdhamp-pie-chart-viz__breakdown {
     margin-top: 8px;
     padding-top: 7px;
-    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    border-top: 1px solid rgba(60, 68, 77, 0.16);
 }
 
 .bgdhamp-pie-chart-viz__breakdown-title {

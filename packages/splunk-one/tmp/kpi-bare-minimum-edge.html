@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Bare-minimum OOTB cases — line, sparkline, pie</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_sparkline/visualization.css" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    background: #dfe3e8;
+    margin: 0;
+    padding: 20px 24px 40px;
+    color: #1b1c1d;
+  }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  .intro { font-size: 12px; color: #555; max-width: 1080px; margin: 0 0 20px; line-height: 1.45; }
+  .section {
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0 0 10px;
+    padding-top: 8px;
+    color: #222;
+    clear: both;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    max-width: 1080px;
+    margin: 0 0 28px;
+    align-items: stretch;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #b8bec7;
+    border-radius: 3px;
+    padding: 10px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+  h2 { font-size: 12px; margin: 0 0 6px; font-weight: 700; }
+  pre {
+    margin: 0 0 8px;
+    padding: 7px 8px;
+    background: #222;
+    color: #eee;
+    font-size: 10px;
+    border-radius: 3px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .host {
+    height: 200px;
+    border: 1px solid #c5cad3;
+    background: #fff;
+    overflow: hidden;
+    position: relative;
+    flex: 0 0 auto;
+  }
+  .host-pie { height: 260px; }
+  .host-spark {
+    height: 172px;
+    background: #0B1F3B;
+  }
+  /* Stops sparkline applyVizHeight from rewriting page ancestors */
+  .dashboard-element {
+    position: relative;
+    overflow: hidden;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 2px;
+    background: #e8eef5;
+    color: #334;
+    margin-bottom: 6px;
+    width: fit-content;
+  }
+  .tag.edge { background: #f5efe0; color: #5a4a20; }
+  .note { font-size: 11px; margin: 8px 0 0; color: #555; line-height: 1.35; }
+</style>
+</head>
+<body>
+<h1>Bare-minimum OOTB cases (no custom tools)</h1>
+<p class="intro">
+  Like dropping an OOTB Line, Single Value (+ spark), or Pie on a panel:
+  Auto fields only — no annotations, High/Critical, inspector, or text/info extras.
+</p>
+
+<div class="section">Happy path</div>
+<div class="row">
+  <div class="card">
+    <span class="tag">kpi_line</span>
+    <h2>Line — bare timechart</h2>
+    <pre>| timechart span=1h count</pre>
+    <div class="host" id="line-bare"></div>
+    <p class="note">Chart-only. Hover points.</p>
+  </div>
+  <div class="card">
+    <span class="tag">kpi_sparkline</span>
+    <h2>Sparkline — bare timechart</h2>
+    <pre>| timechart span=1h count</pre>
+    <div class="host host-spark dashboard-element" id="spark-bare"></div>
+    <p class="note">Major + delta + spark.</p>
+  </div>
+  <div class="card">
+    <span class="tag">pie_chart</span>
+    <h2>Pie — bare stats by</h2>
+    <pre>| stats count by category</pre>
+    <div class="host host-pie" id="pie-bare"></div>
+    <p class="note">Outside labels + %. Legend off.</p>
+  </div>
+</div>
+
+<div class="section">Edge — sparse / gaps</div>
+<div class="row">
+  <div class="card">
+    <span class="tag edge">edge</span>
+    <h2>Line — null buckets</h2>
+    <pre>| timechart span=1h count
+# early buckets blank</pre>
+    <div class="host" id="line-sparse"></div>
+    <p class="note">Auto still picks count.</p>
+  </div>
+  <div class="card">
+    <span class="tag edge">edge</span>
+    <h2>Sparkline — same sparse series</h2>
+    <pre>| timechart span=1h count</pre>
+    <div class="host host-spark dashboard-element" id="spark-sparse"></div>
+    <p class="note">Drops non-finite rows.</p>
+  </div>
+  <div class="card">
+    <span class="tag edge">edge</span>
+    <h2>Pie — Top N + Other</h2>
+    <pre>| stats count by host</pre>
+    <div class="host host-pie" id="pie-topn"></div>
+    <p class="note">8 hosts → Top 5 + OTHER.</p>
+  </div>
+</div>
+
+<div class="section">Edge — shape variants</div>
+<div class="row">
+  <div class="card">
+    <span class="tag edge">edge</span>
+    <h2>Line — no _time</h2>
+    <pre>| makeresults count=12
+| streamstats count as count</pre>
+    <div class="host" id="line-notime"></div>
+    <p class="note">Row order on X.</p>
+  </div>
+  <div class="card">
+    <span class="tag edge">edge</span>
+    <h2>Sparkline — single row</h2>
+    <pre>| stats count</pre>
+    <div class="host host-spark dashboard-element" id="spark-single"></div>
+    <p class="note">Major only; no spark/delta.</p>
+  </div>
+  <div class="card">
+    <span class="tag edge">edge</span>
+    <h2>Line — renamed metric</h2>
+    <pre>| timechart span=1h avg(latency) as latency_ms</pre>
+    <div class="host" id="line-rename"></div>
+    <p class="note">Auto uses last numeric column.</p>
+  </div>
+</div>
+
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampTrendColors.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/bgdhampVizHoverMath.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_sparkline/visualization.js"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js"></script>
+<script>
+(function () {
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    VisualizationError: function (msg) { this.message = msg; },
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+
+  var trend = factories[0]();
+  var hover = factories[1]();
+  var LineViz = factories[2](Base, trend, hover);
+  var SparkViz = factories[3](Base);
+  var PieViz = factories[4](Base);
+
+  var LNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var SNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
+  var PNS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
+
+  function hours(n) {
+    var now = Date.now();
+    var times = [];
+    var i;
+    for (i = 1; i <= n; i += 1) {
+      times.push(new Date(now - (n - i) * 3600000).toISOString());
+    }
+    return times;
+  }
+
+  function mount(Viz, hostId, raw, cfg) {
+    var host = document.getElementById(hostId);
+    host.innerHTML = '';
+    var el = document.createElement('div');
+    el.style.width = '100%';
+    el.style.height = '100%';
+    host.appendChild(el);
+    var viz = new Viz(el);
+    try {
+      var formatted = viz.formatData ? viz.formatData(raw) : { rawData: raw };
+      viz.updateView(formatted, cfg);
+    } catch (err) {
+      el.textContent = (err && err.message) || String(err);
+      el.style.padding = '12px';
+      el.style.fontSize = '12px';
+      el.style.color = '#a00';
+    }
+    return viz;
+  }
+
+  var lineBareCfg = {};
+  lineBareCfg[LNS + 'valueField'] = 'auto';
+  lineBareCfg[LNS + 'showMajor'] = 'false';
+  lineBareCfg[LNS + 'showTextRow'] = 'false';
+  lineBareCfg[LNS + 'showInfo'] = 'false';
+  lineBareCfg[LNS + 'comparison'] = 'false';
+  lineBareCfg[LNS + 'seriesMode'] = 'single';
+  lineBareCfg[LNS + 'showArea'] = 'true';
+  lineBareCfg[LNS + 'showXAxis'] = 'true';
+  lineBareCfg[LNS + 'background'] = '#FFFFFF';
+  lineBareCfg[LNS + 'textColor'] = '#3C444D';
+  lineBareCfg[LNS + 'goodColor'] = '#1E93C6';
+
+  var sparkBareCfg = {};
+  sparkBareCfg[SNS + 'valueField'] = 'auto';
+  sparkBareCfg[SNS + 'showTextRow'] = 'false';
+  sparkBareCfg[SNS + 'showInfo'] = 'false';
+  sparkBareCfg[SNS + 'showTarget'] = 'false';
+  sparkBareCfg[SNS + 'showThresholdBand'] = 'false';
+  sparkBareCfg[SNS + 'showSparkline'] = 'true';
+  sparkBareCfg[SNS + 'showDelta'] = 'true';
+  sparkBareCfg[SNS + 'subheader'] = 'count';
+  sparkBareCfg[SNS + 'badgeText'] = '';
+  sparkBareCfg[SNS + 'majorLabel'] = '';
+  sparkBareCfg[SNS + 'deltaLabel'] = '';
+  sparkBareCfg[SNS + 'vizHeight'] = '172';
+
+  var pieBareCfg = {};
+  pieBareCfg[PNS + 'labelField'] = 'auto';
+  pieBareCfg[PNS + 'valueField'] = 'auto';
+  pieBareCfg[PNS + 'legendPosition'] = 'none';
+  pieBareCfg[PNS + 'showSliceLabels'] = 'true';
+  pieBareCfg[PNS + 'showPercent'] = 'true';
+  pieBareCfg[PNS + 'showValue'] = 'false';
+  pieBareCfg[PNS + 'showRowCount'] = 'false';
+  pieBareCfg[PNS + 'showInspector'] = 'false';
+  pieBareCfg[PNS + 'showDataQuality'] = 'false';
+  pieBareCfg[PNS + 'topN'] = '0';
+  pieBareCfg[PNS + 'background'] = '#FFFFFF';
+  pieBareCfg[PNS + 'textColor'] = '#3C444D';
+
+  var count24 = [];
+  var i;
+  for (i = 1; i <= 24; i += 1) count24.push(String(40 + ((i * 9) % 35)));
+
+  mount(LineViz, 'line-bare', {
+    fields: [{ name: '_time' }, { name: 'count' }],
+    columns: [hours(24), count24],
+  }, lineBareCfg);
+
+  mount(SparkViz, 'spark-bare', {
+    fields: [{ name: '_time' }, { name: 'count' }],
+    columns: [hours(24), count24],
+  }, sparkBareCfg);
+
+  mount(PieViz, 'pie-bare', {
+    fields: [{ name: 'category' }, { name: 'count' }],
+    columns: [
+      ['East', 'West', 'Central', 'North'],
+      ['40', '28', '18', '14'],
+    ],
+  }, pieBareCfg);
+
+  var sparseCount = [];
+  for (i = 1; i <= 24; i += 1) {
+    sparseCount.push(i < 6 || i === 12 ? '' : String(30 + ((i * 7) % 40)));
+  }
+  mount(LineViz, 'line-sparse', {
+    fields: [{ name: '_time' }, { name: 'count' }],
+    columns: [hours(24), sparseCount],
+  }, lineBareCfg);
+  mount(SparkViz, 'spark-sparse', {
+    fields: [{ name: '_time' }, { name: 'count' }],
+    columns: [hours(24), sparseCount],
+  }, sparkBareCfg);
+
+  var pieTopCfg = {};
+  Object.keys(pieBareCfg).forEach(function (k) { pieTopCfg[k] = pieBareCfg[k]; });
+  pieTopCfg[PNS + 'topN'] = '5';
+  pieTopCfg[PNS + 'otherEnabled'] = 'true';
+  pieTopCfg[PNS + 'otherLabel'] = 'OTHER';
+  mount(PieViz, 'pie-topn', {
+    fields: [{ name: 'host' }, { name: 'count' }],
+    columns: [
+      ['web01', 'web02', 'db01', 'db02', 'app01', 'app02', 'cache01', 'queue01'],
+      ['120', '95', '80', '55', '40', '22', '15', '8'],
+    ],
+  }, pieTopCfg);
+
+  var seq = [];
+  for (i = 1; i <= 12; i += 1) seq.push(String(i * 3));
+  mount(LineViz, 'line-notime', {
+    fields: [{ name: 'count' }],
+    columns: [seq],
+  }, lineBareCfg);
+
+  mount(SparkViz, 'spark-single', {
+    fields: [{ name: 'count' }],
+    columns: [['128']],
+  }, sparkBareCfg);
+
+  var latency = [];
+  for (i = 1; i <= 24; i += 1) latency.push(String(50 + ((i * 11) % 45)));
+  mount(LineViz, 'line-rename', {
+    fields: [{ name: '_time' }, { name: 'latency_ms' }],
+    columns: [hours(24), latency],
+  }, lineBareCfg);
+})();
+</script>
+</body>
+</html>

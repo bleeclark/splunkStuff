@@ -124,12 +124,82 @@
     </div>
 </form>
 
-<form class="splunk-formatter-section" section-label="Comparison and thresholds">
-    <splunk-control-group label="Comparison overlay">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.comparison" value="false"></splunk-text-input>
+<form class="splunk-formatter-section" section-label="Series and fill">
+    <splunk-control-group label="Series mode">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.seriesMode" value="single">
+            <option value="single">Single KPI</option>
+            <option value="multi">Multi series</option>
+        </splunk-radio-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        <strong>true</strong> or <strong>false</strong> — synthetic shifted series (demo parity)
+        <strong>Multi</strong> plots extra numeric columns (up to 8) like a Classic line chart. Value field still drives the major number.
+    </div>
+    <splunk-control-group label="Show area under primary">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showArea" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Area fill color">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.areaColor" value="rgba(255,255,255,0.22)"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Shade between primary and compare">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.shadeBetween" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+</form>
+
+<form class="splunk-formatter-section" section-label="Comparison and thresholds">
+    <splunk-control-group label="Comparison overlay">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.comparison" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Compare field">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.compareField" value="auto">
+            <option value="auto">Auto</option>
+            <option value="previous">previous</option>
+            <option value="prior">prior</option>
+            <option value="baseline">baseline</option>
+            <option value="compare">compare</option>
+            <option value="target">target</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Custom compare field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.compareFieldCustom" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Draws a real second series from the search (dashed). Custom name wins. No synthetic wiggle.
+    </div>
+    <splunk-control-group label="Compare line stroke">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.compareStroke" value="#7EB6FF"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Annotation field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.annotationField" value="annotation"></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Compare annotation field">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.compareAnnotationField" value="annotation_compare"></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        String columns aligned to each series. Non-empty cells get markers; hover shows the text on both lines.
+    </div>
+    <splunk-control-group label="Show annotation labels on chart">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showAnnotationLabels" value="false">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="High reference line">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.highLine" value=""></splunk-text-input>
+    </splunk-control-group>
+    <splunk-control-group label="Critical reference line">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.criticalLine" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Optional constant Y lines (e.g. High 80, Critical 95). Leave blank to hide.
     </div>
     <splunk-control-group label="Thresholds + target band">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.threshold" value="false"></splunk-text-input>
