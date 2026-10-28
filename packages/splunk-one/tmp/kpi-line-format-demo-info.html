@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>KPI line Format selections + working text row / info</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css" />
+<style>
+  :root {
+    --ink: #1d2733;
+    --muted: #5c6773;
+    --line: #d5d9de;
+    --panel: #f7f8fa;
+    --accent: #01417f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: #e8ebef;
+    color: var(--ink);
+  }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  .lead { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 16px;
+    align-items: start;
+    max-width: 1100px;
+  }
+  .panel {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .panel-h {
+    padding: 10px 12px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .format {
+    padding: 8px 0 12px;
+    max-height: 560px;
+    overflow: auto;
+  }
+  .section {
+    padding: 8px 12px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 118px 1fr;
+    gap: 8px;
+    align-items: center;
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+  .row label { color: var(--muted); }
+  .val {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 11px;
+    color: var(--ink);
+    min-height: 24px;
+  }
+  .val.on { background: #e8f5e9; border-color: #a5d6a7; color: #1b5e20; font-weight: 600; }
+  .viz-wrap { padding: 12px; }
+  .dashboard-element {
+    width: 100%;
+    height: 280px;
+    border: 1px dashed #c9ced6;
+    border-radius: 4px;
+    background: #fff;
+    overflow: hidden;
+  }
+  .caption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .caption code {
+    font-size: 11px;
+    background: var(--panel);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <h1>splunkstuff_kpi_line — Format text row + info</h1>
+  <p class="lead">Left: Format selections used for this example. Right: live Classic AMD viz with those options applied.</p>
+  <div class="layout">
+    <aside class="panel">
+      <div class="panel-h">Format menu selections</div>
+      <div class="format">
+        <div class="section">General</div>
+        <div class="row"><label>Value field</label><div class="val">value</div></div>
+        <div class="row"><label>Show hover</label><div class="val on">On</div></div>
+        <div class="row"><label>Show major</label><div class="val on">On</div></div>
+
+        <div class="section">Custom — text row</div>
+        <div class="row"><label>Show text row</label><div class="val on">On</div></div>
+        <div class="row"><label>Text1 label field</label><div class="val">text1_label</div></div>
+        <div class="row"><label>Text1 field</label><div class="val">text1</div></div>
+        <div class="row"><label>Text1 link URL field</label><div class="val">urls1</div></div>
+        <div class="row"><label>Text2 field</label><div class="val">text2</div></div>
+        <div class="row"><label>Text3 field</label><div class="val">text3</div></div>
+        <div class="row"><label>Open links in</label><div class="val">New tab</div></div>
+
+        <div class="section">Custom — info</div>
+        <div class="row"><label>Show info icon</label><div class="val on">On</div></div>
+        <div class="row"><label>Info field</label><div class="val">info</div></div>
+        <div class="row"><label>Info text</label><div class="val">(blank → use field)</div></div>
+
+        <div class="section">SPL columns (example)</div>
+        <div class="row"><label>Series</label><div class="val">_time, value</div></div>
+        <div class="row"><label>Extra</label><div class="val">text1, text1_label, urls1, text2, text3, info</div></div>
+      </div>
+    </aside>
+    <section class="panel">
+      <div class="panel-h">Working visualization</div>
+      <div class="viz-wrap">
+        <div class="dashboard-element" id="host"></div>
+        <p class="caption" id="note">Loading…</p>
+      </div>
+    </section>
+  </div>
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js"></script>
+<script>
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var Viz = factories[0](Base);
+  var times = [];
+  var values = [];
+  var text1 = [];
+  var labels = [];
+  var urls = [];
+  var text2 = [];
+  var text3 = [];
+  var info = [];
+  var now = Date.now();
+  var n;
+  for (n = 1; n <= 20; n += 1) {
+    times.push(new Date(now - (20 - n) * 60000).toISOString());
+    values.push(String(28 + ((n * 13) % 52)));
+    text1.push('East');
+    labels.push('Region');
+    urls.push('https://example.com/regions/East');
+    text2.push('1204');
+    text3.push('Stable');
+    info.push('Weighted score, last 24h');
+  }
+  var raw = {
+    fields: [
+      { name: '_time' },
+      { name: 'value' },
+      { name: 'text1' },
+      { name: 'text1_label' },
+      { name: 'urls1' },
+      { name: 'text2' },
+      { name: 'text3' },
+      { name: 'info' },
+    ],
+    columns: [times, values, text1, labels, urls, text2, text3, info],
+  };
+  var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var config = {};
+  config[NS + 'valueField'] = 'value';
+  config[NS + 'showHover'] = 'true';
+  config[NS + 'showMajor'] = 'true';
+  config[NS + 'showTextRow'] = 'true';
+  config[NS + 'text1LabelField'] = 'text1_label';
+  config[NS + 'text1LinkUrlField'] = 'urls1';
+  config[NS + 'showInfo'] = 'true';
+  var el = document.createElement('div');
+  el.style.width = '100%';
+  el.style.height = '100%';
+  document.getElementById('host').appendChild(el);
+  var viz = new Viz(el);
+  viz.updateView(viz.formatData(raw), config);
+  var cells = el.querySelectorAll('.bgdhamp-kpi-line-viz__textCell');
+  var link = el.querySelector('.bgdhamp-kpi-line-viz__textRow a');
+  var infoBtn = el.querySelector('.bgdhamp-kpi-line-viz__info');
+  var bits = [];
+  bits.push(cells.length + ' text cells rendered');
+  if (link) bits.push('linked cell: <code>' + link.textContent + '</code> → <code>' + link.getAttribute('href') + '</code>');
+  bits.push(infoBtn ? 'info icon mounted (hover/click for popover)' : 'info missing');
+  document.getElementById('note').innerHTML = bits.join(' · ');
+  window.__lineDemo = { viz: viz, infoBtn: infoBtn };
+  if (infoBtn) { setTimeout(function () { infoBtn.click(); }, 50); }
+</script>
+</body>
+</html>
