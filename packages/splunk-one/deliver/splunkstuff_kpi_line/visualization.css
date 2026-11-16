@@ -69,6 +69,7 @@
 .bgdhamp-kpi-line-viz__chart svg {
     display: block;
     width: 100%;
+    height: 100%;
 }
 
 .bgdhamp-kpi-line-viz__hoverAnn {
