@@ -7,6 +7,7 @@ const pkgRoot = path.join(__dirname, '..');
 const appId = 'so_title_details';
 const stageDir = path.join(pkgRoot, 'stage');
 const distDir = path.join(pkgRoot, 'dist');
+const releasesDir = path.join(pkgRoot, 'releases');
 const packageRoot = path.join(distDir, appId);
 const archiveName = `${appId}-title-details.tgz`;
 const archivePath = path.join(distDir, archiveName);
@@ -28,8 +29,20 @@ if (result.code !== 0) {
     shell.exit(result.code);
 }
 
+const stamp = new Date()
+    .toISOString()
+    .replace(/[-:TZ.]/g, '')
+    .slice(0, 12);
+shell.mkdir('-p', releasesDir);
+const stamped = path.join(releasesDir, `${appId}-${stamp}.tgz`);
+const latest = path.join(releasesDir, `${appId}-latest.tgz`);
+shell.cp(archivePath, stamped);
+shell.cp(archivePath, latest);
+
 shell.echo(`Packaged: ${archivePath}`);
+shell.echo(`Release:  ${stamped}`);
+shell.echo(`Latest:   ${latest}`);
 shell.echo('');
 shell.echo('Install:');
-shell.echo(`  tar -xzf "${archivePath}" -C "$SPLUNK_HOME/etc/apps"`);
+shell.echo(`  tar -xzf "${latest}" -C "$SPLUNK_HOME/etc/apps"`);
 shell.echo('  splunk restart');
