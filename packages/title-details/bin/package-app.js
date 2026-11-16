@@ -21,8 +21,11 @@ shell.rm('-rf', distDir);
 shell.mkdir('-p', packageRoot);
 shell.cp('-R', path.join(stageDir, '*'), packageRoot);
 
+// macOS AppleDouble (._*) sidecars break Splunk Manage Apps:
+// "archive contains more than one immediate subdirectory".
 const result = shell.exec(`tar -czf "${archivePath}" -C "${distDir}" "${appId}"`, {
     silent: true,
+    env: Object.assign({}, process.env, { COPYFILE_DISABLE: '1' }),
 });
 if (result.code !== 0) {
     shell.echo(result.stderr || result.stdout || 'Failed to create archive.');
