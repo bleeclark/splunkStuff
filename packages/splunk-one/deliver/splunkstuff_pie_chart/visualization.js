@@ -100,6 +100,20 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return false;
     }
 
+    /** Splunk dashboard wrappers often set pointer-events:none on viz hosts; don't stop early. */
+    function enableAncestorPointerEvents(el, maxDepth) {
+        var node = el;
+        var depth = 0;
+        var limit = maxDepth == null ? 24 : maxDepth;
+        while (node && depth < limit) {
+            if (node.style) {
+                node.style.pointerEvents = 'auto';
+            }
+            node = node.parentElement;
+            depth += 1;
+        }
+    }
+
     function cellText(cell) {
         var v = cellValue(cell);
         return v == null ? '' : String(v).trim();
@@ -2004,6 +2018,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             root.appendChild(main);
             root.appendChild(tooltip);
             this.el.appendChild(root);
+
+            if (this.el && this.el.style) {
+                this.el.style.pointerEvents = 'auto';
+            }
+            enableAncestorPointerEvents(this.el);
 
             this._pieCleanup = function () {
                 var ci;
