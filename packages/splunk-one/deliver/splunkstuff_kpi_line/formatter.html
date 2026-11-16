@@ -273,19 +273,19 @@
 
 <form class="splunk-formatter-section" section-label="Plot area padding">
     <splunk-control-group label="padLeft">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.padLeft" value="10"></splunk-text-input>
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.padLeft" value="0"></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="padRight">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.padRight" value="10"></splunk-text-input>
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.padRight" value="0"></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="padTop">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.padTop" value="2"></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="padBottom">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.padBottom" value="12"></splunk-text-input>
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.padBottom" value="0"></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        When a major row is shown, left/right/top/bottom are capped to match compact KPI layout (same as React LineChart).
+        Defaults are flush to the tile edges. Raise padBottom if you enable X-axis ticks (auto-bumps to 14 when empty).
     </div>
 </form>
 

@@ -16,7 +16,7 @@
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '20261028-kpi-line-selfcontained';
+    var VIZ_BUILD = '202611161002-kpi-line-flush';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
@@ -198,6 +198,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         function clampNum(v, lo, hi) {
             return Math.max(lo, Math.min(hi, v));
         }
+        // Stretch mapping: SVG uses preserveAspectRatio=none and fills the chart strip.
         function viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH) {
             var rect =
                 rectSource && typeof rectSource.getBoundingClientRect === 'function'
@@ -214,12 +215,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             ) {
                 return null;
             }
-            var scale = Math.min(rect.width / userW, rect.height / userH);
-            var offX = rect.left + (rect.width - scale * userW) / 2;
-            var offY = rect.top + (rect.height - scale * userH) / 2;
             return {
-                x: (clientX - offX) / scale,
-                y: (clientY - offY) / scale,
+                x: ((clientX - rect.left) / rect.width) * userW,
+                y: ((clientY - rect.top) / rect.height) * userH,
             };
         }
         function seriesIndexFromPointerMeet(
@@ -1747,14 +1745,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 'rgba(255,255,255,0.5)'
             );
             var showHoverAnnotation = readBool(config, 'showHoverAnnotation', false);
-            var padLeftCfg = readFloat(config, 'padLeft', 10);
-            var padRightCfg = readFloat(config, 'padRight', 10);
+            // Flush-to-edge defaults (KPI tile). Bump padBottom when X-axis ticks are on.
+            var padLeftCfg = readFloat(config, 'padLeft', 0);
+            var padRightCfg = readFloat(config, 'padRight', 0);
             var padTopCfg = readFloat(config, 'padTop', 2);
-            var padBottomCfg = readFloat(config, 'padBottom', 12);
-            if (!isFinite(padLeftCfg)) padLeftCfg = 10;
-            if (!isFinite(padRightCfg)) padRightCfg = 10;
+            var padBottomCfg = readFloat(config, 'padBottom', 0);
+            if (!isFinite(padLeftCfg)) padLeftCfg = 0;
+            if (!isFinite(padRightCfg)) padRightCfg = 0;
             if (!isFinite(padTopCfg)) padTopCfg = 2;
-            if (!isFinite(padBottomCfg)) padBottomCfg = 12;
+            if (!isFinite(padBottomCfg)) padBottomCfg = 0;
 
             var textCells = collectTextCells(stringFields, readConfig, config);
             var textRowH = textCells.length ? TEXT_ROW_HEIGHT_PX : 0;
@@ -1784,14 +1783,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var height = Math.max(80, this.el.clientHeight || 200);
             var subheaderH = subheader ? 28 : 0;
             var majorH = showMajor ? 44 : 0;
-            var effPadL = showMajor ? Math.min(padLeftCfg, 10) : padLeftCfg;
-            var effPadR = showMajor ? Math.min(padRightCfg, 10) : padRightCfg;
-            var effPadT = showMajor ? Math.min(padTopCfg, 2) : padTopCfg;
-            var effPadB = showMajor ? Math.min(padBottomCfg, 12) : padBottomCfg;
-            var padL = effPadL;
-            var padR = effPadR;
-            var padT = effPadT;
-            var padB = effPadB;
+            var padL = Math.max(0, padLeftCfg);
+            var padR = Math.max(0, padRightCfg);
+            var padT = Math.max(0, padTopCfg);
+            var padB = Math.max(0, padBottomCfg);
+            if (showXAxis && padB < 14) {
+                padB = 14;
+            }
             var chartH = Math.max(40, height - subheaderH - majorH - textRowH);
 
             // Chart-only (no major row) uses Format background — Classic-like panels stay light/neutral.
@@ -1931,17 +1929,21 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var chartWrap = ownerDoc.createElement('div');
             chartWrap.className = 'bgdhamp-kpi-line-viz__chart';
             chartWrap.style.flex = '1 1 auto';
-            chartWrap.style.minHeight = chartH + 'px';
+            chartWrap.style.minHeight = '0';
             chartWrap.style.width = '100%';
+            chartWrap.style.overflow = 'hidden';
             trendColors.applyTrendSurfaceStyle(chartWrap, chartStripBg);
             chartWrap.style.pointerEvents = 'auto';
 
-            // --- SVG model space; screen size uses meet letterboxing in bgdhampVizHoverMath ---
+            // --- SVG fills the chart strip flush (stretch); hover math uses stretch mapping ---
             var svg = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', String(width));
             svg.setAttribute('height', String(chartH));
+            svg.setAttribute('viewBox', '0 0 ' + width + ' ' + chartH);
+            svg.setAttribute('preserveAspectRatio', 'none');
             svg.style.display = 'block';
             svg.style.width = '100%';
+            svg.style.height = '100%';
             svg.style.cursor = drilldown && norm.timeLike ? 'pointer' : 'default';
             svg.style.pointerEvents = 'auto';
 
@@ -2240,9 +2242,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             this._hoverTooltipEl = tooltip;
 
             function hitTestChart(px, py) {
-                // Use chartWrap, not svg: flex can make chartWrap taller than svg while the gold
-                // “footer” still looks like chart area — svg hit-test would miss those rows (React
-                // pins a wrapper to exact chartH so it doesn’t have this gap).
+                // SVG stretches to fill chartWrap (preserveAspectRatio=none), so either rect works.
                 var rect = chartWrap.getBoundingClientRect();
                 return (
                     rect.width > 0 &&
