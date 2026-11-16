@@ -12,8 +12,18 @@ Cybersecurity Profile remake (entity select → KPIs / Asset Details; KPI title 
 cd packages/title-details
 # from repo root after yarn install:
 yarn workspace @splunk/title-details build
+yarn workspace @splunk/title-details package:app
 export SPLUNK_HOME=/Applications/Splunk
 yarn workspace @splunk/title-details link:app
+"$SPLUNK_HOME/bin/splunk" restart
+```
+
+Installable tarball (git-tracked):
+
+`packages/title-details/releases/so_title_details-latest.tgz`
+
+```bash
+tar -xzf packages/title-details/releases/so_title_details-latest.tgz -C "$SPLUNK_HOME/etc/apps"
 "$SPLUNK_HOME/bin/splunk" restart
 ```
 
