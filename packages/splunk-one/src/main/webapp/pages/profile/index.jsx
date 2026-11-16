@@ -1,32 +1,30 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import layout from '@splunk/react-page/18';
 import { getUserTheme } from '@splunk/splunk-utils/themes';
 
 import Paragraph from '@splunk/react-ui/Paragraph';
 import TabBar from '@splunk/react-ui/TabBar';
-import Select from '@splunk/react-ui/Select';
 import Button from '@splunk/react-ui/Button';
 import Modal from '@splunk/react-ui/Modal';
 import Message from '@splunk/react-ui/Message';
 import WaitSpinner from '@splunk/react-ui/WaitSpinner';
 
 import LineChart from '../../components/visualizations/LineChart';
-import {
-    StandardColumnChart,
-    StandardLineChart,
-    StandardPieChart,
-    StandardSingleValueChart,
-} from '../../components/visualizations/StandardSplunkViz';
 import { useContainerSize } from '../../hooks/useContainerSize';
-
-import { FILTER_OPTIONS } from './profileContract';
-import { getProfileStandardCharts, isProfileDemoMode } from './data/profileDemoFeeds';
 import { useProfileData } from './hooks/useProfileData';
+import { isProfileDemoMode } from './data/profileDemoFeeds';
+import {
+    assetFiltersActive,
+    filterDemoAssets,
+} from './data/cybersecurityDemoFeeds';
+import EntityFilterBar from './components/EntityFilterBar';
+import ProfileKpiGrid from './components/ProfileKpiGrid';
+import AssetDetailsFilters from './components/AssetDetailsFilters';
+import AssetResultsTable from './components/AssetResultsTable';
 import {
     Page,
     PageHeader,
     FilterRow,
-    FilterCluster,
     FilterLabel,
     ButtonRow,
     CardGrid,
@@ -45,9 +43,16 @@ const palette = {
 };
 
 const VIZ_HEIGHT = 200;
-
 const ACTION_2_URL = '/app/so_BUI_pickulationts/feedback';
 const ACTION_3_URL = 'https://dev.splunk.com/';
+
+const DEFAULT_ASSET_FILTERS = {
+    facing: 'all',
+    hosts: 'all',
+    devices: 'all',
+    category: 'all',
+    search: '',
+};
 
 function FullBleedChart({ feed, unit = '', panelHeight }) {
     const { hostRef, width: chartWidth, height: chartHeight } = useContainerSize({
@@ -111,146 +116,76 @@ function PanelStatus({ loading, error, empty }) {
 }
 
 function ProfileTabContent() {
-    const [filter, setFilter] = useState('all');
-    const [actionModalOpen, setActionModalOpen] = useState(false);
-    const action1Ref = useRef(null);
-    const vizHeight = VIZ_HEIGHT;
-    const { data, loading, error, status } = useProfileData('profile', filter);
-    const viz = Array.isArray(data?.viz) ? data.viz : [];
-    const demoMode = isProfileDemoMode();
-    const standard = getProfileStandardCharts(filter);
+    const [entity, setEntity] = useState('');
+    const [filters, setFilters] = useState(DEFAULT_ASSET_FILTERS);
+    const [selectedIds, setSelectedIds] = useState([]);
+
+    const entitySelected = Boolean(entity);
+
+    const filterState = useMemo(
+        () => ({
+            ...filters,
+            entity,
+            mode: 'assets',
+        }),
+        [filters, entity]
+    );
+
+    const tableActive = entitySelected && assetFiltersActive(filters);
+    const rows = useMemo(
+        () => (tableActive ? filterDemoAssets(filterState) : []),
+        [tableActive, filterState]
+    );
+
+    useEffect(() => {
+        setSelectedIds((prev) => prev.filter((id) => rows.some((r) => r.id === id)));
+    }, [rows]);
+
+    useEffect(() => {
+        if (!entitySelected) {
+            setSelectedIds([]);
+            setFilters(DEFAULT_ASSET_FILTERS);
+        }
+    }, [entitySelected]);
+
+    const toggleRow = (id) => {
+        setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    };
+
+    const toggleAll = (on) => {
+        setSelectedIds(on ? rows.map((r) => r.id) : []);
+    };
 
     return (
         <TabPanel>
-            {demoMode ? (
-                <Message type="info" appearance="fill" style={{ marginBottom: 16 }}>
-                    Demo data — trend charts. Remove{' '}
-                    <code>?data=demo</code> for live Splunk REST.
+            <EntityFilterBar entity={entity} onEntityChange={setEntity} />
+
+            {!entitySelected ? (
+                <Message type="info" appearance="fill" style={{ marginBottom: 14 }}>
+                    Pick an entity to load Profile KPIs and Asset Details.
                 </Message>
-            ) : null}
-            {status === 'demo-fallback' ? (
-                <Message type="warning" appearance="fill" style={{ marginBottom: 16 }}>
-                    Live Splunk search unavailable — showing demo chart data. Add{' '}
-                    <code>?data=demo</code> to force demo, or fix REST/search to load live rows.
-                </Message>
-            ) : null}
-            <FilterRow>
-                <FilterCluster>
-                    <FilterLabel>Filter</FilterLabel>
-                    <Select
-                        value={filter}
-                        onChange={(e, { value }) => setFilter(value)}
-                        style={{ minWidth: 160, maxWidth: '100%' }}
-                    >
-                        {FILTER_OPTIONS.map((opt) => (
-                            <Select.Option
-                                key={opt.value}
-                                label={opt.label}
-                                value={opt.value}
-                            />
-                        ))}
-                    </Select>
-                </FilterCluster>
-                <ButtonRow>
-                    <Button
-                        elementRef={action1Ref}
-                        label="Action 1"
-                        appearance="secondary"
-                        onClick={() => setActionModalOpen(true)}
+            ) : (
+                <>
+                    {isProfileDemoMode() ? (
+                        <Message type="info" appearance="fill" style={{ marginBottom: 14 }}>
+                            Demo data — add <code>?data=demo</code> intentionally; remove for live REST
+                            where wired.
+                        </Message>
+                    ) : null}
+
+                    <ProfileKpiGrid />
+
+                    <AssetDetailsFilters filters={filters} onChange={setFilters} />
+
+                    <AssetResultsTable
+                        active={tableActive}
+                        rows={rows}
+                        selectedIds={selectedIds}
+                        onToggleRow={toggleRow}
+                        onToggleAll={toggleAll}
                     />
-                    <Button label="Action 2" appearance="secondary" to={ACTION_2_URL} />
-                    <Button
-                        label="Action 3"
-                        appearance="secondary"
-                        to={ACTION_3_URL}
-                        openInNewContext
-                    />
-                </ButtonRow>
-            </FilterRow>
-
-            <Modal
-                open={actionModalOpen}
-                returnFocus={action1Ref}
-                onRequestClose={() => setActionModalOpen(false)}
-                style={profileModalStyle}
-            >
-                <Modal.Header title="Action 1" />
-                <Modal.Body>
-                    <Paragraph>
-                        Placeholder modal for Action 1. Replace this content when you title the
-                        button.
-                    </Paragraph>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button
-                        appearance="primary"
-                        label="Close"
-                        onClick={() => setActionModalOpen(false)}
-                    />
-                </Modal.Footer>
-            </Modal>
-
-            <PanelStatus
-                loading={loading}
-                error={error}
-                empty={!loading && !error && viz.length === 0}
-            />
-
-            <CardGrid columns={3}>
-                {viz.map((vizFeed, index) => (
-                    <VizCard
-                        key={`${filter}-viz-${index}`}
-                        headerBlue
-                        title={vizFeed.title || `Trend ${index + 1}`}
-                        subheader={vizFeed.subheader}
-                    >
-                        <VizPanel height={vizHeight} background="transparent">
-                            <FullBleedChart feed={vizFeed} panelHeight={vizHeight} />
-                        </VizPanel>
-                    </VizCard>
-                ))}
-            </CardGrid>
-
-            <CardGrid columns={3}>
-                <VizCard subheader={standard.pie.title}>
-                    <VizPanel height={vizHeight} background="transparent">
-                        <StandardPieChart slices={standard.pie.slices} panelHeight={vizHeight} />
-                    </VizPanel>
-                </VizCard>
-                <VizCard subheader={standard.line.title}>
-                    <VizPanel height={vizHeight} background="transparent">
-                        <StandardLineChart
-                            values={standard.line.values}
-                            times={standard.line.times}
-                            panelHeight={vizHeight}
-                        />
-                    </VizPanel>
-                </VizCard>
-                <VizCard subheader={standard.column.title}>
-                    <VizPanel height={vizHeight} background="transparent">
-                        <StandardColumnChart
-                            values={standard.column.values}
-                            times={standard.column.times}
-                            panelHeight={vizHeight}
-                        />
-                    </VizPanel>
-                </VizCard>
-            </CardGrid>
-
-            <CardGrid columns={3}>
-                {(standard.singles || []).map((feed) => (
-                    <VizCard key={feed.title} subheader={feed.title}>
-                        <VizPanel height={vizHeight} background="transparent">
-                            <StandardSingleValueChart
-                                values={feed.values}
-                                times={feed.times}
-                                unit={feed.title === 'SLA' ? '%' : ''}
-                                panelHeight={vizHeight}
-                            />
-                        </VizPanel>
-                    </VizCard>
-                ))}
-            </CardGrid>
+                </>
+            )}
         </TabPanel>
     );
 }
@@ -346,7 +281,7 @@ function ProfilePage() {
 
     return (
         <Page>
-            <PageHeader title="Profile" />
+            <PageHeader title="Title Details" />
             <TabBar
                 activeTabId={activeTabId}
                 onChange={(e, { selectedTabId }) => setActiveTabId(selectedTabId)}
