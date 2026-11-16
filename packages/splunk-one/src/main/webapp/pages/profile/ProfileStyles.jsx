@@ -16,11 +16,94 @@ const RESPONSIVE_CSS = `
   box-sizing: border-box;
   background: ${PAGE_BLUE};
   color: #FFFFFF;
-  padding: 28px 32px 48px;
+  padding: 20px 24px 40px;
 }
 .ss-profile-page__inner {
-  max-width: 1180px;
+  max-width: 1240px;
   margin: 0 auto;
+}
+.ss-profile-kpi-card {
+  background: rgba(1, 65, 127, 0.55);
+  border: 1px solid ${BORDER};
+  border-radius: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
+  min-height: 148px;
+  display: flex;
+  flex-direction: column;
+}
+.ss-profile-kpi-card__title {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: rgba(115, 164, 207, 0.55);
+  border: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #FFFFFF;
+  cursor: pointer;
+  font-family: 'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.ss-profile-kpi-card__title:hover,
+.ss-profile-kpi-card__title:focus {
+  background: rgba(115, 164, 207, 0.75);
+  outline: none;
+}
+.ss-profile-kpi-card__title[disabled] {
+  cursor: default;
+  opacity: 0.95;
+}
+.ss-profile-kpi-card__body {
+  flex: 1 1 auto;
+  padding: 12px 14px 14px;
+}
+.ss-profile-entity-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid ${BORDER};
+}
+.ss-profile-asset-details {
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px solid ${BORDER};
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+}
+.ss-profile-asset-details h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+.ss-profile-results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.ss-profile-results-table th,
+.ss-profile-results-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid ${BORDER};
+  text-align: left;
+}
+.ss-profile-results-table th {
+  color: ${MUTED};
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ss-profile-results-empty {
+  padding: 28px 12px;
+  text-align: center;
+  color: ${MUTED};
+  font-size: 13px;
 }
 .ss-profile-page button,
 .ss-profile-page [role="tab"],

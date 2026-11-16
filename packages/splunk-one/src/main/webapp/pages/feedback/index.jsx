@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import layout from '@splunk/react-page/18';
 import { getUserTheme } from '@splunk/splunk-utils/themes';
 
@@ -17,6 +17,7 @@ import {
     BORDER,
     MUTED,
 } from '../profile/ProfileStyles';
+import { DEMO_ASSETS as ASSET_ROWS } from '../profile/data/cybersecurityDemoFeeds';
 
 const PROFILE_URL = '/app/so_BUI_pickulationts/profile';
 
@@ -26,9 +27,57 @@ const fieldStyle = {
     borderColor: 'rgba(255,255,255,0.28)',
 };
 
+function readPrefillAssets() {
+    const params =
+        typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const idsParam = params ? String(params.get('assets') || '').trim() : '';
+    let fromStorage = [];
+    try {
+        const raw =
+            typeof sessionStorage !== 'undefined'
+                ? sessionStorage.getItem('ss_profile_feedback_assets')
+                : null;
+        if (raw) {
+            fromStorage = JSON.parse(raw);
+        }
+    } catch (e) {
+        fromStorage = [];
+    }
+
+    if (Array.isArray(fromStorage) && fromStorage.length) {
+        return fromStorage;
+    }
+
+    if (!idsParam) {
+        return [];
+    }
+    const ids = idsParam.split(',').map((s) => s.trim()).filter(Boolean);
+    return ASSET_ROWS.filter((row) => ids.includes(row.id)).map((row) => ({
+        id: row.id,
+        name: row.name,
+        category: row.category,
+    }));
+}
+
+function buildPrefillMessage(assets) {
+    if (!assets.length) {
+        return '';
+    }
+    const lines = assets.map((a) => `- ${a.name} (${a.id})${a.category ? ` · ${a.category}` : ''}`);
+    return [
+        'ServiceNow ticket request — feedback on checked profile assets:',
+        '',
+        ...lines,
+        '',
+        'Additional notes:',
+        '',
+    ].join('\n');
+}
+
 function FeedbackForm() {
+    const prefillAssets = useMemo(() => readPrefillAssets(), []);
     const [name, setName] = useState('');
-    const [message, setMessage] = useState('');
+    const [message, setMessage] = useState(() => buildPrefillMessage(prefillAssets));
     const [submitted, setSubmitted] = useState(false);
 
     const handleSubmit = (e) => {
@@ -49,9 +98,15 @@ function FeedbackForm() {
                 color: '#FFFFFF',
             }}
         >
+            {prefillAssets.length ? (
+                <Message type="info" appearance="fill" style={{ marginBottom: 14 }}>
+                    Prefilling from {prefillAssets.length} checked asset
+                    {prefillAssets.length === 1 ? '' : 's'} on Profile.
+                </Message>
+            ) : null}
             {submitted ? (
                 <Message type="success" appearance="fill">
-                    Thanks — your feedback was recorded locally (placeholder).
+                    Thanks — your feedback was recorded locally (placeholder SNOW ticket draft).
                 </Message>
             ) : null}
             <form onSubmit={handleSubmit}>
@@ -68,7 +123,7 @@ function FeedbackForm() {
                         value={message}
                         onChange={(e, { value }) => setMessage(value)}
                         placeholder="Tell us what you think…"
-                        rows={5}
+                        rows={8}
                         style={fieldStyle}
                     />
                 </ControlGroup>
@@ -88,8 +143,8 @@ function FeedbackForm() {
                 </div>
             </form>
             <p style={{ color: MUTED, fontSize: 13, marginTop: 16, marginBottom: 0 }}>
-                Placeholder feedback page. Wire this to a Splunk collection or webhook when you
-                are ready.
+                Placeholder feedback page (SNOW ticket draft). Wire to a Splunk collection or
+                ServiceNow webhook when ready.
             </p>
         </div>
     );

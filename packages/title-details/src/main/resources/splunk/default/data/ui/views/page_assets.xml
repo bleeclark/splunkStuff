@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<view template="so_title_details:/templates/page_assets.html" type="html">
+    <label>Assets Inv</label>
+</view>

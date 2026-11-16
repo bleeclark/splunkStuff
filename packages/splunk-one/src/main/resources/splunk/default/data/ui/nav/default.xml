@@ -1,5 +1,12 @@
 <nav>
     <view name="profile" default="true" />
+    <collection label="Profile details">
+        <view name="profile_assets" />
+        <view name="profile_high_patches" />
+        <view name="profile_critical_patches" />
+        <view name="profile_endpoints" />
+        <view name="feedback" />
+    </collection>
     <collection label="Resources">
         <view name="documentation" />
         <a href="https://docs.splunk.com/Documentation/Splunk/9.4.0" target="_blank">Splunk 9.4 Docs</a>
