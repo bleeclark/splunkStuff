@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
-import Line from '@splunk/visualizations/Line';
+import Area from '@splunk/visualizations/Area';
 import Pie from '@splunk/visualizations/Pie';
 import Column from '@splunk/visualizations/Column';
 import SingleValue from '@splunk/visualizations/SingleValue';
@@ -10,11 +10,17 @@ import { useContainerSize } from '../../hooks/useContainerSize';
 const AXIS_CHART_OPTIONS = {
     backgroundColor: 'transparent',
     legendDisplay: 'off',
-    xAxisTitleVisibility: 'hide',
-    yAxisTitleVisibility: 'hide',
-    xAxisLabelVisibility: 'hide',
-    yAxisLabelVisibility: 'hide',
+    xAxisTitleVisibility: 'show',
+    yAxisTitleVisibility: 'show',
+    xAxisTitleText: 'Time',
+    yAxisTitleText: 'Value',
+    xAxisLabelVisibility: 'show',
+    yAxisLabelVisibility: 'show',
+    showXMajorGridLines: true,
+    showYMajorGridLines: true,
+    showYMinorGridLines: false,
     lineWidth: 2,
+    seriesColors: ['#5B9BD5'],
 };
 
 const PIE_CHART_OPTIONS = {
@@ -23,14 +29,20 @@ const PIE_CHART_OPTIONS = {
     collapseThreshold: 0.01,
 };
 
+// SingleValue sparkline options (correct @splunk/visualizations names).
+// Area fill uses sparklineAreaColor × internal fillOpacity (~0.2).
 const SINGLE_VALUE_OPTIONS = {
     backgroundColor: 'transparent',
     majorColor: '#FFFFFF',
     trendColor: '#FFFFFF',
     sparklineDisplay: 'below',
     sparklineStrokeColor: '#FFFFFF',
-    sparklineFillColor: 'transparent',
-    showSparkAreaGraph: false,
+    sparklineAreaColor: '#7EB6E8',
+    showSparklineAreaGraph: true,
+    showSparklineTooltip: true,
+    sparklineHighlightDots: 1,
+    sparklineHighlightSegments: 0,
+    sparklineNullValueDisplay: 'connect',
 };
 
 export function toSingleValueDataSource(values = [], times = []) {
@@ -69,6 +81,8 @@ function timeLabel(rawT, index) {
         return String(index);
     }
     return new Date(ms).toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
     });
@@ -177,19 +191,33 @@ StandardPieChart.defaultProps = {
     panelHeight: 200,
 };
 
-export function StandardLineChart({ values, times, panelHeight = 200 }) {
+export function StandardLineChart({
+    values,
+    times,
+    panelHeight = 200,
+    xAxisTitle = 'Time',
+    yAxisTitle = 'Value',
+}) {
     const dataSources = useMemo(
         () => toTimeSeriesDataSource(values, times),
         [values, times]
     );
+    const options = useMemo(
+        () => ({
+            ...AXIS_CHART_OPTIONS,
+            xAxisTitleText: xAxisTitle,
+            yAxisTitleText: yAxisTitle,
+        }),
+        [xAxisTitle, yAxisTitle]
+    );
     return (
         <ChartHost defaultHeight={panelHeight}>
             {(width, height) => (
-                <Line
+                <Area
                     width={width}
                     height={height}
                     dataSources={dataSources}
-                    options={AXIS_CHART_OPTIONS}
+                    options={options}
                 />
             )}
         </ChartHost>
@@ -200,18 +228,36 @@ StandardLineChart.propTypes = {
     values: PropTypes.arrayOf(PropTypes.number),
     times: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
     panelHeight: PropTypes.number,
+    xAxisTitle: PropTypes.string,
+    yAxisTitle: PropTypes.string,
 };
 
 StandardLineChart.defaultProps = {
     values: [],
     times: [],
     panelHeight: 200,
+    xAxisTitle: 'Time',
+    yAxisTitle: 'Value',
 };
 
-export function StandardColumnChart({ values, times, panelHeight = 200 }) {
+export function StandardColumnChart({
+    values,
+    times,
+    panelHeight = 200,
+    xAxisTitle = 'Time',
+    yAxisTitle = 'Value',
+}) {
     const dataSources = useMemo(
         () => toTimeSeriesDataSource(values, times, 'tickets'),
         [values, times]
+    );
+    const options = useMemo(
+        () => ({
+            ...AXIS_CHART_OPTIONS,
+            xAxisTitleText: xAxisTitle,
+            yAxisTitleText: yAxisTitle,
+        }),
+        [xAxisTitle, yAxisTitle]
     );
     return (
         <ChartHost defaultHeight={panelHeight}>
@@ -220,7 +266,7 @@ export function StandardColumnChart({ values, times, panelHeight = 200 }) {
                     width={width}
                     height={height}
                     dataSources={dataSources}
-                    options={AXIS_CHART_OPTIONS}
+                    options={options}
                 />
             )}
         </ChartHost>
@@ -231,22 +277,57 @@ StandardColumnChart.propTypes = {
     values: PropTypes.arrayOf(PropTypes.number),
     times: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
     panelHeight: PropTypes.number,
+    xAxisTitle: PropTypes.string,
+    yAxisTitle: PropTypes.string,
 };
 
 StandardColumnChart.defaultProps = {
     values: [],
     times: [],
     panelHeight: 200,
+    xAxisTitle: 'Time',
+    yAxisTitle: 'Value',
 };
 
-export function StandardSingleValueChart({ values, times, unit = '', panelHeight = 200 }) {
+export function StandardSingleValueChart({
+    values,
+    times,
+    unit = '',
+    panelHeight = 200,
+    sparklineDisplay = 'below',
+    sparklineStrokeColor = '#FFFFFF',
+    sparklineAreaColor = '#7EB6E8',
+    showSparklineAreaGraph = true,
+    showSparklineTooltip = true,
+    sparklineHighlightDots = 1,
+    sparklineHighlightSegments = 0,
+    sparklineNullValueDisplay = 'connect',
+}) {
     const dataSources = useMemo(() => toSingleValueDataSource(values, times), [values, times]);
     const options = useMemo(
         () => ({
             ...SINGLE_VALUE_OPTIONS,
             unit: unit || '',
+            sparklineDisplay,
+            sparklineStrokeColor,
+            sparklineAreaColor,
+            showSparklineAreaGraph,
+            showSparklineTooltip,
+            sparklineHighlightDots,
+            sparklineHighlightSegments,
+            sparklineNullValueDisplay,
         }),
-        [unit]
+        [
+            unit,
+            sparklineDisplay,
+            sparklineStrokeColor,
+            sparklineAreaColor,
+            showSparklineAreaGraph,
+            showSparklineTooltip,
+            sparklineHighlightDots,
+            sparklineHighlightSegments,
+            sparklineNullValueDisplay,
+        ]
     );
     return (
         <ChartHost defaultHeight={panelHeight}>
@@ -267,6 +348,14 @@ StandardSingleValueChart.propTypes = {
     times: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
     unit: PropTypes.string,
     panelHeight: PropTypes.number,
+    sparklineDisplay: PropTypes.oneOf(['below', 'before', 'after', 'off']),
+    sparklineStrokeColor: PropTypes.string,
+    sparklineAreaColor: PropTypes.string,
+    showSparklineAreaGraph: PropTypes.bool,
+    showSparklineTooltip: PropTypes.bool,
+    sparklineHighlightDots: PropTypes.number,
+    sparklineHighlightSegments: PropTypes.number,
+    sparklineNullValueDisplay: PropTypes.oneOf(['gaps', 'zero', 'connect']),
 };
 
 StandardSingleValueChart.defaultProps = {
@@ -274,4 +363,12 @@ StandardSingleValueChart.defaultProps = {
     times: [],
     unit: '',
     panelHeight: 200,
+    sparklineDisplay: 'below',
+    sparklineStrokeColor: '#FFFFFF',
+    sparklineAreaColor: '#7EB6E8',
+    showSparklineAreaGraph: true,
+    showSparklineTooltip: true,
+    sparklineHighlightDots: 1,
+    sparklineHighlightSegments: 0,
+    sparklineNullValueDisplay: 'connect',
 };

@@ -273,6 +273,8 @@ function ProfileTabContent({ entity }) {
                             values={topLine.values}
                             times={topLine.times}
                             panelHeight={vizHeight}
+                            xAxisTitle="Time"
+                            yAxisTitle={topLine.unit || 'Count'}
                         />
                     </VizPanel>
                 </VizCard>
@@ -300,6 +302,8 @@ function ProfileTabContent({ entity }) {
                             values={standard.line.values}
                             times={standard.line.times}
                             panelHeight={vizHeight}
+                            xAxisTitle="Time"
+                            yAxisTitle={standard.line.unit || 'Count'}
                         />
                     </VizPanel>
                 </VizCard>
@@ -309,6 +313,8 @@ function ProfileTabContent({ entity }) {
                             values={standard.column.values}
                             times={standard.column.times}
                             panelHeight={vizHeight}
+                            xAxisTitle="Time"
+                            yAxisTitle={standard.column.unit || 'Count'}
                         />
                     </VizPanel>
                 </VizCard>

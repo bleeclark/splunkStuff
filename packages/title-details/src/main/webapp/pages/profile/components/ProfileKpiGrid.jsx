@@ -60,6 +60,9 @@ function KpiTile({ feed, href, drillable }) {
                         badColor={palette.badColor}
                         textColor={palette.textColor}
                         colorPlacement="none"
+                        showArea
+                        showXAxis={false}
+                        showYAxis={false}
                         padLeft={2}
                         padRight={2}
                         padTop={2}
