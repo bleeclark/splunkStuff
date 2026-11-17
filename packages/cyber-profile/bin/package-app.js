@@ -9,7 +9,7 @@ const stageDir = path.join(pkgRoot, 'stage');
 const distDir = path.join(pkgRoot, 'dist');
 const releasesDir = path.join(pkgRoot, 'releases');
 const packageRoot = path.join(distDir, appId);
-const archiveName = `${appId}-cyber-profile.tgz`;
+const archiveName = `${appId}.tgz`;
 const archivePath = path.join(distDir, archiveName);
 
 if (!shell.test('-d', stageDir)) {

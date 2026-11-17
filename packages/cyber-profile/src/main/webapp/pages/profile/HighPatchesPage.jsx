@@ -36,6 +36,7 @@ const DEFAULT_ASSET_FILTERS = {
 
 function HighPatchesApp() {
     const [entity, setEntity] = useState('');
+    const [mode, setMode] = useState('assets');
     const [filters, setFilters] = useState(DEFAULT_ASSET_FILTERS);
     const [selectedIds, setSelectedIds] = useState([]);
     const [instructionsOpen, setInstructionsOpen] = useState(false);
@@ -45,9 +46,9 @@ function HighPatchesApp() {
         () => ({
             ...filters,
             entity,
-            mode: 'endpoints',
+            mode,
         }),
-        [filters, entity]
+        [filters, entity, mode]
     );
 
     const tableActive = Boolean(entity) && assetFiltersActive(filters);
@@ -84,7 +85,16 @@ function HighPatchesApp() {
                     </div>
                 </div>
                 <div className="ss-profile-mode-tabs">
-                    <Button label="All Endpoints" appearance="primary" onClick={() => {}} />
+                    <Button
+                        label="All Assets"
+                        appearance={mode === 'assets' ? 'primary' : 'secondary'}
+                        onClick={() => setMode('assets')}
+                    />
+                    <Button
+                        label="All Endpoints"
+                        appearance={mode === 'endpoints' ? 'primary' : 'secondary'}
+                        onClick={() => setMode('endpoints')}
+                    />
                 </div>
                 <div style={{ marginLeft: 'auto' }}>
                     <Button label="Back to Profile" appearance="secondary" to={PROFILE_URL} />
@@ -129,9 +139,9 @@ function HighPatchesApp() {
                 <Modal.Header title="Vulnerability Management Instructions" />
                 <Modal.Body>
                     <Paragraph>
-                        Pick an entity, then use Asset Details filters to focus inventory related to
-                        high patches. Left panels show Assets / High Patches / Critical Patches
-                        KPIs.
+                        Pick an entity, toggle All Assets / All Endpoints, then use Asset Details
+                        filters to focus inventory related to high patches. Left panels show Assets
+                        / High Patches / Critical Patches KPIs.
                     </Paragraph>
                 </Modal.Body>
                 <Modal.Footer>
