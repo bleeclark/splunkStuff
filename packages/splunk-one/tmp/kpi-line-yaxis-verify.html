@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>KPI line Y-axis value verify</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css?v=yaxis" />
+<style>
+  body { margin: 0; padding: 16px; font-family: Helvetica, Arial, sans-serif; background: #eef1f5; color: #1d2733; }
+  h1 { font-size: 18px; margin: 0 0 8px; }
+  .summary { padding: 10px 12px; border-radius: 8px; background: #fff; border: 1px solid #d5d9de; margin-bottom: 12px; font-weight: 600; }
+  .summary.pass { background: #f3faf3; border-color: #7ac27a; }
+  .summary.fail { background: #fdf4f3; border-color: #e07a7a; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card { background: #fff; border: 1px solid #d5d9de; border-radius: 8px; padding: 10px 12px; }
+  .host { width: 100%; height: 240px; border: 1px solid #e0e4ea; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; background: #fff; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e8ebef; }
+  tr.fail td { background: #fdecea; color: #8a1f11; }
+  code { font-size: 11px; }
+</style>
+</head>
+<body>
+  <h1>Y-axis numbers ↔ data values</h1>
+  <div class="summary" id="summary">Running…</div>
+  <div class="grid">
+    <div class="card"><h3>Count 10→60 (Y on)</h3><div class="host" id="h1"></div><div class="meta" id="m1"></div></div>
+    <div class="card"><h3>Multi count+latency (shared Y)</h3><div class="host" id="h2"></div><div class="meta" id="m2"></div></div>
+  </div>
+  <table><thead><tr><th>Check</th><th>Result</th><th>Detail</th></tr></thead><tbody id="tb"></tbody></table>
+
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js?v=yaxis"></script>
+<script>
+(function () {
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var Viz = factories[0](Base);
+  var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var now = Date.now();
+
+  function cfg(map) {
+    var o = {};
+    Object.keys(map).forEach(function (k) { o[NS + k] = map[k]; });
+    return o;
+  }
+  function times(n) {
+    var a = []; var i;
+    for (i = 0; i < n; i += 1) a.push(new Date(now - (n - i) * 3600000).toISOString());
+    return a;
+  }
+  function mount(hostId, raw, map) {
+    var host = document.getElementById(hostId);
+    var el = document.createElement('div');
+    el.style.width = '100%';
+    el.style.height = '100%';
+    host.appendChild(el);
+    var viz = new Viz(el);
+    viz.updateView(viz.formatData(raw), cfg(Object.assign({
+      yScale: 'auto',
+      showYAxisTicks: 'true',
+      showYGrid: 'true',
+      showXAxis: 'true',
+      showMajor: 'true',
+      showLegend: 'true',
+      seriesMode: 'auto',
+      backgroundMode: 'transparent',
+      stroke: '#1E93C6',
+      comparison: 'false',
+    }, map || {})));
+    return el;
+  }
+
+  var values = [10, 20, 30, 40, 50, 60];
+  var el1 = mount('h1', {
+    fields: [{ name: '_time' }, { name: 'count' }],
+    columns: [times(6), values.map(String)],
+  }, { valueFieldCustom: 'count', seriesMode: 'single' });
+
+  var el2 = mount('h2', {
+    fields: [{ name: 'host' }, { name: 'count' }, { name: 'latency' }],
+    columns: [
+      ['a', 'b', 'c', 'd', 'e', 'f'],
+      ['10', '20', '30', '40', '50', '60'],
+      ['100', '110', '120', '130', '140', '150'],
+    ],
+  }, { xFieldCustom: 'host', valueFieldCustom: 'count', seriesMode: 'multi' });
+
+  function root(el) { return el.querySelector('.bgdhamp-kpi-line-viz'); }
+  function yTicks(el) {
+    return Array.prototype.map.call(el.querySelectorAll('.bgdhamp-kpi-line-viz__yTick'), function (t) {
+      return t.textContent;
+    });
+  }
+  function parseTick(s) {
+    return Number(String(s).replace(/,/g, ''));
+  }
+
+  var tests = [];
+  function add(name, fn) {
+    var r;
+    try { r = fn(); } catch (e) { r = { ok: false, detail: String(e.message || e) }; }
+    tests.push({ name: name, ok: !!r.ok, detail: r.detail || '' });
+  }
+
+  add('Y ticks present', function () {
+    var t = yTicks(el1);
+    return { ok: t.length >= 3, detail: 'ticks=' + JSON.stringify(t) };
+  });
+
+  add('Y tick labels are finite numbers', function () {
+    var t = yTicks(el1).map(parseTick);
+    return { ok: t.every(function (n) { return isFinite(n); }), detail: t.join(',') };
+  });
+
+  add('Y range covers data 10..60', function () {
+    var r = root(el1);
+    var ymin = Number(r.getAttribute('data-bgdhamp-y-min'));
+    var ymax = Number(r.getAttribute('data-bgdhamp-y-max'));
+    return {
+      ok: isFinite(ymin) && isFinite(ymax) && ymin <= 10 && ymax >= 60,
+      detail: 'ymin=' + ymin + ' ymax=' + ymax,
+    };
+  });
+
+  add('Y ticks are nice (no long decimals)', function () {
+    var t = yTicks(el1);
+    var nice = t.every(function (s) {
+      return !/\.\d{3,}/.test(s) && !/\.\d+0{2,}/.test(s);
+    });
+    return { ok: nice && t.length >= 3, detail: JSON.stringify(t) };
+  });
+
+  add('Major value = last count (60)', function () {
+    var major = el1.querySelector('.bgdhamp-kpi-line-viz__majorVal');
+    var txt = major ? major.textContent.replace(/[^\d.,-]/g, '') : '';
+    var n = parseTick(txt);
+    return { ok: n === 60, detail: 'major=' + (major && major.textContent) };
+  });
+
+  add('Min data point maps near bottom (not inverted)', function () {
+    var svg = el1.querySelector('svg');
+    var path = el1.querySelector('path.bgdhamp-kpi-line-viz__series');
+    var d = path ? path.getAttribute('d') : '';
+    // First point y should be lower on screen (larger y) than last for rising 10→60
+    var ys = [];
+    String(d || '').replace(/[ML]\s*([\d.]+)\s+([\d.]+)/g, function (_, x, y) {
+      ys.push(Number(y));
+      return _;
+    });
+    return {
+      ok: ys.length >= 2 && ys[0] > ys[ys.length - 1],
+      detail: 'y0=' + ys[0] + ' yLast=' + ys[ys.length - 1] + ' vb=' + (svg && svg.getAttribute('viewBox')),
+    };
+  });
+
+  add('Multi shared Y covers latency 150', function () {
+    var r = root(el2);
+    var ymax = Number(r.getAttribute('data-bgdhamp-y-max'));
+    var t = yTicks(el2).map(parseTick);
+    var maxTick = Math.max.apply(null, t);
+    return {
+      ok: ymax >= 150 && maxTick >= 100,
+      detail: 'ymax=' + ymax + ' ticks=' + JSON.stringify(yTicks(el2)),
+    };
+  });
+
+  add('Fixed 0-100 clips correctly when set', function () {
+    var host = document.createElement('div');
+    host.style.width = '480px';
+    host.style.height = '240px';
+    document.body.appendChild(host);
+    var el = document.createElement('div');
+    el.style.width = '100%';
+    el.style.height = '100%';
+    host.appendChild(el);
+    var viz = new Viz(el);
+    viz.updateView(viz.formatData({
+      fields: [{ name: '_time' }, { name: 'count' }],
+      columns: [times(6), ['10', '20', '30', '40', '50', '60']],
+    }), cfg({
+      yScale: 'fixed', min: '0', max: '100',
+      showYAxisTicks: 'true', valueFieldCustom: 'count', seriesMode: 'single',
+      backgroundMode: 'transparent', stroke: '#1E93C6', showMajor: 'false',
+    }));
+    var r = root(el);
+    var ymin = Number(r.getAttribute('data-bgdhamp-y-min'));
+    var ymax = Number(r.getAttribute('data-bgdhamp-y-max'));
+    host.parentNode && host.parentNode.removeChild(host);
+    return { ok: ymin === 0 && ymax === 100, detail: 'ymin=' + ymin + ' ymax=' + ymax };
+  });
+
+  var tb = document.getElementById('tb');
+  var pass = 0;
+  tests.forEach(function (t) {
+    if (t.ok) pass += 1;
+    var tr = document.createElement('tr');
+    tr.className = t.ok ? 'pass' : 'fail';
+    tr.innerHTML = '<td>' + t.name + '</td><td>' + (t.ok ? 'PASS' : 'FAIL') + '</td><td><code>' + t.detail + '</code></td>';
+    tb.appendChild(tr);
+  });
+
+  var r1 = root(el1);
+  document.getElementById('m1').textContent =
+    'y=[' + r1.getAttribute('data-bgdhamp-y-min') + ',' + r1.getAttribute('data-bgdhamp-y-max') + '] ticks=' + yTicks(el1).join(' | ');
+  var r2 = root(el2);
+  document.getElementById('m2').textContent =
+    'y=[' + r2.getAttribute('data-bgdhamp-y-min') + ',' + r2.getAttribute('data-bgdhamp-y-max') + '] ticks=' + yTicks(el2).join(' | ');
+
+  var summary = document.getElementById('summary');
+  var ok = pass === tests.length;
+  summary.className = 'summary ' + (ok ? 'pass' : 'fail');
+  summary.textContent = pass + '/' + tests.length + ' Y-axis checks ' + (ok ? 'PASS' : 'FAIL');
+  document.title = (ok ? 'PASS' : 'FAIL') + ' · Y-axis verify';
+  window.__yVerify = { pass: pass, total: tests.length, ok: ok };
+})();
+</script>
+</body>
+</html>

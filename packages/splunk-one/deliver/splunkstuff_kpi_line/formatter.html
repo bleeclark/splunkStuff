@@ -73,8 +73,9 @@
         </splunk-radio-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Controls how values map into the plot only — does <strong>not</strong> draw a Y-axis.
-        <strong>Auto</strong> fits data -/+ 5% padding. <strong>Fixed</strong> uses min / max below.
+        Controls how values map into the plot. Turn on <strong>Show Y-axis ticks</strong> under Axis to label them.
+        <strong>Auto</strong> uses nice OOTB-like bounds from the data (includes 0 for positive series).
+        <strong>Fixed</strong> uses min / max below (Single KPI only — Multi always auto-fits).
     </div>
     <splunk-control-group label="Value min">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.min" value="0"></splunk-text-input>
@@ -209,7 +210,10 @@
         </splunk-radio-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        <strong>Auto</strong> turns on multi when extra numeric columns exist (up to 8), like Classic timechart-by. Value field still drives the major number.
+        <strong>Multi series</strong> draws every other numeric column as its own line
+        (example: <code>| table host count latency errors</code> → 3 lines).
+        <strong>Single KPI</strong> draws only the Y value field.
+        <strong>Auto</strong> uses multi when extra numeric columns exist. Value field still drives the major number.
     </div>
     <splunk-control-group label="Show area under primary">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.showArea" value="false">
