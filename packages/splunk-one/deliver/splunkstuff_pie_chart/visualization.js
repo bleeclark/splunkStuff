@@ -6,7 +6,7 @@
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
-    var VIZ_BUILD = '202611181315-pie-studio-font';
+    var VIZ_BUILD = '202611181415-pie-appearance';
     /** Optional text1..text3 strip + info icon — same contract as kpi_line / sparkline. */
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
@@ -584,6 +584,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         if (s.toLowerCase() === 'transparent') {
             return 'transparent';
         }
+        if (/^[0-9A-Fa-f]{6}$/.test(s) || /^[0-9A-Fa-f]{3}$/.test(s)) {
+            s = '#' + s;
+        }
         if (/^#[0-9A-Fa-f]{6}$/.test(s)) {
             return s;
         }
@@ -748,6 +751,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             emptyMessage: readString(config, 'emptyMessage', 'No data to display.') || 'No data to display.',
             background: safeColor(readConfig(config, 'background', '#01417F'), '#01417F'),
             textColor: safeColor(readConfig(config, 'textColor', '#FFFFFF'), '#FFFFFF'),
+            textRowBackground: safeColor(
+                readConfig(config, 'textRowBackground', 'rgba(0,0,0,0.35)'),
+                'rgba(0,0,0,0.35)'
+            ),
             palettePreset: palettePreset,
             palette: parsePalette(readConfig(config, 'palette', ''), palettePreset),
             colorMap: parseColorMap(readConfig(config, 'colorMap', '')),
@@ -1793,7 +1800,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 textRow.style.height = TEXT_ROW_HEIGHT_PX + 'px';
                 textRow.style.boxSizing = 'border-box';
                 textRow.style.overflow = 'hidden';
-                textRow.style.background = 'rgba(0,0,0,0.35)';
+                textRow.style.background = opts.textRowBackground;
+                textRow.style.setProperty('background', opts.textRowBackground, 'important');
                 textRow.style.color = opts.textColor;
                 textRow.style.fontWeight = '400';
                 textRow.style.textShadow = 'none';

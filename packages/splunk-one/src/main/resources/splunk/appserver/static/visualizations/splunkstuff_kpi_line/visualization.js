@@ -17,7 +17,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '202611181405-kpi-line-table-fix';
+    var VIZ_BUILD = '202611181415-kpi-line-appearance';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
@@ -220,6 +220,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         if (raw == null) return fallback;
         var s = String(raw).trim();
         if (!s) return fallback;
+        if (/^[0-9A-Fa-f]{6}$/.test(s)) {
+            s = '#' + s;
+        } else if (/^[0-9A-Fa-f]{3}$/.test(s)) {
+            s = '#' + s;
+        }
         if (/^#[0-9A-Fa-f]{6}$/.test(s)) return s;
         if (/^#[0-9A-Fa-f]{3}$/.test(s)) {
             return (
@@ -242,6 +247,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         var s = String(raw).trim();
         if (!s) return fallback;
         if (s.toLowerCase() === 'transparent') return 'transparent';
+        if (/^[0-9A-Fa-f]{6}$/.test(s) || /^[0-9A-Fa-f]{3}$/.test(s)) {
+            return sanitizeHexColor(s, fallback);
+        }
         if (/^#[0-9A-Fa-f]{6}$/.test(s)) return s;
         if (/^#[0-9A-Fa-f]{3}$/.test(s)) {
             return sanitizeHexColor(s, fallback);
@@ -1879,9 +1887,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 'points',
                 values.length
             );
-            var backgroundMode = String(readConfig(config, 'backgroundMode', 'transparent') || 'transparent')
+            // Solid by default so Appearance → Background color is visible in Search.
+            var backgroundMode = String(readConfig(config, 'backgroundMode', 'solid') || 'solid')
                 .trim()
                 .toLowerCase();
+            if (backgroundMode !== 'transparent' && backgroundMode !== 'solid') {
+                backgroundMode = 'solid';
+            }
             var backgroundRaw = readConfig(config, 'background', '#01417F');
             var background;
             if (
@@ -1900,6 +1912,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 // Search / transparent panels are light — use dark ink. Solid navy tiles stay white.
                 textColor = background === 'transparent' ? '#1D2733' : '#FFFFFF';
             }
+            var textRowBackground = sanitizeCssColor(
+                readConfig(config, 'textRowBackground', 'rgba(0,0,0,0.42)'),
+                'rgba(0,0,0,0.42)'
+            );
             var emptyText = String(readConfig(config, 'emptyText', '') || '');
 
             // --- Empty / insufficient points (emptyText when set) ---
@@ -2065,9 +2081,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 scale = fitScaleToSeries(scale, fitArrays);
             }
             var strokeRaw = readConfig(config, 'stroke', null);
+            // Default white so the line stays visible on the default navy solid fill.
             var stroke = sanitizeHexColor(
-                strokeRaw != null && String(strokeRaw).trim() !== '' ? strokeRaw : '#01417F',
-                '#01417F'
+                strokeRaw != null && String(strokeRaw).trim() !== '' ? strokeRaw : '#FFFFFF',
+                '#FFFFFF'
             );
             var unit = String(readConfig(config, 'unit', '') || '');
             var subheader = String(readConfig(config, 'subheader', '') || '');
@@ -2077,10 +2094,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var target = useThreshold ? readFloat(config, 'target', 50) : null;
             var anomalyMode = String(readConfig(config, 'anomalies', 'none'));
             var anomalySens = readInt(config, 'anomalySensitivity', 3);
-            // Chart defaults: X ticks on, Y scale/grid off, no up/down trend delta.
+            // Chart defaults: X ticks on. Y ticks/grid off — new key ignores sticky showYAxis=true.
             var showXAxis = readBool(config, 'showXAxis', true);
-            var showYAxis = readBool(config, 'showYAxis', false);
-            var showYGrid = readBool(config, 'showYGrid', false);
+            var showYAxis = readBool(config, 'showYAxisTicks', false);
+            var showYGrid = showYAxis && readBool(config, 'showYGrid', false);
             // Splunk formatter text fields may omit the key; only explicit false disables hover.
             var showHover = readBool(config, 'showHover', true);
             if (readConfig(config, 'showHover', null) === null) {
@@ -2171,13 +2188,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (showXAxis && padB < 18) {
                 padB = 18;
             }
-            // Keep first/last category labels inside the plot for | table results.
-            if (isCategorical && showXAxis) {
-                if (padL < 28) {
-                    padL = 28;
+            // Slight side pad for category labels — avoid a large left gutter that looks like a Y axis.
+            if (isCategorical && showXAxis && !showYAxis) {
+                if (padL < 12) {
+                    padL = 12;
                 }
-                if (padR < 28) {
-                    padR = 28;
+                if (padR < 12) {
+                    padR = 12;
                 }
             }
             var chartH = Math.max(40, height - subheaderH - majorH - textRowH);
@@ -2240,10 +2257,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 textRow.style.height = TEXT_ROW_HEIGHT_PX + 'px';
                 textRow.style.boxSizing = 'border-box';
                 textRow.style.overflow = 'hidden';
-                textRow.style.background = 'rgba(0,0,0,0.42)';
+                textRow.style.background = textRowBackground;
+                textRow.style.setProperty('background', textRowBackground, 'important');
                 textRow.style.color = textColor;
-                textRow.style.textShadow = '0 1px 1px rgba(0,0,0,0.45)';
-                textRow.style.fontWeight = '600';
+                textRow.style.textShadow = 'none';
+                textRow.style.fontWeight = '400';
                 var linkPrefix = splunkPathPrefix(ownerDoc);
                 var linkTarget =
                     String(readConfig(config, 'linkTarget', 'newTab') || '')
