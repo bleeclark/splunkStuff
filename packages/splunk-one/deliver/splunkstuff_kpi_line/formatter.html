@@ -65,44 +65,50 @@
     </div>
 </form>
 
-<form class="splunk-formatter-section" section-label="Y axis">
-    <splunk-control-group label="Y scale">
+<form class="splunk-formatter-section" section-label="Value range">
+    <splunk-control-group label="Value scale">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.yScale" value="auto">
             <option value="auto">Auto</option>
             <option value="fixed">Fixed</option>
         </splunk-radio-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        <strong>Auto</strong> fits the Y axis to the data -/+ 5% padding.
-        <strong>Fixed</strong> uses Y min / Y max below.
+        Controls how values map into the plot only — does <strong>not</strong> draw a Y-axis.
+        <strong>Auto</strong> fits data -/+ 5% padding. <strong>Fixed</strong> uses min / max below.
     </div>
-    <splunk-control-group label="Y min">
+    <splunk-control-group label="Value min">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.min" value="0"></splunk-text-input>
     </splunk-control-group>
-    <splunk-control-group label="Y max">
+    <splunk-control-group label="Value max">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.max" value="100"></splunk-text-input>
     </splunk-control-group>
 </form>
 
 <form class="splunk-formatter-section" section-label="Appearance">
     <splunk-control-group label="Background mode">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.backgroundMode" value="transparent">
-            <option value="transparent">Transparent</option>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.backgroundMode" value="solid">
             <option value="solid">Solid color</option>
+            <option value="transparent">Transparent</option>
         </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Background color">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#01417F"></splunk-color-picker>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Use <strong>Solid color</strong> with the picker above. Transparent lets the Search/dashboard panel show through.
+        Default is solid navy. Choose Transparent to let the Search/dashboard panel show through.
         No good/bad trend fills.
     </div>
     <splunk-control-group label="Text color">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
     </splunk-control-group>
+    <splunk-control-group label="Text row background">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textRowBackground" value="#000000"></splunk-color-picker>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Background behind the Text1–Text3 row. Use a dark color for contrast on light text.
+    </div>
     <splunk-control-group label="Line stroke">
-        <splunk-color-picker name="{{VIZ_NAMESPACE}}.stroke" value="#01417F"></splunk-color-picker>
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.stroke" value="#FFFFFF"></splunk-color-picker>
     </splunk-control-group>
     <splunk-control-group label="Line stroke width, px">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.strokeWidth" value="2"></splunk-text-input>
@@ -312,14 +318,14 @@
 </form>
 
 <form class="splunk-formatter-section" section-label="Axis and drilldown">
-    <splunk-control-group label="Show Y-axis scale">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYAxis" value="false">
+    <splunk-control-group label="Show Y-axis ticks">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYAxisTicks" value="false">
             <option value="false">Off</option>
             <option value="true">On</option>
         </splunk-radio-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Default Off. Optional numeric Y ticks from Auto/Fixed scale.
+        Default Off. Draws left-side numeric ticks (separate from Value range mapping).
     </div>
     <splunk-control-group label="Show Y gridlines">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYGrid" value="false">

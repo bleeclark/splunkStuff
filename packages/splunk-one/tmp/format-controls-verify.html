@@ -337,23 +337,40 @@
       detail: 'x ticks=' + count(on, '.bgdhamp-kpi-line-viz__xTick'),
     };
   });
-  add(lineTests, 'showYAxis / showYGrid', function () {
+  add(lineTests, 'showYAxisTicks / showYGrid', function () {
     var on = render('line', merge(lineBase, {
-      showMajor: 'false', showYAxis: 'true', showYGrid: 'true', showXAxis: 'true', yScale: 'auto',
+      showMajor: 'false', showYAxisTicks: 'true', showYGrid: 'true', showXAxis: 'true', yScale: 'auto',
     }));
-    var off = render('line', merge(lineBase, { showYAxis: 'false', showYGrid: 'false' }));
+    var off = render('line', merge(lineBase, { showYAxisTicks: 'false', showYGrid: 'false' }));
+    var stickyLegacy = render('line', merge(lineBase, { showYAxis: 'true', showYGrid: 'true' }));
     return {
       ok:
         count(on, '.bgdhamp-kpi-line-viz__yTick') >= 2 &&
         count(on, '.bgdhamp-kpi-line-viz__yGrid') >= 2 &&
-        count(off, '.bgdhamp-kpi-line-viz__yTick') === 0,
+        count(off, '.bgdhamp-kpi-line-viz__yTick') === 0 &&
+        count(stickyLegacy, '.bgdhamp-kpi-line-viz__yTick') === 0,
       detail:
         'yTicks=' +
         count(on, '.bgdhamp-kpi-line-viz__yTick') +
         ' grid=' +
         count(on, '.bgdhamp-kpi-line-viz__yGrid') +
         ' off=' +
-        count(off, '.bgdhamp-kpi-line-viz__yTick'),
+        count(off, '.bgdhamp-kpi-line-viz__yTick') +
+        ' legacySticky=' +
+        count(stickyLegacy, '.bgdhamp-kpi-line-viz__yTick'),
+    };
+  });
+  add(lineTests, 'textRowBackground', function () {
+    var el = render('line', merge(lineBase, {
+      showTextRow: 'true',
+      text1Field: 'text1',
+      textRowBackground: '#112233',
+    }));
+    var row = el.querySelector('.bgdhamp-kpi-line-viz__textRow');
+    var bgv = row ? String(row.style.background || row.style.backgroundColor || '').toLowerCase() : '';
+    return {
+      ok: !!row && (bgv.indexOf('112233') >= 0 || bgv.indexOf('rgb(17, 34, 51)') >= 0),
+      detail: 'bg=' + bgv,
     };
   });
   add(lineTests, 'defaults: no major, no trend, no Y scale', function () {
@@ -620,6 +637,19 @@
     var el = render('pie', merge(pieBase, { backgroundMode: 'solid', background: '#01417F' }));
     var s = bg(el) + bg(el, '.bgdhamp-pie-chart-viz');
     return { ok: /1,\s*65,\s*127|#01417F/i.test(s), detail: s.slice(0, 80) };
+  });
+  add(pieTests, 'textRowBackground', function () {
+    var el = render('pie', merge(pieBase, {
+      showTextRow: 'true',
+      text1Field: 'text1',
+      textRowBackground: '#112233',
+    }));
+    var row = el.querySelector('.bgdhamp-pie-chart-viz__textRow');
+    var bgv = row ? String(row.style.background || row.style.backgroundColor || '').toLowerCase() : '';
+    return {
+      ok: !!row && (bgv.indexOf('112233') >= 0 || bgv.indexOf('rgb(17, 34, 51)') >= 0),
+      detail: 'bg=' + bgv,
+    };
   });
   add(pieTests, 'textColor', function () {
     var el = render('pie', merge(pieBase, { textColor: '#FFEEDD', showSliceLabels: 'true', legendPosition: 'none' }));
