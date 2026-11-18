@@ -35,6 +35,16 @@
 </form>
 
 <form class="splunk-formatter-section" section-label="Y-axis scale">
+    <splunk-control-group label="Y scale">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.yScale" value="auto">
+            <option value="auto">Auto</option>
+            <option value="fixed">Fixed</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        <strong>Auto</strong> fits the Y axis to the data -/+ 5% padding.
+        <strong>Fixed</strong> uses Y min / Y max below.
+    </div>
     <splunk-control-group label="Y min">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.min" value="0"></splunk-text-input>
     </splunk-control-group>
@@ -45,25 +55,17 @@
 
 <form class="splunk-formatter-section" section-label="Appearance">
     <splunk-control-group label="Background">
-        <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#0B1F3B"></splunk-color-picker>
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.background" value="transparent"></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        With <strong>color placement: top</strong>, this fills the chart strip when a major row is shown; the major row uses trend colors. With <strong>full</strong> (default), the whole tile uses the trend surface.
-    </div>
-    <splunk-control-group label="Up / flat trend - delta &gt;= 0">
-        <splunk-color-picker name="{{VIZ_NAMESPACE}}.goodColor" value="#01417F"></splunk-color-picker>
-    </splunk-control-group>
-    <splunk-control-group label="Down trend - delta &lt; 0">
-        <splunk-color-picker name="{{VIZ_NAMESPACE}}.badColor" value="#DFA611"></splunk-color-picker>
-    </splunk-control-group>
-    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Keith/ITSI pattern: blue when trend &gt;= 0, gold when trend &lt; 0.
+        Tile fill only — no up/down trend colors. Default <strong>transparent</strong> so the dashboard panel shows through.
+        Use a hex like <strong>#0B1F3B</strong> or <strong>rgba(0,0,0,0)</strong> if you want a solid fill.
     </div>
     <splunk-control-group label="Text color">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
     </splunk-control-group>
     <splunk-control-group label="Line stroke">
-        <splunk-color-picker name="{{VIZ_NAMESPACE}}.stroke" value="#FFFFFF"></splunk-color-picker>
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.stroke" value="#01417F"></splunk-color-picker>
     </splunk-control-group>
     <splunk-control-group label="Line stroke width, px">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.strokeWidth" value="2"></splunk-text-input>
@@ -87,7 +89,7 @@
         <splunk-text-input name="{{VIZ_NAMESPACE}}.colorPlacement" value="full"></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        <strong>full</strong> - trend fill on full tile. <strong>top</strong> - trend on major row only; chart uses background color (when major row is shown).
+        Kept for compatibility. Background is always the Format background (default transparent) — no good/bad trend fill.
     </div>
 </form>
 

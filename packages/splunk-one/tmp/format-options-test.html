@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Format options test — pie + line</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css?v=fmt2" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css?v=fmt2" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font-family: Helvetica, Arial, sans-serif; background: #e8ebef; color: #1d2733; }
+  h1 { font-size: 18px; margin: 0 0 8px; }
+  .summary { background: #fff; border: 1px solid #d5d9de; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+  .summary.pass { border-color: #7ac27a; }
+  .summary.fail { border-color: #e07a7a; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+  .card { background: #fff; border: 1px solid #d5d9de; border-radius: 8px; overflow: hidden; }
+  .card.fail { border-color: #e07a7a; box-shadow: 0 0 0 1px #e07a7a inset; }
+  .card-h { padding: 8px 10px; background: #f7f8fa; border-bottom: 1px solid #d5d9de; font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; gap: 8px; }
+  .badge { font-size: 11px; padding: 2px 6px; border-radius: 999px; }
+  .badge.pass { background: #e8f5e9; color: #1b5e20; }
+  .badge.fail { background: #fdecea; color: #8a1f11; }
+  .host { height: 210px; }
+  .checks { padding: 8px 10px; font-size: 11px; color: #5c6773; line-height: 1.4; min-height: 42px; }
+  .checks li.fail { color: #8a1f11; font-weight: 600; }
+</style>
+</head>
+<body>
+  <h1>Format options test — splunkstuff_kpi_line + splunkstuff_pie_chart</h1>
+  <div class="summary" id="summary">Running…</div>
+  <div class="grid" id="grid"></div>
+
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js?v=fmt2"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js?v=fmt2"></script>
+<script>
+(function () {
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var LineViz = factories[0](Base);
+  var PieViz = factories[1](Base);
+  var LINE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var PIE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
+
+  function cfg(ns, map) {
+    var out = {};
+    Object.keys(map).forEach(function (k) { out[ns + k] = map[k]; });
+    return out;
+  }
+
+  function series(n, fn) {
+    var times = [];
+    var values = [];
+    var now = Date.now();
+    var i;
+    for (i = 0; i < n; i += 1) {
+      times.push(new Date(now - (n - i) * 3600000).toISOString());
+      values.push(String(fn(i)));
+    }
+    return { times: times, values: values };
+  }
+
+  function lineRawDual() {
+    var a = series(10, function (i) { return 40 + i * 3 + ((i % 3) * 4); });
+    var b = series(10, function (i) { return 30 + i * 2; });
+    var text1 = a.values.map(function () { return 'East'; });
+    var text2 = a.values.map(function () { return '1204'; });
+    var text3 = a.values.map(function () { return 'Stable'; });
+    var info = a.values.map(function () { return 'Ops dual stream'; });
+    var annotation = a.values.map(function (_, i) { return i === 4 ? 'spike' : ''; });
+    return {
+      fields: [
+        { name: '_time' }, { name: 'current' }, { name: 'previous' },
+        { name: 'text1' }, { name: 'text2' }, { name: 'text3' }, { name: 'info' }, { name: 'annotation' },
+      ],
+      columns: [a.times, a.values, b.values, text1, text2, text3, info, annotation],
+    };
+  }
+
+  function lineRawSingle() {
+    var a = series(12, function (i) { return 12 + ((i * 17) % 40); });
+    return {
+      fields: [{ name: '_time' }, { name: 'value' }],
+      columns: [a.times, a.values],
+    };
+  }
+
+  function lineRawEmpty() {
+    return { fields: [{ name: '_time' }, { name: 'value' }], columns: [[], []] };
+  }
+
+  function pieRaw() {
+    return {
+      fields: [
+        { name: 'category' }, { name: 'count' }, { name: 'previous' }, { name: 'color' },
+        { name: 'text1' }, { name: 'text2' }, { name: 'text3' }, { name: 'info' },
+      ],
+      columns: [
+        ['Critical', 'High', 'Medium', 'Low', 'Info', 'Noise', 'OtherX'],
+        ['42', '88', '156', '310', '18', '9', '5'],
+        ['40', '80', '140', '300', '20', '10', '4'],
+        ['#FF0000', '', '', '', '', '', ''],
+        ['East', 'East', 'East', 'East', 'East', 'East', 'East'],
+        ['1204', '1204', '1204', '1204', '1204', '1204', '1204'],
+        ['Stable', 'Stable', 'Stable', 'Stable', 'Stable', 'Stable', 'Stable'],
+        ['Severity mix', 'Severity mix', 'Severity mix', 'Severity mix', 'Severity mix', 'Severity mix', 'Severity mix'],
+      ],
+    };
+  }
+
+  function mountCard(title, kind) {
+    var card = document.createElement('section');
+    card.className = 'card';
+    card.innerHTML =
+      '<div class="card-h"><span></span><span class="badge">…</span></div>' +
+      '<div class="host"></div><ul class="checks"></ul>';
+    card.querySelector('.card-h span').textContent = title;
+    document.getElementById('grid').appendChild(card);
+    var host = card.querySelector('.host');
+    var el = document.createElement('div');
+    el.style.width = '100%';
+    el.style.height = '100%';
+    host.appendChild(el);
+    var viz = kind === 'line' ? new LineViz(el) : new PieViz(el);
+    return { card: card, el: el, viz: viz, checksEl: card.querySelector('.checks'), badge: card.querySelector('.badge') };
+  }
+
+  function assert(checks, name, ok) {
+    checks.push({ name: name, ok: !!ok });
+  }
+
+  function finish(ui, checks) {
+    var failed = checks.filter(function (c) { return !c.ok; });
+    ui.badge.textContent = failed.length ? 'FAIL ' + failed.length : 'PASS';
+    ui.badge.className = 'badge ' + (failed.length ? 'fail' : 'pass');
+    if (failed.length) ui.card.classList.add('fail');
+    ui.checksEl.innerHTML = checks
+      .map(function (c) {
+        return '<li class="' + (c.ok ? 'pass' : 'fail') + '">' + (c.ok ? '✓' : '✗') + ' ' + c.name + '</li>';
+      })
+      .join('');
+    return failed.length === 0;
+  }
+
+  var results = [];
+
+  // ---- LINE SCENARIOS ----
+  (function () {
+    var ui = mountCard('LINE · defaults + auto scale', 'line');
+    var raw = lineRawSingle();
+    ui.viz.updateView(ui.viz.formatData(raw), cfg(LINE_NS, {
+      valueField: 'value', yScale: 'auto', showMajor: 'true', showHover: 'true',
+    }));
+    var checks = [];
+    assert(checks, 'root mounted', !!ui.el.querySelector('.bgdhamp-kpi-line-viz'));
+    assert(checks, 'major value shown', !!ui.el.querySelector('.bgdhamp-kpi-line-viz__major'));
+    assert(checks, 'path drawn', !!ui.el.querySelector('path'));
+    assert(checks, 'build id present', !!ui.el.querySelector('[data-bgdhamp-viz-build]'));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('LINE · fixed Y 0-100 clips spike', 'line');
+    var raw = {
+      fields: [{ name: '_time' }, { name: 'value' }],
+      columns: [
+        series(8, function () { return 0; }).times,
+        ['10', '12', '11', '220', '14', '13', '15', '16'],
+      ],
+    };
+    ui.viz.updateView(ui.viz.formatData(raw), cfg(LINE_NS, {
+      valueField: 'value', yScale: 'fixed', min: '0', max: '100', showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B',
+    }));
+    var checks = [];
+    assert(checks, 'renders with fixed scale', !!ui.el.querySelector('path'));
+    assert(checks, 'major shows 16', /16/.test((ui.el.querySelector('.bgdhamp-kpi-line-viz__major') || {}).textContent || ''));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('LINE · colorPlacement top + background', 'line');
+    ui.viz.updateView(ui.viz.formatData(lineRawSingle()), cfg(LINE_NS, {
+      valueField: 'value', yScale: 'auto', showMajor: 'true', colorPlacement: 'top',
+      background: '#102a43', stroke: '#FFFFFF', goodColor: '#01417F', badColor: '#DFA611',
+    }));
+    var checks = [];
+    var root = ui.el.querySelector('.bgdhamp-kpi-line-viz');
+    var bg = root ? (root.style.backgroundColor || root.style.background || '') : '';
+    assert(checks, 'uses Format background on strip', /rgb\(16,\s*42,\s*67\)|#102a43/i.test(bg) || /102a43/i.test(root.getAttribute('style') || ''));
+    assert(checks, 'line path present', !!ui.el.querySelector('path'));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('LINE · dual stream + legend + area', 'line');
+    ui.viz.updateView(ui.viz.formatData(lineRawDual()), cfg(LINE_NS, {
+      valueField: 'current', compareField: 'previous', comparison: 'true', seriesMode: 'multi',
+      yScale: 'auto', showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B',
+      showLegend: 'true', showArea: 'true', shadeBetween: 'true', showXAxis: 'true',
+      stroke: '#FFFFFF', compareStroke: '#7EB6FF',
+    }));
+    var checks = [];
+    assert(checks, 'multiple paths', ui.el.querySelectorAll('path').length >= 2);
+    assert(checks, 'legend shows current/previous', /current|previous/i.test(ui.el.textContent || ''));
+    assert(checks, 'x-axis ticks', !!ui.el.querySelector('text') || /AM|PM|:/.test(ui.el.textContent || ''));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('LINE · thresholds + markers + SMA', 'line');
+    ui.viz.updateView(ui.viz.formatData(lineRawSingle()), cfg(LINE_NS, {
+      valueField: 'value', yScale: 'auto', showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B',
+      threshold: 'true', thresholdMin: '20', thresholdMax: '80', target: '50',
+      showMarkers: 'true', chartStyle: 'area', showArea: 'true', smoothing: 'sma', smaWindow: '3',
+      showHover: 'true', showHoverAnnotation: 'true',
+    }));
+    var checks = [];
+    assert(checks, 'threshold/target geometry', ui.el.querySelectorAll('rect, line, path').length >= 3);
+    assert(checks, 'markers or area path', !!ui.el.querySelector('circle, path'));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('LINE · anomalies + annotations', 'line');
+    ui.viz.updateView(ui.viz.formatData(lineRawDual()), cfg(LINE_NS, {
+      valueField: 'current', compareField: 'previous', comparison: 'true', yScale: 'auto',
+      showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B',
+      anomalies: 'pctChange', anomalySensitivity: '2',
+      annotationField: 'annotation', showAnnotationLabels: 'true',
+    }));
+    var checks = [];
+    assert(checks, 'chart rendered', !!ui.el.querySelector('.bgdhamp-kpi-line-viz'));
+    assert(checks, 'path present', !!ui.el.querySelector('path'));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('LINE · text row + info + unit', 'line');
+    ui.viz.updateView(ui.viz.formatData(lineRawDual()), cfg(LINE_NS, {
+      valueField: 'current', yScale: 'auto', showMajor: 'true', colorPlacement: 'top',
+      background: 'transparent', textColor: '#FFFFFF', stroke: '#01417F', compareStroke: '#DFA611',
+      comparison: 'true', compareField: 'previous', showLegend: 'true',
+      showTextRow: 'true', text1Field: 'text1', text2Field: 'text2', text3Field: 'text3',
+      text1LinkUrl: 'https://example.com/$value$', showInfo: 'true', infoField: 'info',
+      unit: '%', subheader: 'Format text row',
+    }));
+    var checks = [];
+    assert(checks, 'text row cells', ui.el.querySelectorAll('.bgdhamp-kpi-line-viz__textCell').length >= 1);
+    assert(checks, 'info icon', !!ui.el.querySelector('.bgdhamp-kpi-line-viz__info'));
+    assert(checks, 'subheader', /Format text row/.test(ui.el.textContent || ''));
+    assert(checks, 'unit suffix', /%/.test(ui.el.textContent || ''));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('LINE · chart-only + empty message', 'line');
+    ui.viz.updateView(ui.viz.formatData(lineRawEmpty()), cfg(LINE_NS, {
+      valueField: 'value', showMajor: 'false', emptyText: 'Custom empty LINE',
+      background: '#0B1F3B', textColor: '#FFFFFF',
+    }));
+    var checks = [];
+    assert(checks, 'empty message shown', /Custom empty LINE/.test(ui.el.textContent || ''));
+    results.push(finish(ui, checks));
+  })();
+
+  // ---- PIE SCENARIOS ----
+  (function () {
+    var ui = mountCard('PIE · Studio palette + labels', 'pie');
+    ui.viz.updateView(ui.viz.formatData(pieRaw()), cfg(PIE_NS, {
+      labelField: 'category', valueField: 'count', palettePreset: 'studio',
+      title: 'Studio palette', showSliceLabels: 'true', showPercent: 'true',
+      legendPosition: 'right', background: '#01417F', textColor: '#FFFFFF',
+      otherEnabled: 'false', topN: '0',
+    }));
+    var fills = Array.prototype.map.call(ui.el.querySelectorAll('path'), function (p) { return p.getAttribute('fill'); })
+      .filter(function (f) { return f && f.charAt(0) === '#'; });
+    var checks = [];
+    assert(checks, 'studio first color', fills.indexOf('#7B56DB') >= 0);
+    assert(checks, 'title shown', /Studio palette/.test(ui.el.textContent || ''));
+    assert(checks, 'legend present', /Critical|Low|Medium/.test(ui.el.textContent || ''));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('PIE · Classic palette + donut', 'pie');
+    ui.viz.updateView(ui.viz.formatData(pieRaw()), cfg(PIE_NS, {
+      labelField: 'category', valueField: 'count', palettePreset: 'classic',
+      innerRadius: '44', legendPosition: 'bottom', title: 'Classic donut',
+      showSliceLabels: 'true', background: '#01417F', textColor: '#FFFFFF',
+      otherEnabled: 'false', topN: '0',
+    }));
+    var fills = Array.prototype.map.call(ui.el.querySelectorAll('path'), function (p) { return p.getAttribute('fill'); })
+      .filter(function (f) { return f && f.charAt(0) === '#'; });
+    var checks = [];
+    assert(checks, 'classic first color', fills.indexOf('#1E93C6') >= 0);
+    assert(checks, 'donut hole via inner radius', !!ui.el.querySelector('path'));
+    assert(checks, 'title Classic donut', /Classic donut/.test(ui.el.textContent || ''));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('PIE · TopN + Other + dark bg', 'pie');
+    ui.viz.updateView(ui.viz.formatData(pieRaw()), cfg(PIE_NS, {
+      labelField: 'category', valueField: 'count', palettePreset: 'studio',
+      topN: '3', otherEnabled: 'true', otherLabel: 'Other', otherColor: '#8B9BB4',
+      minSlicePercent: '1', sortMode: 'value-desc',
+      background: '#01417F', textColor: '#FFFFFF', legendPosition: 'right',
+      title: 'Top 3 + Other', showSliceLabels: 'true',
+    }));
+    var checks = [];
+    assert(checks, 'Other bucket labeled', /Other/.test(ui.el.textContent || ''));
+    assert(checks, 'dark background applied', /rgb\(1,\s*65,\s*127\)|#01417F/i.test(ui.el.style.backgroundColor || ui.el.getAttribute('style') || '') ||
+      /01417F/i.test((ui.el.firstChild && ui.el.firstChild.getAttribute && ui.el.firstChild.getAttribute('style')) || '') ||
+      ui.el.style.backgroundColor === 'rgb(1, 65, 127)');
+    assert(checks, 'host bg dark', ui.el.style.backgroundColor === 'rgb(1, 65, 127)' || /1,\s*65,\s*127/.test(ui.el.style.backgroundColor || ''));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('PIE · color field + compare + text/info', 'pie');
+    ui.viz.updateView(ui.viz.formatData(pieRaw()), cfg(PIE_NS, {
+      labelField: 'category', valueField: 'count', compareField: 'previous', colorField: 'color',
+      showCompare: 'true', showValue: 'true', showPercent: 'true', showRowCount: 'true',
+      showTextRow: 'true', text1Field: 'text1', text2Field: 'text2', text3Field: 'text3',
+      text1LinkUrlField: '', showInfo: 'true', infoField: 'info',
+      palettePreset: 'studio', legendPosition: 'right', title: 'Compare + text',
+      background: '#01417F', textColor: '#FFFFFF',
+      showSliceLabels: 'true', showInspector: 'true', showDataQuality: 'false',
+      otherEnabled: 'false', topN: '0',
+    }));
+    var fills = Array.prototype.map.call(ui.el.querySelectorAll('path'), function (p) { return p.getAttribute('fill'); })
+      .filter(function (f) { return f && f.charAt(0) === '#'; });
+    var checks = [];
+    assert(checks, 'color field forces Critical red', fills.indexOf('#FF0000') >= 0);
+    assert(checks, 'text row cells', ui.el.querySelectorAll('.bgdhamp-pie-chart-viz__textCell').length >= 1);
+    assert(checks, 'info icon', !!ui.el.querySelector('.bgdhamp-pie-chart-viz__info'));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('PIE · emptyMessage (all negative dropped)', 'pie');
+    // Negatives are dropped → no slices / total 0 → emptyMessage (not numeric-column error).
+    ui.viz.updateView(
+      ui.viz.formatData({
+        fields: [{ name: 'category' }, { name: 'count' }],
+        columns: [['A', 'B'], ['-1', '-2']],
+      }),
+      cfg(PIE_NS, {
+        labelField: 'category',
+        valueField: 'count',
+        emptyMessage: 'Custom empty PIE',
+        background: '#01417F',
+        textColor: '#FFFFFF',
+      })
+    );
+    var checks = [];
+    assert(checks, 'empty message', /Custom empty PIE/.test(ui.el.textContent || ''));
+    results.push(finish(ui, checks));
+  })();
+
+  (function () {
+    var ui = mountCard('PIE · colorMap override', 'pie');
+    ui.viz.updateView(ui.viz.formatData(pieRaw()), cfg(PIE_NS, {
+      labelField: 'category', valueField: 'count', palettePreset: 'studio',
+      colorMap: 'Low=#111111,Medium=#222222,High=#333333,Critical=#444444',
+      otherEnabled: 'false', topN: '0', legendPosition: 'right', showSliceLabels: 'false',
+      title: 'Mapped colors',
+    }));
+    var fills = Array.prototype.map.call(ui.el.querySelectorAll('path'), function (p) { return p.getAttribute('fill'); })
+      .filter(function (f) { return f && f.charAt(0) === '#'; })
+      .map(function (f) { return f.toUpperCase(); });
+    var checks = [];
+    assert(checks, 'mapped Low #111111', fills.indexOf('#111111') >= 0);
+    assert(checks, 'title Mapped colors', /Mapped colors/.test(ui.el.textContent || ''));
+    results.push(finish(ui, checks));
+  })();
+
+  var passed = results.filter(Boolean).length;
+  var total = results.length;
+  var summary = document.getElementById('summary');
+  summary.textContent = passed + ' / ' + total + ' Format scenarios passed';
+  summary.className = 'summary ' + (passed === total ? 'pass' : 'fail');
+  window.__formatTest = { passed: passed, total: total, ok: passed === total };
+})();
+</script>
+</body>
+</html>

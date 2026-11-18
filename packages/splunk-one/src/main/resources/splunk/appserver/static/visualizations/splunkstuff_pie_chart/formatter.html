@@ -184,20 +184,26 @@
 
 <form class="splunk-formatter-section" section-label="Appearance">
     <splunk-control-group label="Background">
-        <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#FFFFFF"></splunk-color-picker>
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#01417F"></splunk-color-picker>
     </splunk-control-group>
     <splunk-control-group label="Text color">
-        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#3C444D"></splunk-color-picker>
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
     </splunk-control-group>
     <splunk-control-group label="Palette preset">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.palettePreset" value="splunk">
-            <option value="splunk">BGDHamp</option>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.palettePreset" value="studio">
+            <option value="studio">Dashboard Studio</option>
+            <option value="classic">Classic</option>
+            <option value="splunk">Studio</option>
+            <option value="bgdhamp">BGDHamp</option>
             <option value="calm">Calm</option>
             <option value="bright">Bright</option>
             <option value="accessible">Accessible</option>
             <option value="risk">Risk</option>
         </splunk-radio-input>
     </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Default matches Dashboard Studio seriesColors. Classic uses the older Simple XML chart palette.
+    </div>
     <splunk-control-group label="Palette hex list">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.palette" value=""></splunk-text-input>
     </splunk-control-group>

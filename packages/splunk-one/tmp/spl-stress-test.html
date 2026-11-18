@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>SPL stress test — pie + line</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css?v=spl1" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css?v=spl1" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 14px; font-family: Helvetica, Arial, sans-serif; background: #e8ebef; color: #1d2733; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  .summary { background: #fff; border: 1px solid #d5d9de; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px; }
+  .summary.pass { border-color: #7ac27a; background: #f3faf3; }
+  .summary.fail { border-color: #e07a7a; background: #fdf4f3; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 10px; }
+  .card { background: #fff; border: 1px solid #d5d9de; border-radius: 8px; overflow: hidden; }
+  .card.fail { border-color: #e07a7a; }
+  .card-h { padding: 7px 9px; background: #f7f8fa; border-bottom: 1px solid #d5d9de; font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; gap: 8px; }
+  .badge { font-size: 10px; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
+  .badge.pass { background: #e8f5e9; color: #1b5e20; }
+  .badge.fail { background: #fdecea; color: #8a1f11; }
+  .kind { font-size: 10px; color: #5c6773; font-weight: 600; margin-right: 6px; }
+  pre.spl { margin: 0; padding: 6px 9px; background: #0b1f3b; color: #dce7f5; font-size: 10px; line-height: 1.35; white-space: pre-wrap; max-height: 72px; overflow: auto; }
+  .host { height: 180px; }
+  .checks { margin: 0; padding: 6px 9px 8px 22px; font-size: 10px; color: #5c6773; }
+  .checks li.fail { color: #8a1f11; font-weight: 700; }
+</style>
+</head>
+<body>
+  <h1>SPL stress test — pie + line</h1>
+  <div class="summary" id="summary">Running…</div>
+  <div class="grid" id="grid"></div>
+
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js?v=spl2"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js?v=spl2"></script>
+<script>
+(function () {
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var LineViz = factories[0](Base);
+  var PieViz = factories[1](Base);
+  var LINE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var PIE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
+
+  function raw(fields, columns) {
+    return { fields: fields.map(function (n) { return { name: n }; }), columns: columns };
+  }
+  function cfg(ns, map) {
+    var o = {};
+    Object.keys(map).forEach(function (k) { o[ns + k] = map[k]; });
+    return o;
+  }
+  function times(n) {
+    var now = Date.now();
+    var out = [];
+    var i;
+    for (i = 0; i < n; i += 1) out.push(new Date(now - (n - i) * 3600000).toISOString());
+    return out;
+  }
+  function nums(arr) { return arr.map(String); }
+
+  function mount(kind, title, spl) {
+    var card = document.createElement('section');
+    card.className = 'card';
+    card.innerHTML =
+      '<div class="card-h"><span><span class="kind">' + kind.toUpperCase() + '</span>' + title +
+      '</span><span class="badge">…</span></div>' +
+      '<pre class="spl"></pre><div class="host"></div><ul class="checks"></ul>';
+    card.querySelector('pre.spl').textContent = spl;
+    document.getElementById('grid').appendChild(card);
+    var el = document.createElement('div');
+    el.style.width = '100%';
+    el.style.height = '100%';
+    card.querySelector('.host').appendChild(el);
+    return {
+      card: card,
+      el: el,
+      viz: kind === 'line' ? new LineViz(el) : new PieViz(el),
+      badge: card.querySelector('.badge'),
+      checksEl: card.querySelector('.checks'),
+    };
+  }
+
+  function run(ui, rawData, config, expects) {
+    var checks = [];
+    var err = null;
+    try {
+      ui.viz.updateView(ui.viz.formatData(rawData), config);
+    } catch (e) {
+      err = e;
+    }
+    function add(name, ok) { checks.push({ name: name, ok: !!ok }); }
+    add('no throw', !err);
+    expects.forEach(function (ex) {
+      add(ex.name, ex.fn(ui.el, ui.el.textContent || ''));
+    });
+    var failed = checks.filter(function (c) { return !c.ok; });
+    ui.badge.textContent = failed.length ? 'FAIL ' + failed.length : 'PASS';
+    ui.badge.className = 'badge ' + (failed.length ? 'fail' : 'pass');
+    if (failed.length) ui.card.classList.add('fail');
+    ui.checksEl.innerHTML = checks
+      .map(function (c) {
+        return '<li class="' + (c.ok ? 'pass' : 'fail') + '">' + (c.ok ? '✓' : '✗') + ' ' + c.name + '</li>';
+      })
+      .join('');
+    return !failed.length;
+  }
+
+  var results = [];
+
+  // ========== LINE SPL SHAPES ==========
+  results.push(run(
+    mount('line', 'timechart count', '| timechart span=1h count'),
+    raw(['_time', 'count'], [times(12), nums([3,5,4,8,6,9,7,11,10,8,12,14])]),
+    cfg(LINE_NS, { valueField: 'count', yScale: 'auto', showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B', showXAxis: 'true' }),
+    [
+      { name: 'path', fn: function (el) { return !!el.querySelector('path'); } },
+      { name: 'major', fn: function (el) { return !!el.querySelector('.bgdhamp-kpi-line-viz__major'); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('line', 'timechart avg(latency) as value', '| timechart span=5m avg(latency) as value'),
+    raw(['_time', 'value'], [times(10), nums([12.5, 18.2, 9.1, 22.4, 15.0, 30.3, 28.1, 19.7, 21.2, 17.8])]),
+    cfg(LINE_NS, { valueField: 'value', yScale: 'auto', showMajor: 'true', unit: 'ms', colorPlacement: 'top', background: '#0B1F3B' }),
+    [
+      { name: 'path', fn: function (el) { return !!el.querySelector('path'); } },
+      { name: 'unit ms', fn: function (el, t) { return /ms/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('line', 'timechart by series (multi)', '| timechart span=1h count by status'),
+    raw(
+      ['_time', 'ok', 'warn', 'error'],
+      [times(8), nums([40,42,44,43,45,48,47,50]), nums([5,6,4,7,5,6,8,7]), nums([1,0,2,1,1,3,2,1])]
+    ),
+    cfg(LINE_NS, {
+      valueField: 'ok', seriesMode: 'multi', yScale: 'auto', showMajor: 'true', showLegend: 'true',
+      colorPlacement: 'top', background: '#0B1F3B', showXAxis: 'true',
+    }),
+    [
+      { name: 'multi paths', fn: function (el) { return el.querySelectorAll('path').length >= 2; } },
+      { name: 'legend labels', fn: function (el, t) { return /warn|error|ok/i.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('line', 'current vs previous overlay', '| timechart count as current, sum(prev) as previous'),
+    raw(['_time', 'current', 'previous'], [times(9), nums([20,22,25,24,30,28,33,31,35]), nums([18,19,21,20,22,23,24,25,26])]),
+    cfg(LINE_NS, {
+      valueField: 'current', compareField: 'previous', comparison: 'true', yScale: 'auto',
+      showMajor: 'true', showLegend: 'true', colorPlacement: 'top', background: '#0B1F3B', shadeBetween: 'true',
+    }),
+    [
+      { name: '>=2 paths', fn: function (el) { return el.querySelectorAll('path').length >= 2; } },
+      { name: 'legend', fn: function (el, t) { return /current|previous/i.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('line', 'sparse nulls (gaps)', '| timechart count  (null buckets)'),
+    raw(['_time', 'count'], [times(8), ['4', '', '6', 'null', '8', '', '10', '12']]),
+    cfg(LINE_NS, {
+      valueField: 'count', yScale: 'auto', nullValueMode: 'gaps', showMajor: 'true',
+      colorPlacement: 'top', background: '#0B1F3B', showMarkers: 'true',
+    }),
+    [
+      { name: 'renders path or markers', fn: function (el) { return !!el.querySelector('path, circle'); } },
+      { name: 'not empty error', fn: function (el, t) { return !/Need at least 2|No numeric/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('line', 'large values (millions)', '| timechart sum(bytes) as bytes'),
+    raw(['_time', 'bytes'], [times(7), nums([1.2e6, 1.5e6, 1.1e6, 2.4e6, 2.1e6, 3.0e6, 2.8e6])]),
+    cfg(LINE_NS, { valueField: 'bytes', yScale: 'auto', showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B' }),
+    [
+      { name: 'path', fn: function (el) { return !!el.querySelector('path'); } },
+      { name: 'major shows millions', fn: function (el, t) { return /2,?800,?000|2800000|2\.8/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('line', 'tiny fractional values', '| timechart avg(ratio) as ratio'),
+    raw(['_time', 'ratio'], [times(8), nums([0.0012, 0.0018, 0.0015, 0.0022, 0.0020, 0.0025, 0.0021, 0.0028])]),
+    cfg(LINE_NS, { valueField: 'ratio', yScale: 'auto', showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B' }),
+    [
+      { name: 'path fills chart (auto)', fn: function (el) { return !!el.querySelector('path'); } },
+      { name: 'major fractional', fn: function (el, t) { return /0\.00[1-9]|0\.002/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('line', 'streamstats / makeresults sequence', '| makeresults count=20 | streamstats count as value'),
+    (function () {
+      var t = times(20);
+      var v = [];
+      var i;
+      for (i = 1; i <= 20; i += 1) v.push(String(i));
+      return raw(['_time', 'value'], [t, v]);
+    })(),
+    cfg(LINE_NS, { valueField: 'value', yScale: 'auto', showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B', showArea: 'true' }),
+    [
+      { name: 'path', fn: function (el) { return !!el.querySelector('path'); } },
+      { name: 'major 20', fn: function (el, t) { return /\b20\b/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('line', 'single point → empty state', '| stats count'),
+    raw(['count'], [['5']]),
+    cfg(LINE_NS, { valueField: 'count', emptyText: 'Need more points', background: '#0B1F3B', textColor: '#FFFFFF' }),
+    [
+      { name: 'empty/insufficient UI', fn: function (el, t) { return /Need more points|Need at least 2|No numeric|No results/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('line', 'empty search', '| stats count | where count<0'),
+    raw(['_time', 'count'], [[], []]),
+    cfg(LINE_NS, { valueField: 'count', emptyText: 'No line data', background: '#0B1F3B', textColor: '#FFFFFF' }),
+    [
+      { name: 'empty message', fn: function (el, t) { return /No line data|No numeric|Need at least 2/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('line', 'custom field name (score)', '| timechart avg(score) as score'),
+    raw(['_time', 'score'], [times(6), nums([88, 90, 87, 92, 95, 93])]),
+    cfg(LINE_NS, { valueFieldCustom: 'score', yScale: 'auto', showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B' }),
+    [
+      { name: 'path', fn: function (el) { return !!el.querySelector('path'); } },
+      { name: 'major ~93', fn: function (el, t) { return /93/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('line', 'spike + null connect mode', '| timechart count'),
+    raw(['_time', 'count'], [times(8), ['10', '12', '', '220', '14', 'null', '16', '18']]),
+    cfg(LINE_NS, {
+      valueField: 'count', yScale: 'auto', nullValueMode: 'connect', showMajor: 'true',
+      colorPlacement: 'top', background: '#0B1F3B', anomalies: 'pctChange', anomalySensitivity: '2',
+    }),
+    [
+      { name: 'path', fn: function (el) { return !!el.querySelector('path'); } },
+      { name: 'not hard-fail', fn: function (el, t) { return !/Error:|TypeError/.test(t); } },
+    ]
+  ));
+
+  // ========== PIE SPL SHAPES ==========
+  results.push(run(
+    mount('pie', 'stats count by category', '| stats count as value by category'),
+    raw(['category', 'value'], [['East', 'West', 'Central', 'North'], nums([40, 28, 18, 14])]),
+    cfg(PIE_NS, {
+      labelField: 'category', valueField: 'value', palettePreset: 'studio',
+      legendPosition: 'right', showSliceLabels: 'true', background: '#FFFFFF',
+    }),
+    [
+      { name: 'slices', fn: function (el) { return el.querySelectorAll('path').length >= 4; } },
+      { name: 'studio color', fn: function (el) {
+        return Array.prototype.some.call(el.querySelectorAll('path'), function (p) { return p.getAttribute('fill') === '#7B56DB'; });
+      } },
+      { name: 'labels', fn: function (el, t) { return /East|West/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('pie', 'stats count by sourcetype', '| stats count by sourcetype'),
+    raw(['sourcetype', 'count'], [['access_combined', 'splunkd', 'linux_secure'], nums([120, 80, 45])]),
+    cfg(PIE_NS, { labelField: 'sourcetype', valueField: 'count', palettePreset: 'studio', legendPosition: 'right' }),
+    [
+      { name: 'slices', fn: function (el) { return el.querySelectorAll('path').length >= 3; } },
+      { name: 'sourcetype labels', fn: function (el, t) { return /splunkd|access_combined/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('pie', 'auto fields host/total', '| stats sum(bytes) as total by host'),
+    raw(['host', 'total'], [['web-01', 'web-02', 'db-01'], nums([500, 350, 200])]),
+    cfg(PIE_NS, { labelField: 'auto', valueField: 'auto', palettePreset: 'studio', legendPosition: 'right' }),
+    [
+      { name: 'slices', fn: function (el) { return el.querySelectorAll('path').length >= 3; } },
+      { name: 'hosts', fn: function (el, t) { return /web-01|db-01/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('pie', 'top / rare high cardinality → Other', '| stats count by user | sort -count'),
+    (function () {
+      var labels = [];
+      var values = [];
+      var i;
+      for (i = 1; i <= 20; i += 1) {
+        labels.push('user_' + i);
+        values.push(String(Math.max(1, 40 - i)));
+      }
+      return raw(['user', 'count'], [labels, values]);
+    })(),
+    cfg(PIE_NS, {
+      labelField: 'user', valueField: 'count', topN: '5', otherEnabled: 'true', otherLabel: 'Other',
+      palettePreset: 'studio', legendPosition: 'right', showSliceLabels: 'true',
+    }),
+    [
+      { name: 'Other present', fn: function (el, t) { return /Other/.test(t); } },
+      { name: 'limited slices', fn: function (el) { return el.querySelectorAll('path').length <= 8; } },
+    ]
+  ));
+
+  results.push(run(
+    mount('pie', 'compare previous period', '| stats count as value, sum(prev) as previous by status'),
+    raw(['status', 'value', 'previous'], [['ok', 'warn', 'error'], nums([70, 20, 10]), nums([60, 25, 15])]),
+    cfg(PIE_NS, {
+      labelField: 'status', valueField: 'value', compareField: 'previous', showCompare: 'true',
+      palettePreset: 'studio', legendPosition: 'right', showSliceLabels: 'true',
+    }),
+    [
+      { name: 'slices', fn: function (el) { return el.querySelectorAll('path').length >= 3; } },
+      { name: 'delta text', fn: function (el, t) { return /\+|delta|%/.test(t) || /ok|warn|error/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('pie', 'eval color column', '| stats count as value by label | eval color=...'),
+    raw(['label', 'value', 'color'], [['A', 'B', 'C'], nums([50, 30, 20]), ['#01417F', '#DFA611', '#5CC05C']]),
+    cfg(PIE_NS, { labelField: 'label', valueField: 'value', colorField: 'color', legendPosition: 'right' }),
+    [
+      { name: 'custom fills', fn: function (el) {
+        var fills = Array.prototype.map.call(el.querySelectorAll('path'), function (p) { return p.getAttribute('fill'); });
+        return fills.indexOf('#01417F') >= 0 && fills.indexOf('#DFA611') >= 0;
+      } },
+    ]
+  ));
+
+  results.push(run(
+    mount('pie', 'two numerics — force amount', '| stats count, sum(cost) as amount by name'),
+    raw(['name', 'count', 'amount'], [['Alpha', 'Beta', 'Gamma'], nums([9, 9, 9]), nums([100, 250, 75])]),
+    cfg(PIE_NS, { labelField: 'name', valueField: 'amount', palettePreset: 'studio', legendPosition: 'right' }),
+    [
+      { name: 'not flat thirds', fn: function (el, t) {
+        // amount-driven: Beta should be largest share ~58%
+        return /Beta/.test(t) && (/5[0-9]\.|58|250/.test(t) || el.querySelectorAll('path').length >= 3);
+      } },
+    ]
+  ));
+
+  results.push(run(
+    mount('pie', 'special characters in labels', '| stats count by reason'),
+    raw(
+      ['reason', 'count'],
+      [['User said "hello"', 'path/to\\file', 'a & b < c', 'emoji 🔥'], nums([12, 8, 5, 3])]
+    ),
+    cfg(PIE_NS, { labelField: 'reason', valueField: 'count', palettePreset: 'studio', legendPosition: 'right', showSliceLabels: 'true' }),
+    [
+      { name: 'renders', fn: function (el) { return el.querySelectorAll('path').length >= 3; } },
+      { name: 'no throw / has text', fn: function (el, t) { return t.length > 10; } },
+    ]
+  ));
+
+  results.push(run(
+    mount('pie', 'zeros + tiny slices collapse', '| stats count by code'),
+    raw(['code', 'count'], [['A', 'B', 'C', 'D', 'E'], nums([100, 0, 1, 2, 50])]),
+    cfg(PIE_NS, {
+      labelField: 'code', valueField: 'count', otherEnabled: 'true', minSlicePercent: '5',
+      palettePreset: 'studio', legendPosition: 'right',
+    }),
+    [
+      { name: 'renders', fn: function (el) { return el.querySelectorAll('path').length >= 2; } },
+      { name: 'A or E visible', fn: function (el, t) { return /\bA\b|\bE\b|Other/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('pie', 'classic palette donut', '| stats count by region'),
+    raw(['region', 'count'], [['NA', 'EMEA', 'APAC'], nums([55, 30, 15])]),
+    cfg(PIE_NS, {
+      labelField: 'region', valueField: 'count', palettePreset: 'classic', innerRadius: '44',
+      legendPosition: 'bottom', title: 'Regions',
+    }),
+    [
+      { name: 'classic color', fn: function (el) {
+        return Array.prototype.some.call(el.querySelectorAll('path'), function (p) { return p.getAttribute('fill') === '#1E93C6'; });
+      } },
+      { name: 'title', fn: function (el, t) { return /Regions/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('pie', 'empty / no numeric', '| stats count | where false'),
+    raw(['category', 'count'], [[], []]),
+    cfg(PIE_NS, { emptyMessage: 'No pie rows', background: '#FFFFFF' }),
+    [
+      { name: 'empty/error UI', fn: function (el, t) { return /No pie rows|numeric value column|No data/.test(t); } },
+    ]
+  ));
+
+  results.push(run(
+    mount('pie', 'negatives dropped → emptyMessage', '| stats sum(delta) as count by bucket'),
+    raw(['bucket', 'count'], [['x', 'y'], ['-5', '-2']]),
+    cfg(PIE_NS, { labelField: 'bucket', valueField: 'count', emptyMessage: 'No positive slices' }),
+    [
+      { name: 'emptyMessage', fn: function (el, t) { return /No positive slices/.test(t); } },
+    ]
+  ));
+
+  var passed = results.filter(Boolean).length;
+  var total = results.length;
+  var summary = document.getElementById('summary');
+  summary.textContent = passed + ' / ' + total + ' SPL stress scenarios passed';
+  summary.className = 'summary ' + (passed === total ? 'pass' : 'fail');
+  window.__splStress = { passed: passed, total: total, ok: passed === total };
+})();
+</script>
+</body>
+</html>

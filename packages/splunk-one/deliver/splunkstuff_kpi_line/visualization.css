@@ -37,24 +37,27 @@
 
 .bgdhamp-kpi-line-viz__majorVal {
     font-size: 28px;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.1;
     display: inline-flex;
     align-items: baseline;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 1px rgba(0, 0, 0, 0.45);
 }
 
 .bgdhamp-kpi-line-viz__unit {
     font-size: 0.6em;
-    font-weight: 600;
+    font-weight: 700;
     margin-left: 2px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
 .bgdhamp-kpi-line-viz__trend {
-    font-size: 11px;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 600;
     line-height: 1.2;
-    opacity: 0.95;
+    opacity: 1;
     margin-left: 6px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 1px rgba(0, 0, 0, 0.45);
 }
 
 .bgdhamp-kpi-line-viz__chart {
@@ -141,8 +144,9 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
-    padding: 4px 6px;
-    background: rgba(0, 0, 0, 0.35);
+    padding: 5px 7px;
+    background: rgba(11, 31, 59, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 3px;
     pointer-events: none;
     max-width: 46%;
@@ -163,9 +167,11 @@
 }
 
 .bgdhamp-kpi-line-viz__legendLabel {
-    font-size: 10px;
+    font-size: 11px;
+    font-weight: 600;
     line-height: 1.2;
-    color: rgba(255, 255, 255, 0.9);
+    color: #ffffff;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

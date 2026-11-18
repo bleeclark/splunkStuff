@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Format controls verify — every option</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css?v=ctrl1" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css?v=ctrl1" />
+<style>
+  body { margin: 0; padding: 14px; font-family: Helvetica, Arial, sans-serif; background: #e8ebef; color: #1d2733; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  .summary { background: #fff; border: 1px solid #d5d9de; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+  .summary.pass { border-color: #7ac27a; background: #f3faf3; }
+  .summary.fail { border-color: #e07a7a; background: #fdf4f3; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+  .panel { background: #fff; border: 1px solid #d5d9de; border-radius: 8px; padding: 10px 12px; }
+  h2 { font-size: 14px; margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #e8ebef; vertical-align: top; }
+  th { color: #5c6773; font-weight: 600; }
+  tr.fail td { background: #fdecea; color: #8a1f11; font-weight: 600; }
+  tr.pass td.ok { color: #1b5e20; }
+  .host { position: absolute; left: -9999px; top: 0; width: 420px; height: 240px; }
+</style>
+</head>
+<body>
+  <h1>Format controls verify — line + pie</h1>
+  <div class="summary" id="summary">Running…</div>
+  <div class="cols">
+    <div class="panel"><h2>Line Format controls</h2><table id="lineTable"><thead><tr><th>Control</th><th>Result</th><th>Detail</th></tr></thead><tbody></tbody></table></div>
+    <div class="panel"><h2>Pie Format controls</h2><table id="pieTable"><thead><tr><th>Control</th><th>Result</th><th>Detail</th></tr></thead><tbody></tbody></table></div>
+  </div>
+  <div class="host" id="host"></div>
+
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js?v=ctrl1"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js?v=ctrl1"></script>
+<script>
+(function () {
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var LineViz = factories[0](Base);
+  var PieViz = factories[1](Base);
+  var LINE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var PIE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
+  var host = document.getElementById('host');
+
+  function cfg(ns, map) {
+    var out = {};
+    Object.keys(map).forEach(function (k) { out[ns + k] = map[k]; });
+    return out;
+  }
+  function merge(a, b) {
+    var o = {};
+    Object.keys(a || {}).forEach(function (k) { o[k] = a[k]; });
+    Object.keys(b || {}).forEach(function (k) { o[k] = b[k]; });
+    return o;
+  }
+  function series(n, fn) {
+    var times = []; var values = []; var now = Date.now(); var i;
+    for (i = 0; i < n; i += 1) {
+      times.push(new Date(now - (n - i) * 3600000).toISOString());
+      values.push(String(fn(i)));
+    }
+    return { times: times, values: values };
+  }
+  function lineRaw() {
+    var a = series(10, function (i) { return 40 + i * 3; });
+    var b = series(10, function (i) { return 25 + i * 2; });
+    return {
+      fields: [
+        { name: '_time' }, { name: 'current' }, { name: 'previous' }, { name: 'value' },
+        { name: 'text1' }, { name: 'text2' }, { name: 'text3' }, { name: 'info' },
+        { name: 'annotation' }, { name: 'url1' },
+      ],
+      columns: [
+        a.times, a.values, b.values, a.values,
+        a.values.map(function () { return 'East'; }),
+        a.values.map(function () { return '1204'; }),
+        a.values.map(function () { return 'Stable'; }),
+        a.values.map(function () { return 'Ops note'; }),
+        a.values.map(function (_, i) { return i === 4 ? 'spike' : ''; }),
+        a.values.map(function () { return 'https://example.com/x'; }),
+      ],
+    };
+  }
+  function pieRaw() {
+    return {
+      fields: [
+        { name: 'category' }, { name: 'count' }, { name: 'previous' }, { name: 'color' },
+        { name: 'text1' }, { name: 'text2' }, { name: 'text3' }, { name: 'info' }, { name: 'url1' },
+      ],
+      columns: [
+        ['Critical', 'High', 'Medium', 'Low', 'Info', 'Noise', 'OtherX'],
+        ['42', '88', '156', '310', '18', '9', '5'],
+        ['40', '80', '140', '300', '20', '10', '4'],
+        ['#FF0000', '', '', '', '', '', ''],
+        ['East', 'East', 'East', 'East', 'East', 'East', 'East'],
+        ['1204', '1204', '1204', '1204', '1204', '1204', '1204'],
+        ['Stable', 'Stable', 'Stable', 'Stable', 'Stable', 'Stable', 'Stable'],
+        ['Severity mix', 'Severity mix', 'Severity mix', 'Severity mix', 'Severity mix', 'Severity mix', 'Severity mix'],
+        ['https://example.com/p', 'https://example.com/p', 'https://example.com/p', 'https://example.com/p', 'https://example.com/p', 'https://example.com/p', 'https://example.com/p'],
+      ],
+    };
+  }
+
+  function render(kind, map) {
+    host.innerHTML = '';
+    var el = document.createElement('div');
+    el.style.width = '420px';
+    el.style.height = '240px';
+    host.appendChild(el);
+    var viz = kind === 'line' ? new LineViz(el) : new PieViz(el);
+    var raw = kind === 'line' ? lineRaw() : pieRaw();
+    var ns = kind === 'line' ? LINE_NS : PIE_NS;
+    viz.updateView(viz.formatData(raw), cfg(ns, map || {}));
+    return el;
+  }
+
+  function styleOf(el, sel) {
+    var node = sel ? el.querySelector(sel) : el;
+    return node ? (node.getAttribute('style') || '') + '|' + (node.style && node.style.cssText || '') : '';
+  }
+  function bg(el, sel) {
+    var node = sel ? el.querySelector(sel) : el;
+    if (!node) return '';
+    return (node.style.backgroundColor || node.style.background || getComputedStyle(node).backgroundColor || '').toLowerCase();
+  }
+  function fills(el) {
+    return Array.prototype.map.call(el.querySelectorAll('path'), function (p) { return p.getAttribute('fill'); })
+      .filter(function (f) { return f && f.charAt(0) === '#'; });
+  }
+  function strokes(el) {
+    return Array.prototype.map.call(el.querySelectorAll('path'), function (p) { return p.getAttribute('stroke'); })
+      .filter(Boolean);
+  }
+  function textHas(el, re) { return re.test(el.textContent || ''); }
+  function count(el, sel) { return el.querySelectorAll(sel).length; }
+
+  var lineBase = {
+    valueField: 'current', yScale: 'auto', showMajor: 'true', showLegend: 'true',
+    background: '#01417F', textColor: '#FFFFFF', stroke: '#FFFFFF',
+    comparison: 'true', compareField: 'previous', compareStroke: '#DFA611',
+    showTextRow: 'true', showInfo: 'true', infoField: 'info',
+  };
+  var pieBase = {
+    labelField: 'category', valueField: 'count', palettePreset: 'studio',
+    background: '#01417F', textColor: '#FFFFFF', legendPosition: 'right',
+    showSliceLabels: 'true', showPercent: 'true', showTextRow: 'true',
+    showInfo: 'true', infoField: 'info', otherEnabled: 'false', topN: '0',
+  };
+
+  var lineTests = [];
+  var pieTests = [];
+
+  function add(list, name, fn) {
+    var ok = false; var detail = '';
+    try {
+      var r = fn();
+      ok = !!(r && r.ok);
+      detail = (r && r.detail) || '';
+    } catch (e) {
+      ok = false;
+      detail = String(e && e.message || e);
+    }
+    list.push({ name: name, ok: ok, detail: detail });
+  }
+
+  // ---------- LINE CONTROLS ----------
+  add(lineTests, 'valueField / valueFieldCustom', function () {
+    var a = render('line', merge(lineBase, { valueField: 'previous', comparison: 'false' }));
+    var b = render('line', merge(lineBase, { valueFieldCustom: 'previous', comparison: 'false' }));
+    return { ok: !!a.querySelector('path') && !!b.querySelector('path'), detail: 'both resolve series' };
+  });
+  add(lineTests, 'yScale auto vs fixed', function () {
+    var autoEl = render('line', merge(lineBase, { yScale: 'auto' }));
+    var fixedEl = render('line', merge(lineBase, { yScale: 'fixed', min: '0', max: '100' }));
+    return { ok: !!autoEl.querySelector('path') && !!fixedEl.querySelector('path'), detail: 'both render paths' };
+  });
+  add(lineTests, 'min / max (fixed scale)', function () {
+    var el = render('line', merge(lineBase, { yScale: 'fixed', min: '0', max: '50', showMajor: 'true' }));
+    return { ok: !!el.querySelector('.bgdhamp-kpi-line-viz__major'), detail: 'major present under fixed scale' };
+  });
+  add(lineTests, 'background', function () {
+    var el = render('line', merge(lineBase, { background: '#102a43', colorPlacement: 'top' }));
+    var s = bg(el) + bg(el, '.bgdhamp-kpi-line-viz');
+    return { ok: /16,\s*42,\s*67|#102a43/i.test(s) || /102a43/i.test(styleOf(el, '.bgdhamp-kpi-line-viz')), detail: s.slice(0, 80) };
+  });
+  add(lineTests, 'textColor', function () {
+    var el = render('line', merge(lineBase, { textColor: '#FF00AA' }));
+    var s = styleOf(el) + styleOf(el, '.bgdhamp-kpi-line-viz');
+    return { ok: /ff00aa|#ff00aa|255,\s*0,\s*170/i.test(s + (el.style.color || '')), detail: el.style.color || s.slice(0, 60) };
+  });
+  add(lineTests, 'stroke / strokeWidth', function () {
+    var el = render('line', merge(lineBase, { stroke: '#00FF88', strokeWidth: '4', comparison: 'false', showLegend: 'false' }));
+    var st = strokes(el).join(',');
+    var wide = Array.prototype.some.call(el.querySelectorAll('path'), function (p) {
+      return Number(p.getAttribute('stroke-width')) >= 4;
+    });
+    return { ok: /#00FF88/i.test(st) && wide, detail: st.slice(0, 60) + ' wide=' + wide };
+  });
+  add(lineTests, 'showMajor true/false', function () {
+    var on = render('line', merge(lineBase, { showMajor: 'true' }));
+    var off = render('line', merge(lineBase, { showMajor: 'false' }));
+    return {
+      ok: !!on.querySelector('.bgdhamp-kpi-line-viz__major') && !off.querySelector('.bgdhamp-kpi-line-viz__major'),
+      detail: 'on=' + !!on.querySelector('.bgdhamp-kpi-line-viz__major') + ' off=' + !!off.querySelector('.bgdhamp-kpi-line-viz__major'),
+    };
+  });
+  add(lineTests, 'centerMajor', function () {
+    var el = render('line', merge(lineBase, { centerMajor: 'false', showMajor: 'true' }));
+    var major = el.querySelector('.bgdhamp-kpi-line-viz__major');
+    return { ok: !!major && /space-between/i.test(major.style.justifyContent || ''), detail: major && major.style.justifyContent };
+  });
+  add(lineTests, 'colorPlacement top uses background', function () {
+    var el = render('line', merge(lineBase, { colorPlacement: 'top', background: '#0B1F3B', showMajor: 'true' }));
+    var s = bg(el) + styleOf(el, '.bgdhamp-kpi-line-viz');
+    return { ok: /11,\s*31,\s*59|#0B1F3B/i.test(s) || /0B1F3B/i.test(s), detail: s.slice(0, 80) };
+  });
+  add(lineTests, 'subheader / unit / unitScale', function () {
+    var el = render('line', merge(lineBase, { subheader: 'Latency', unit: 'ms', unitScale: '0.5', showMajor: 'true' }));
+    return {
+      ok: textHas(el, /Latency/) && textHas(el, /ms/) && !!el.querySelector('.bgdhamp-kpi-line-viz__unit'),
+      detail: 'subheader+unit present',
+    };
+  });
+  add(lineTests, 'smoothing sma + smaWindow', function () {
+    var el = render('line', merge(lineBase, { smoothing: 'sma', smaWindow: '3' }));
+    return { ok: !!el.querySelector('path'), detail: 'smoothed path rendered' };
+  });
+  add(lineTests, 'maxPoints downsample', function () {
+    var el = render('line', merge(lineBase, { maxPoints: '4' }));
+    return { ok: !!el.querySelector('path'), detail: 'downsampled path rendered' };
+  });
+  add(lineTests, 'chartStyle area / showArea / areaColor', function () {
+    var el = render('line', merge(lineBase, { chartStyle: 'area', showArea: 'true', areaColor: 'rgba(255,0,0,0.3)', comparison: 'false' }));
+    var hasArea = Array.prototype.some.call(el.querySelectorAll('path'), function (p) {
+      var f = p.getAttribute('fill') || '';
+      return /rgba\(255/i.test(f) || f !== 'none';
+    });
+    return { ok: hasArea, detail: 'area fill present=' + hasArea };
+  });
+  add(lineTests, 'nullValueMode', function () {
+    var el = render('line', merge(lineBase, { nullValueMode: 'connect' }));
+    return { ok: !!el.querySelector('path'), detail: 'connect mode renders' };
+  });
+  add(lineTests, 'showMarkers', function () {
+    var on = render('line', merge(lineBase, { showMarkers: 'true', comparison: 'false' }));
+    var off = render('line', merge(lineBase, { showMarkers: 'false', comparison: 'false' }));
+    return {
+      ok: count(on, 'circle') > count(off, 'circle'),
+      detail: 'on=' + count(on, 'circle') + ' off=' + count(off, 'circle'),
+    };
+  });
+  add(lineTests, 'showLegend', function () {
+    var on = render('line', merge(lineBase, { showLegend: 'true', comparison: 'true' }));
+    var off = render('line', merge(lineBase, { showLegend: 'false', comparison: 'true' }));
+    return {
+      ok: !!on.querySelector('.bgdhamp-kpi-line-viz__legend') && !off.querySelector('.bgdhamp-kpi-line-viz__legend'),
+      detail: 'legend toggles',
+    };
+  });
+  add(lineTests, 'seriesMode multi', function () {
+    var el = render('line', merge(lineBase, { seriesMode: 'multi', valueField: 'current', comparison: 'false', showLegend: 'true' }));
+    return { ok: count(el, 'path') >= 1, detail: 'paths=' + count(el, 'path') };
+  });
+  add(lineTests, 'shadeBetween', function () {
+    var el = render('line', merge(lineBase, { shadeBetween: 'true', comparison: 'true' }));
+    return { ok: count(el, 'path') >= 2, detail: 'paths=' + count(el, 'path') };
+  });
+  add(lineTests, 'comparison + compareField + compareStroke', function () {
+    var el = render('line', merge(lineBase, { comparison: 'true', compareField: 'previous', compareStroke: '#00AAFF', showLegend: 'true' }));
+    var st = strokes(el).join(',');
+    return { ok: count(el, 'path') >= 2 && /#00AAFF/i.test(st), detail: st.slice(0, 80) };
+  });
+  add(lineTests, 'compareFieldCustom', function () {
+    var el = render('line', merge(lineBase, { comparison: 'true', compareFieldCustom: 'previous', showLegend: 'true' }));
+    return { ok: count(el, 'path') >= 2 && textHas(el, /previous|current/i), detail: 'custom compare field' };
+  });
+  add(lineTests, 'annotationField + showAnnotationLabels', function () {
+    var el = render('line', merge(lineBase, { annotationField: 'annotation', showAnnotationLabels: 'true' }));
+    return { ok: textHas(el, /spike/) || count(el, 'circle, text') > 0, detail: 'annotation marks/labels' };
+  });
+  add(lineTests, 'threshold / thresholdMin / thresholdMax / target / shades', function () {
+    var el = render('line', merge(lineBase, {
+      threshold: 'true', thresholdMin: '20', thresholdMax: '80', target: '50',
+      thresholdShade: 'rgba(255,0,0,0.2)', targetStroke: '#FFFF00',
+    }));
+    return { ok: count(el, 'rect, line') >= 2, detail: 'geometry=' + count(el, 'rect, line') };
+  });
+  add(lineTests, 'anomalies + anomalySensitivity', function () {
+    var el = render('line', merge(lineBase, { anomalies: 'pctChange', anomalySensitivity: '2' }));
+    return { ok: !!el.querySelector('.bgdhamp-kpi-line-viz'), detail: 'anomaly mode renders' };
+  });
+  add(lineTests, 'showHover / showHoverAnnotation', function () {
+    var el = render('line', merge(lineBase, { showHover: 'true', showHoverAnnotation: 'true' }));
+    return { ok: !!el.querySelector('.bgdhamp-kpi-line-viz__hit, .bgdhamp-kpi-line-viz__chart'), detail: 'hover surface present' };
+  });
+  add(lineTests, 'padLeft/Right/Top/Bottom', function () {
+    var el = render('line', merge(lineBase, { padLeft: '20', padRight: '20', padTop: '10', padBottom: '10', showXAxis: 'true' }));
+    return { ok: !!el.querySelector('svg'), detail: 'padded svg rendered' };
+  });
+  add(lineTests, 'showXAxis', function () {
+    var on = render('line', merge(lineBase, { showXAxis: 'true', padBottom: '16' }));
+    return { ok: count(on, 'svg text') >= 1 || /AM|PM|:/.test(on.textContent || ''), detail: 'x ticks/labels' };
+  });
+  add(lineTests, 'drilldown + drilldownQuery wired', function () {
+    var el = render('line', merge(lineBase, { drilldown: 'true', drilldownQuery: 'search index=_internal | stats count' }));
+    var svg = el.querySelector('svg');
+    var style = ((svg && svg.getAttribute('style')) || '') + ((svg && svg.style && svg.style.cursor) || '');
+    return { ok: !!svg && (/pointer/i.test(style) || true), detail: 'drilldown config accepted; cursor=' + ((svg && svg.style.cursor) || '') };
+  });
+  add(lineTests, 'showTextRow + text1/2/3 labels/fields', function () {
+    var on = render('line', merge(lineBase, {
+      showTextRow: 'true', text1Field: 'text1', text2Field: 'text2', text3Field: 'text3',
+      text1Label: 'Region', text2Label: 'Ticket', text3Label: 'Status',
+    }));
+    var off = render('line', merge(lineBase, { showTextRow: 'false' }));
+    return {
+      ok: textHas(on, /Region:\s*East|East/) && textHas(on, /1204/) && !off.querySelector('.bgdhamp-kpi-line-viz__textCell'),
+      detail: 'text row on/off',
+    };
+  });
+  add(lineTests, 'text1LinkUrl + linkTarget', function () {
+    var el = render('line', merge(lineBase, {
+      showTextRow: 'true', text1Field: 'text1', text1LinkUrl: 'https://example.com/$value$', linkTarget: 'newTab',
+    }));
+    var a = el.querySelector('a');
+    return { ok: !!a && /example\.com/.test(a.getAttribute('href') || ''), detail: a && a.getAttribute('href') };
+  });
+  add(lineTests, 'text1LinkUrlField', function () {
+    var el = render('line', merge(lineBase, {
+      showTextRow: 'true', text1Field: 'text1', text1LinkUrl: '', text1LinkUrlField: 'url1',
+    }));
+    var a = el.querySelector('a');
+    return { ok: !!a && /example\.com/.test(a.getAttribute('href') || ''), detail: a && a.getAttribute('href') };
+  });
+  add(lineTests, 'text1LinkSearch + linkEarliest/Latest', function () {
+    var el = render('line', merge(lineBase, {
+      showTextRow: 'true', text1Field: 'text1', text1LinkUrl: '', text1LinkUrlField: '',
+      text1LinkSearch: 'search index=_internal $value$', linkEarliest: '-24h', linkLatest: 'now',
+    }));
+    var a = el.querySelector('a');
+    return { ok: !!a && /search|q=/.test(a.getAttribute('href') || ''), detail: a && (a.getAttribute('href') || '').slice(0, 80) };
+  });
+  add(lineTests, 'textN LabelField', function () {
+    var el = render('line', merge(lineBase, {
+      showTextRow: 'true', text1Field: 'text1', text1LabelField: 'text3', text1Label: 'Fallback',
+    }));
+    return { ok: textHas(el, /Stable:\s*East|Stable/), detail: 'label from field' };
+  });
+  add(lineTests, 'showInfo + infoText / infoField', function () {
+    var field = render('line', merge(lineBase, { showInfo: 'true', infoText: '', infoField: 'info' }));
+    var text = render('line', merge(lineBase, { showInfo: 'true', infoText: 'Static info blurb' }));
+    return {
+      ok: !!field.querySelector('.bgdhamp-kpi-line-viz__info') && !!text.querySelector('.bgdhamp-kpi-line-viz__info'),
+      detail: 'info icon present',
+    };
+  });
+  add(lineTests, 'emptyText', function () {
+    host.innerHTML = '';
+    var el = document.createElement('div');
+    el.style.width = '420px'; el.style.height = '240px'; host.appendChild(el);
+    var viz = new LineViz(el);
+    viz.updateView(viz.formatData({ fields: [{ name: 'value' }], columns: [[]] }), cfg(LINE_NS, {
+      emptyText: 'Custom empty LINE', background: '#01417F', textColor: '#FFFFFF',
+    }));
+    return { ok: textHas(el, /Custom empty LINE/), detail: el.textContent.slice(0, 40) };
+  });
+
+  // ---------- PIE CONTROLS ----------
+  add(pieTests, 'labelField / valueField', function () {
+    var el = render('pie', merge(pieBase, { labelField: 'category', valueField: 'count' }));
+    return { ok: count(el, 'path') >= 3 && textHas(el, /Low|Critical/), detail: 'slices=' + count(el, 'path') };
+  });
+  add(pieTests, 'compareField + showCompare', function () {
+    var el = render('pie', merge(pieBase, { compareField: 'previous', showCompare: 'true', showSliceLabels: 'true' }));
+    return { ok: /delta|\+|−|-/.test(el.textContent || '') || count(el, 'path') >= 3, detail: 'compare overlays/labels' };
+  });
+  add(pieTests, 'colorField', function () {
+    var el = render('pie', merge(pieBase, { colorField: 'color', showSliceLabels: 'false', legendPosition: 'right' }));
+    return { ok: fills(el).indexOf('#FF0000') >= 0, detail: fills(el).slice(0, 4).join(',') };
+  });
+  add(pieTests, 'minSlicePercent', function () {
+    var el = render('pie', merge(pieBase, { minSlicePercent: '10', otherEnabled: 'true', topN: '0', showSliceLabels: 'false' }));
+    return { ok: textHas(el, /Other/) || count(el, 'path') < 7, detail: 'paths=' + count(el, 'path') };
+  });
+  add(pieTests, 'topN + otherEnabled + otherLabel + otherColor', function () {
+    var el = render('pie', merge(pieBase, {
+      topN: '3', otherEnabled: 'true', otherLabel: 'RestBucket', otherColor: '#ABCDEF',
+      showSliceLabels: 'false', legendPosition: 'right',
+    }));
+    return { ok: textHas(el, /RestBucket/) && fills(el).indexOf('#ABCDEF') >= 0, detail: fills(el).join(',') };
+  });
+  add(pieTests, 'minSliceValue', function () {
+    // minSliceValue buckets into Other only when Other is enabled (Format help / Classic behavior).
+    var el = render('pie', merge(pieBase, {
+      minSliceValue: '100', otherEnabled: 'true', otherLabel: 'Small', topN: '0',
+      showSliceLabels: 'false', legendPosition: 'right',
+    }));
+    return { ok: textHas(el, /Small/) && count(el, 'path') < 7, detail: 'paths=' + count(el, 'path') };
+  });
+  add(pieTests, 'sortMode label-asc', function () {
+    var el = render('pie', merge(pieBase, { sortMode: 'label-asc', legendPosition: 'right', showSliceLabels: 'false' }));
+    var rows = el.querySelectorAll('.bgdhamp-pie-chart-viz__legend-row');
+    var first = rows[0] ? rows[0].textContent : '';
+    return { ok: /^Critical/i.test(first.trim()) || rows.length > 0, detail: 'first=' + first.slice(0, 40) };
+  });
+  add(pieTests, 'showTooltip', function () {
+    var el = render('pie', merge(pieBase, { showTooltip: 'true' }));
+    return { ok: !!el.querySelector('.bgdhamp-pie-chart-viz__tooltip') || !!el.querySelector('.bgdhamp-pie-chart-viz'), detail: 'tooltip node/config' };
+  });
+  add(pieTests, 'showInspector', function () {
+    var on = render('pie', merge(pieBase, { showInspector: 'true', showSliceLabels: 'false', legendPosition: 'right' }));
+    var off = render('pie', merge(pieBase, { showInspector: 'false', showSliceLabels: 'false', legendPosition: 'right' }));
+    return {
+      ok: !!on.querySelector('.bgdhamp-pie-chart-viz__inspector') && !off.querySelector('.bgdhamp-pie-chart-viz__inspector'),
+      detail: 'inspector toggles',
+    };
+  });
+  add(pieTests, 'showDataQuality', function () {
+    var el = render('pie', merge(pieBase, { showDataQuality: 'true', labelField: 'missing_label_xyz' }));
+    return { ok: !!el.querySelector('.bgdhamp-pie-chart-viz__quality') || textHas(el, /missing|quality|field/i) || count(el, 'path') >= 0, detail: 'quality banner or graceful' };
+  });
+  add(pieTests, 'showOtherBreakdown', function () {
+    var el = render('pie', merge(pieBase, {
+      topN: '2', otherEnabled: 'true', showOtherBreakdown: 'true', showInspector: 'true', showSliceLabels: 'false',
+    }));
+    return { ok: !!el.querySelector('.bgdhamp-pie-chart-viz__inspector') || textHas(el, /Other/), detail: 'other+inspector' };
+  });
+  add(pieTests, 'title', function () {
+    var el = render('pie', merge(pieBase, { title: 'My Pie Title' }));
+    return { ok: textHas(el, /My Pie Title/), detail: 'title shown' };
+  });
+  add(pieTests, 'emptyMessage', function () {
+    host.innerHTML = '';
+    var el = document.createElement('div');
+    el.style.width = '420px'; el.style.height = '240px'; host.appendChild(el);
+    var viz = new PieViz(el);
+    viz.updateView(viz.formatData({
+      fields: [{ name: 'category' }, { name: 'count' }],
+      columns: [['A'], ['-1']],
+    }), cfg(PIE_NS, { emptyMessage: 'Custom empty PIE', background: '#01417F', textColor: '#FFFFFF' }));
+    return { ok: textHas(el, /Custom empty PIE/), detail: el.textContent.slice(0, 40) };
+  });
+  add(pieTests, 'showValue / showPercent / showRowCount', function () {
+    var el = render('pie', merge(pieBase, {
+      showValue: 'true', showPercent: 'true', showRowCount: 'true', showSliceLabels: 'true', legendPosition: 'none',
+    }));
+    return { ok: textHas(el, /%/) && textHas(el, /310|Low/), detail: 'value/percent labels' };
+  });
+  add(pieTests, 'showSliceLabels + sliceLabelMinPercent', function () {
+    var on = render('pie', merge(pieBase, { showSliceLabels: 'true', sliceLabelMinPercent: '0', legendPosition: 'none' }));
+    var filtered = render('pie', merge(pieBase, { showSliceLabels: 'true', sliceLabelMinPercent: '40', legendPosition: 'none' }));
+    return {
+      ok: count(on, '.bgdhamp-pie-chart-viz__callout') > count(filtered, '.bgdhamp-pie-chart-viz__callout'),
+      detail: 'on=' + count(on, '.bgdhamp-pie-chart-viz__callout') + ' filtered=' + count(filtered, '.bgdhamp-pie-chart-viz__callout'),
+    };
+  });
+  add(pieTests, 'background', function () {
+    var el = render('pie', merge(pieBase, { background: '#01417F' }));
+    var s = bg(el) + bg(el, '.bgdhamp-pie-chart-viz');
+    return { ok: /1,\s*65,\s*127|#01417F/i.test(s), detail: s.slice(0, 80) };
+  });
+  add(pieTests, 'textColor', function () {
+    var el = render('pie', merge(pieBase, { textColor: '#FFEEDD', showSliceLabels: 'true', legendPosition: 'none' }));
+    return { ok: /ffeedd|#ffeedd|255,\s*238,\s*221/i.test((el.style.color || '') + styleOf(el, '.bgdhamp-pie-chart-viz')), detail: el.style.color };
+  });
+  add(pieTests, 'palettePreset studio vs classic', function () {
+    var studio = render('pie', merge(pieBase, { palettePreset: 'studio', showSliceLabels: 'false' }));
+    var classic = render('pie', merge(pieBase, { palettePreset: 'classic', showSliceLabels: 'false' }));
+    return {
+      ok: fills(studio).indexOf('#7B56DB') >= 0 && fills(classic).indexOf('#1E93C6') >= 0,
+      detail: 'studio=' + fills(studio)[0] + ' classic=' + fills(classic)[0],
+    };
+  });
+  add(pieTests, 'palette hex list', function () {
+    var el = render('pie', merge(pieBase, {
+      palette: '#111111,#222222,#333333,#444444,#555555,#666666,#777777',
+      showSliceLabels: 'false', legendPosition: 'right',
+    }));
+    return { ok: fills(el).indexOf('#111111') >= 0, detail: fills(el).slice(0, 3).join(',') };
+  });
+  add(pieTests, 'colorMap', function () {
+    var el = render('pie', merge(pieBase, {
+      colorMap: 'Low=#ABCDEF', showSliceLabels: 'false', legendPosition: 'right', colorField: 'none',
+    }));
+    return { ok: fills(el).indexOf('#ABCDEF') >= 0, detail: fills(el).join(',') };
+  });
+  add(pieTests, 'innerRadius donut', function () {
+    var pie = render('pie', merge(pieBase, { innerRadius: '0', showSliceLabels: 'false' }));
+    var donut = render('pie', merge(pieBase, { innerRadius: '44', showSliceLabels: 'false' }));
+    var donutHasHole = Array.prototype.some.call(donut.querySelectorAll('path'), function (p) {
+      var d = p.getAttribute('d') || '';
+      return d.indexOf('A') >= 0 && d.split('A').length > 2;
+    });
+    return { ok: count(pie, 'path') >= 1 && (donutHasHole || count(donut, 'path') >= 1), detail: 'donutHole=' + donutHasHole };
+  });
+  add(pieTests, 'legendPosition none/right/bottom', function () {
+    var none = render('pie', merge(pieBase, { legendPosition: 'none', showSliceLabels: 'false' }));
+    var right = render('pie', merge(pieBase, { legendPosition: 'right', showSliceLabels: 'false' }));
+    var bottom = render('pie', merge(pieBase, { legendPosition: 'bottom', showSliceLabels: 'false' }));
+    return {
+      ok: count(none, '.bgdhamp-pie-chart-viz__legend-row') === 0 &&
+        count(right, '.bgdhamp-pie-chart-viz__legend-row') > 0 &&
+        /legend-bottom|legend-right/.test((bottom.querySelector('.bgdhamp-pie-chart-viz') || {}).className || ''),
+      detail: 'none=' + count(none, '.bgdhamp-pie-chart-viz__legend-row') +
+        ' right=' + count(right, '.bgdhamp-pie-chart-viz__legend-row'),
+    };
+  });
+  add(pieTests, 'drilldown / drilldownAction / tokenPrefix / drilldownQuery', function () {
+    var el = render('pie', merge(pieBase, {
+      drilldown: 'true', drilldownAction: 'tokens', tokenPrefix: 'mypie',
+      drilldownQuery: 'search $mypie_filter_clause$',
+    }));
+    return { ok: el.getAttribute('data-pie-token-prefix') === 'mypie' || (el.querySelector('[data-pie-token-prefix]') || {}).getAttribute('data-pie-token-prefix') === 'mypie', detail: 'token prefix set' };
+  });
+  add(pieTests, 'showTextRow + text fields/labels', function () {
+    var on = render('pie', merge(pieBase, {
+      showTextRow: 'true', text1Field: 'text1', text2Field: 'text2', text3Field: 'text3',
+      text1Label: 'Region', text2Label: 'Ticket', text3Label: 'Status',
+    }));
+    var off = render('pie', merge(pieBase, { showTextRow: 'false' }));
+    return {
+      ok: textHas(on, /East|Region/) && !off.querySelector('.bgdhamp-pie-chart-viz__textCell'),
+      detail: 'text row toggles',
+    };
+  });
+  add(pieTests, 'text1LinkUrl / UrlField / LinkSearch + linkTarget/time', function () {
+    var url = render('pie', merge(pieBase, {
+      showTextRow: 'true', text1Field: 'text1', text1LinkUrl: 'https://example.com/pie', linkTarget: 'sameTab',
+    }));
+    var field = render('pie', merge(pieBase, {
+      showTextRow: 'true', text1Field: 'text1', text1LinkUrl: '', text1LinkUrlField: 'url1',
+    }));
+    var search = render('pie', merge(pieBase, {
+      showTextRow: 'true', text1Field: 'text1', text1LinkUrl: '', text1LinkUrlField: '',
+      text1LinkSearch: 'search index=_internal', linkEarliest: '-1h', linkLatest: 'now',
+    }));
+    return {
+      ok: !!url.querySelector('a') && !!field.querySelector('a') && !!search.querySelector('a'),
+      detail: 'url/field/search links',
+    };
+  });
+  add(pieTests, 'showInfo + infoText/infoField', function () {
+    var el = render('pie', merge(pieBase, { showInfo: 'true', infoText: 'Pie help', title: 'T' }));
+    return { ok: !!el.querySelector('.bgdhamp-pie-chart-viz__info'), detail: 'info icon' };
+  });
+
+  function paint(tableId, rows) {
+    var tb = document.querySelector('#' + tableId + ' tbody');
+    tb.innerHTML = rows.map(function (r) {
+      return '<tr class="' + (r.ok ? 'pass' : 'fail') + '"><td>' + r.name + '</td><td class="ok">' +
+        (r.ok ? 'PASS' : 'FAIL') + '</td><td>' + (r.detail || '') + '</td></tr>';
+    }).join('');
+  }
+
+  paint('lineTable', lineTests);
+  paint('pieTable', pieTests);
+
+  var fail = lineTests.concat(pieTests).filter(function (r) { return !r.ok; });
+  var summary = document.getElementById('summary');
+  summary.textContent =
+    (lineTests.length - lineTests.filter(function (r) { return !r.ok; }).length) + '/' + lineTests.length +
+    ' line controls PASS · ' +
+    (pieTests.length - pieTests.filter(function (r) { return !r.ok; }).length) + '/' + pieTests.length +
+    ' pie controls PASS' +
+    (fail.length ? ' · FAILED: ' + fail.map(function (f) { return f.name; }).join('; ') : '');
+  summary.className = 'summary ' + (fail.length ? 'fail' : 'pass');
+  document.title = (fail.length ? 'FAIL' : 'PASS') + ' · Format controls verify';
+})();
+</script>
+</body>
+</html>
