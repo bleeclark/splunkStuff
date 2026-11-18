@@ -17,7 +17,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '202611181500-kpi-line-textrow';
+    var VIZ_BUILD = '202611181525-kpi-line-yaxis';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
@@ -987,14 +987,21 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return -1;
     }
 
-    function listMultiSeriesColumns(rawData, primaryIdx) {
+    function listMultiSeriesColumns(rawData, primaryIdx, skipIdx) {
         var out = [];
         if (!rawData || !rawData.columns || !rawData.fields) {
             return out;
         }
+        var skip = {};
+        if (primaryIdx >= 0) {
+            skip[primaryIdx] = true;
+        }
+        if (skipIdx != null && skipIdx >= 0) {
+            skip[skipIdx] = true;
+        }
         var c;
         for (c = 0; c < rawData.columns.length; c += 1) {
-            if (c === primaryIdx) {
+            if (skip[c]) {
                 continue;
             }
             if (!columnHasNumber(rawData, c)) {
@@ -1040,9 +1047,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         });
     }
 
-    function fitScaleToSeries(scale, seriesArrays) {
-        var lo = scale.min;
-        var hi = scale.max;
+    function dataMinMax(seriesArrays) {
+        var lo = 0;
+        var hi = 1;
         var s;
         var i;
         var v;
@@ -1064,14 +1071,60 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 }
             }
         }
-        if (!saw) {
+        return saw ? { min: lo, max: hi, saw: true } : { min: 0, max: 1, saw: false };
+    }
+
+    function fitScaleToSeries(scale, seriesArrays) {
+        var mm = dataMinMax(seriesArrays);
+        if (!mm.saw) {
             return scale;
         }
+        var lo = mm.min;
+        var hi = mm.max;
         if (!(hi > lo)) {
             hi = lo + 1;
         }
         var pad = (hi - lo) * 0.05;
         return { min: lo - pad, max: hi + pad };
+    }
+
+    /**
+     * OOTB-like nice Y domain + ticks (round step labels, no padded decimals on the axis).
+     */
+    function niceYScale(seriesArrays, fixedScale, useFixed) {
+        var targetCount = 5;
+        if (useFixed && fixedScale) {
+            return {
+                min: fixedScale.min,
+                max: fixedScale.max,
+                ticks: buildYTicks(fixedScale.min, fixedScale.max, targetCount),
+            };
+        }
+        var mm = dataMinMax(seriesArrays);
+        if (!mm.saw) {
+            return { min: 0, max: 1, ticks: [0, 1] };
+        }
+        var lo = mm.min;
+        var hi = mm.max;
+        if (!(hi > lo)) {
+            hi = lo + 1;
+        }
+        var pad = (hi - lo) * 0.05;
+        var rawLo = lo - pad;
+        var rawHi = hi + pad;
+        // Counts / positive metrics: don't go below 0 (Classic line often includes zero).
+        if (mm.min >= 0 && rawLo < 0) {
+            rawLo = 0;
+        }
+        var ticks = buildYTicks(rawLo, rawHi, targetCount);
+        if (!ticks.length) {
+            ticks = [rawLo, rawHi];
+        }
+        return {
+            min: ticks[0],
+            max: ticks[ticks.length - 1],
+            ticks: ticks,
+        };
     }
 
     function clamp(v, lo, hi) {
@@ -1421,7 +1474,27 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return v.toLocaleString(undefined, { maximumFractionDigits: 2 });
     }
 
-    /** Studio-like Y tick steps (nice numbers across [min, max]). */
+    /** Y-axis labels: prefer clean integers / short decimals (OOTB-like). */
+    function formatYTick(v) {
+        if (!isFinite(v)) return '—';
+        var n = Number(v);
+        if (Math.abs(n) >= 1000) {
+            return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        }
+        if (Math.abs(n - Math.round(n)) < 1e-6) {
+            return String(Math.round(n));
+        }
+        var rounded = Math.round(n * 100) / 100;
+        if (Math.abs(rounded - Math.round(rounded)) < 1e-6) {
+            return String(Math.round(rounded));
+        }
+        return String(rounded);
+    }
+
+    /**
+     * Nice Y tick steps only (1/2/5×10^n). Domain is expanded to the outer ticks —
+     * do not append raw padded min/max (those produced messy axis labels).
+     */
     function buildYTicks(min, max, targetCount) {
         var lo = Number(min);
         var hi = Number(max);
@@ -1448,30 +1521,35 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         else if (frac <= 5) niceFrac = 5;
         else niceFrac = 10;
         var step = niceFrac * pow;
-        var start = Math.ceil(lo / step) * step;
+        var start = Math.floor(lo / step) * step;
+        var end = Math.ceil(hi / step) * step;
+        if (!(end > start)) {
+            end = start + step;
+        }
         var ticks = [];
-        var v;
-        var guard = 0;
-        for (v = start; v <= hi + step * 0.001 && guard < 24; v += step) {
-            ticks.push(v);
-            guard += 1;
+        var guard;
+        // Step from start using integer multiples to avoid float drift.
+        for (guard = 0; guard < 24; guard += 1) {
+            var tick = Number((start + guard * step).toPrecision(12));
+            if (tick > end + step * 0.001) {
+                break;
+            }
+            ticks.push(tick);
+            if (tick >= end - step * 0.001) {
+                break;
+            }
         }
         if (!ticks.length) {
             ticks = [lo, hi];
-        } else if (ticks[0] > lo + step * 0.05) {
-            ticks.unshift(lo);
-        }
-        if (ticks[ticks.length - 1] < hi - step * 0.05) {
-            ticks.push(hi);
         }
         return ticks;
     }
 
-    function estimateYAxisPad(ticks) {
+    function estimateYAxisPad(tickLabels) {
         var maxLen = 2;
         var i;
-        for (i = 0; i < ticks.length; i += 1) {
-            maxLen = Math.max(maxLen, String(formatNumber(ticks[i])).length);
+        for (i = 0; i < tickLabels.length; i += 1) {
+            maxLen = Math.max(maxLen, String(tickLabels[i]).length);
         }
         return Math.min(76, Math.max(36, Math.round(maxLen * 7.2 + 12)));
     }
@@ -1936,6 +2014,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
             this._lastData = null;
             this._lastConfig = null;
+            /** Keep full column-major search results for multi-series (Format valueField alone is one column). */
+            this._rawSearchData = null;
         },
 
         getInitialDataParams: function () {
@@ -1952,21 +2032,41 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
          */
         formatData: function (rawData) {
             var safe = normalizeSearchData(rawData);
+            // Retain on the instance — some Splunk paths only forward a trimmed formatData payload.
+            this._rawSearchData = safe.columns.length ? safe : this._rawSearchData;
             if (!safe.columns.length) {
                 log('formatData: empty columns');
-                return { rawData: safe, values: [], times: [], fieldName: '', stringFields: {} };
+                return {
+                    rawData: safe,
+                    fields: safe.fields,
+                    columns: safe.columns,
+                    values: [],
+                    times: [],
+                    fieldName: '',
+                    stringFields: {},
+                };
             }
             var series = buildSeriesFromRaw(safe, 'auto', 'auto');
             if (!series.values.length) {
                 // Classic OOTB shows empty panel — soft-fail instead of VisualizationError.
                 log('formatData: no numeric column — soft empty');
-                return { rawData: safe, values: [], times: [], fieldName: '', stringFields: {} };
+                return {
+                    rawData: safe,
+                    fields: safe.fields,
+                    columns: safe.columns,
+                    values: [],
+                    times: [],
+                    fieldName: '',
+                    stringFields: {},
+                };
             }
             log(
                 'formatData: field',
                 series.fieldName,
                 'points',
                 series.values.length,
+                'cols',
+                safe.columns.length,
                 '_time',
                 findTimeColumnIndex(safe) >= 0,
                 'x',
@@ -1974,11 +2074,16 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             );
             return {
                 rawData: safe,
+                // Top-level fields/columns so multi-series still works if nested rawData is dropped.
+                fields: safe.fields,
+                columns: safe.columns,
                 values: series.values,
                 times: series.times,
                 fieldName: series.fieldName,
                 categoryField: series.categoryField || '',
                 stringFields: series.stringFields || {},
+                columnIndex: series.columnIndex,
+                rowOrder: series.rowOrder,
             };
         },
 
@@ -2022,10 +2127,16 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 ? xFieldCustom
                 : String(readConfig(config, 'xField', 'auto') || 'auto').trim() || 'auto';
             var rawData = normalizeSearchData(
-                data && data.rawData ? data.rawData : data && data.columns ? data : null
+                (data && data.rawData) ||
+                    (data && data.columns ? data : null) ||
+                    this._rawSearchData
             );
-            if (!rawData.columns.length && data && data.values) {
-                rawData = null;
+            if (rawData.columns.length) {
+                this._rawSearchData = rawData;
+            } else if (data && data.values) {
+                rawData = this._rawSearchData && this._rawSearchData.columns
+                    ? this._rawSearchData
+                    : { fields: [], columns: [] };
             }
             var series =
                 rawData && rawData.columns && rawData.columns.length
@@ -2171,28 +2282,71 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 }
             }
 
+            // Skip category X column (e.g. host) even if it looks numeric.
+            var categorySkipIdx = -1;
+            if (rawData && series && series.categoryField) {
+                categorySkipIdx = findFieldIndex(rawData.fields, series.categoryField);
+            }
+
             if (seriesMode === 'auto' && rawData && primaryColumnIndex >= 0) {
                 seriesMode =
-                    listMultiSeriesColumns(rawData, primaryColumnIndex).length > 0 ? 'multi' : 'single';
+                    listMultiSeriesColumns(rawData, primaryColumnIndex, categorySkipIdx).length > 0
+                        ? 'multi'
+                        : 'single';
             } else if (seriesMode !== 'multi') {
                 seriesMode = 'single';
             }
 
             var extraSeries = [];
-            if (seriesMode === 'multi' && rawData && primaryColumnIndex >= 0) {
-                var multiCols = listMultiSeriesColumns(rawData, primaryColumnIndex);
+            if (seriesMode === 'multi' && rawData && rawData.columns && rawData.columns.length) {
+                if (primaryColumnIndex < 0) {
+                    primaryColumnIndex = resolveValueColumnIndex(rawData, valueField);
+                }
+                var multiCols = listMultiSeriesColumns(
+                    rawData,
+                    primaryColumnIndex,
+                    categorySkipIdx
+                );
                 var mi;
                 for (mi = 0; mi < multiCols.length; mi += 1) {
-                    if (compareFieldName && multiCols[mi].name === compareFieldName) {
+                    // Comparison overlay owns that column as a dashed series — don't double-draw.
+                    if (cmpValues && compareFieldName && multiCols[mi].name === compareFieldName) {
                         continue;
                     }
-                    var multiVals = valuesFromColumnInOrder(rawData, multiCols[mi].index, rowOrder);
+                    var multiVals = valuesFromColumnInOrder(
+                        rawData,
+                        multiCols[mi].index,
+                        rowOrder
+                    );
                     if (smoothing === 'sma') {
                         multiVals = sma(multiVals, smaWindow);
+                    }
+                    // Need ≥2 finite points to stroke a line (same as primary).
+                    var finitePts = 0;
+                    var fi;
+                    for (fi = 0; fi < multiVals.length; fi += 1) {
+                        if (isFinite(multiVals[fi])) {
+                            finitePts += 1;
+                        }
+                    }
+                    if (finitePts < 2) {
+                        continue;
                     }
                     extraSeries.push({ name: multiCols[mi].name, values: multiVals });
                 }
             }
+            log(
+                'updateView: seriesMode',
+                seriesMode,
+                'primary',
+                series.fieldName || valueField,
+                'extras',
+                extraSeries.map(function (s) {
+                    return s.name;
+                }).join(',') || '(none)',
+                'rawCols',
+                rawData && rawData.columns ? rawData.columns.length : 0
+            );
 
             var ds = downsampleAligned(plotValues, times, maxPoints);
             plotValues = ds.values;
@@ -2223,24 +2377,26 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 compareAnnotations = pickAligned(compareAnnotationsFull, ds.indices);
             }
 
-            // Y scale: Auto (default) fits all plotted series; Fixed uses Format min/max.
+            // Y scale: Auto (default) nice-fits all plotted series; Fixed uses Format min/max.
             var yScaleMode = String(readConfig(config, 'yScale', 'auto') || 'auto')
                 .trim()
                 .toLowerCase();
             if (yScaleMode !== 'fixed') {
                 yScaleMode = 'auto';
             }
-            var scale = bounds(readConfig(config, 'min', 0), readConfig(config, 'max', 100));
-            if (yScaleMode === 'auto' || seriesMode === 'multi' || cmpValues) {
-                var fitArrays = [plotValues];
-                if (cmpValues) {
-                    fitArrays.push(cmpValues);
-                }
-                for (mi = 0; mi < extraSeries.length; mi += 1) {
-                    fitArrays.push(extraSeries[mi].values);
-                }
-                scale = fitScaleToSeries(scale, fitArrays);
+            var fixedScale = bounds(readConfig(config, 'min', 0), readConfig(config, 'max', 100));
+            var fitArrays = [plotValues];
+            if (cmpValues) {
+                fitArrays.push(cmpValues);
             }
+            for (mi = 0; mi < extraSeries.length; mi += 1) {
+                fitArrays.push(extraSeries[mi].values);
+            }
+            // Multi / compare always auto-fit so shared axis reads all series correctly.
+            var useFixedY = yScaleMode === 'fixed' && seriesMode !== 'multi' && !cmpValues;
+            var niceScale = niceYScale(fitArrays, fixedScale, useFixedY);
+            var scale = { min: niceScale.min, max: niceScale.max };
+            var yTicksPrefetched = niceScale.ticks;
             var strokeRaw = readConfig(config, 'stroke', null);
             // Auto-contrast like OOTB: Splunk blue on light/Search panels, white on dark tiles.
             var stroke = resolveLineStroke(strokeRaw, background);
@@ -2330,9 +2486,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var padR = Math.max(0, padRightCfg);
             var padT = Math.max(0, padTopCfg);
             var padB = Math.max(0, padBottomCfg);
-            var yTicks = showYAxis ? buildYTicks(scale.min, scale.max, 5) : [];
+            var yTicks = showYAxis
+                ? yTicksPrefetched && yTicksPrefetched.length
+                    ? yTicksPrefetched
+                    : buildYTicks(scale.min, scale.max, 5)
+                : [];
             if (showYAxis) {
-                var autoPadL = estimateYAxisPad(yTicks);
+                var autoPadL = estimateYAxisPad(yTicks.map(formatYTick));
                 if (padL < autoPadL) {
                     padL = autoPadL;
                 }
@@ -2387,6 +2547,21 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var root = ownerDoc.createElement('div');
             root.className = 'bgdhamp-kpi-line-viz';
             root.setAttribute('data-bgdhamp-viz-build', VIZ_BUILD);
+            root.setAttribute('data-bgdhamp-series-mode', seriesMode);
+            root.setAttribute('data-bgdhamp-extra-series', String(extraSeries.length));
+            root.setAttribute(
+                'data-bgdhamp-series-names',
+                [series.fieldName || valueField || 'value']
+                    .concat(
+                        extraSeries.map(function (s) {
+                            return s.name;
+                        })
+                    )
+                    .join(',')
+            );
+            root.setAttribute('data-bgdhamp-y-min', String(scale.min));
+            root.setAttribute('data-bgdhamp-y-max', String(scale.max));
+            root.setAttribute('data-bgdhamp-y-scale', useFixedY ? 'fixed' : 'auto');
             trendColors.applyTrendSurfaceStyle(root, containerBg);
             root.style.color = textColor;
             root.style.width = '100%';
@@ -2646,13 +2821,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 );
                 if (extraD) {
                     var extraPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    extraPath.setAttribute('class', 'bgdhamp-kpi-line-viz__series');
+                    extraPath.setAttribute('data-series', extraSeries[ei].name);
                     extraPath.setAttribute('d', extraD);
                     extraPath.setAttribute('fill', 'none');
                     extraPath.setAttribute('stroke', extraColor);
-                    extraPath.setAttribute('stroke-width', String(Math.max(1, strokeWidth - 0.5)));
+                    extraPath.setAttribute('stroke-width', String(Math.max(2, strokeWidth)));
                     extraPath.setAttribute('stroke-linecap', 'round');
                     extraPath.setAttribute('stroke-linejoin', 'round');
-                    extraPath.setAttribute('stroke-opacity', '0.95');
+                    extraPath.setAttribute('stroke-opacity', '1');
                     extraPath.setAttribute('vector-effect', 'non-scaling-stroke');
                     svg.appendChild(extraPath);
                     legendItems.push({ name: extraSeries[ei].name, color: extraColor });
@@ -2708,6 +2885,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             );
             if (mainD) {
                 var mainPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
+                mainPath.setAttribute('class', 'bgdhamp-kpi-line-viz__series');
+                mainPath.setAttribute('data-series', series.fieldName || valueField || 'value');
                 mainPath.setAttribute('d', mainD);
                 mainPath.setAttribute('fill', 'none');
                 mainPath.setAttribute('stroke', stroke);
@@ -2833,7 +3012,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     yLabel.setAttribute('font-weight', '600');
                     yLabel.setAttribute('text-anchor', 'end');
                     yLabel.setAttribute('dominant-baseline', 'middle');
-                    yLabel.textContent = formatNumber(yTickVal);
+                    yLabel.textContent = formatYTick(yTickVal);
                     svg.appendChild(yLabel);
                 }
             }

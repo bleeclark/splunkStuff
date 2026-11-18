@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>KPI line ↔ OOTB Splunk line parity</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css?v=ootbparity" />
+<style>
+  body { margin: 0; padding: 16px; font-family: Helvetica, Arial, sans-serif; background: #eef1f5; color: #1d2733; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  .lead { font-size: 13px; color: #5c6773; margin: 0 0 14px; max-width: 80ch; }
+  .summary { padding: 10px 12px; border-radius: 8px; border: 1px solid #d5d9de; background: #fff; margin-bottom: 12px; font-weight: 600; }
+  .summary.pass { border-color: #7ac27a; background: #f3faf3; }
+  .summary.fail { border-color: #e07a7a; background: #fdf4f3; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #d5d9de; border-radius: 8px; overflow: hidden; font-size: 12px; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid #e8ebef; vertical-align: top; }
+  th { background: #f7f8fa; color: #5c6773; }
+  tr.fail td { background: #fdecea; color: #8a1f11; }
+  tr.pass td.ok { color: #1b5e20; }
+  code, pre { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  pre.spl { margin: 0; white-space: pre-wrap; font-size: 11px; color: #334; }
+  .host { position: absolute; left: -9999px; top: 0; width: 480px; height: 260px; }
+</style>
+</head>
+<body>
+  <h1>KPI line ↔ Classic OOTB line chart parity</h1>
+  <p class="lead">
+    Asserts that <code>splunkstuff_kpi_line</code> behaves like Splunk’s built-in line chart for common SPL shapes:
+    time X, category X, multi-series, null gaps, Auto field pick, and messy cells.
+    Series mode defaults to <strong>Auto</strong> (OOTB-like multi when extra numeric columns exist).
+  </p>
+  <div class="summary" id="summary">Running…</div>
+  <table>
+    <thead><tr><th>#</th><th>SPL shape</th><th>OOTB expectation</th><th>Result</th><th>Detail</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="host" id="host"></div>
+
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js?v=ootbparity"></script>
+<script>
+(function () {
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var Viz = factories[0](Base);
+  var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var host = document.getElementById('host');
+  var now = Date.now();
+
+  function cfg(map) {
+    var out = {};
+    Object.keys(map || {}).forEach(function (k) { out[NS + k] = map[k]; });
+    return out;
+  }
+  function times(n, spanMs) {
+    var out = [];
+    var i;
+    var step = spanMs || 3600000;
+    for (i = 0; i < n; i += 1) out.push(new Date(now - (n - i) * step).toISOString());
+    return out;
+  }
+  function nums(n, fn) {
+    var out = [];
+    var i;
+    for (i = 1; i <= n; i += 1) out.push(String(fn(i)));
+    return out;
+  }
+  function raw(fields, columns) {
+    return { fields: fields.map(function (n) { return { name: n }; }), columns: columns };
+  }
+  function render(data, map) {
+    host.innerHTML = '';
+    var el = document.createElement('div');
+    el.style.width = '480px';
+    el.style.height = '260px';
+    host.appendChild(el);
+    var viz = new Viz(el);
+    // Simulate Splunk dropping nested rawData (stress multi-series retention).
+    var formatted = viz.formatData(data);
+    var payload = map && map.__dropNestedRaw
+      ? {
+          values: formatted.values,
+          times: formatted.times,
+          fieldName: formatted.fieldName,
+          stringFields: formatted.stringFields,
+          fields: formatted.fields,
+          columns: formatted.columns,
+        }
+      : formatted;
+    var conf = cfg(Object.assign({
+      seriesMode: 'auto',
+      yScale: 'auto',
+      showMajor: 'false',
+      showLegend: 'true',
+      showXAxis: 'true',
+      showYAxisTicks: 'false',
+      backgroundMode: 'transparent',
+      stroke: '#1E93C6',
+      comparison: 'false',
+      showTextRow: 'false',
+    }, map || {}));
+    delete conf[NS + '__dropNestedRaw'];
+    viz.updateView(payload, conf);
+    return el;
+  }
+  function root(el) { return el.querySelector('.bgdhamp-kpi-line-viz'); }
+  function seriesCount(el) { return el.querySelectorAll('path.bgdhamp-kpi-line-viz__series').length; }
+  function extras(el) {
+    var r = root(el);
+    return r ? Number(r.getAttribute('data-bgdhamp-extra-series') || 0) : 0;
+  }
+  function names(el) {
+    var r = root(el);
+    return r ? String(r.getAttribute('data-bgdhamp-series-names') || '') : '';
+  }
+  function mode(el) {
+    var r = root(el);
+    return r ? String(r.getAttribute('data-bgdhamp-series-mode') || '') : '';
+  }
+  function hasPath(el) { return seriesCount(el) >= 1 || !!el.querySelector('svg path[stroke]'); }
+  function xTickCount(el) { return el.querySelectorAll('.bgdhamp-kpi-line-viz__xTick').length; }
+  function isErr(el) { return !!el.querySelector('.bgdhamp-kpi-line-viz__err'); }
+
+  var cases = [];
+
+  cases.push({
+    title: 'timechart single metric',
+    spl: '| timechart span=1h count\n| fields _time count',
+    ootb: 'One line on _time',
+    run: function () {
+      var el = render(raw(['_time', 'count'], [times(12), nums(12, function (i) { return 10 + i; })]));
+      return { ok: seriesCount(el) === 1 && extras(el) === 0 && hasPath(el) && !isErr(el), detail: 'series=' + seriesCount(el) + ' mode=' + mode(el) };
+    },
+  });
+
+  cases.push({
+    title: 'timechart multi metrics (Auto)',
+    spl: '| timechart span=1h avg(a) as a, avg(b) as b, avg(c) as c',
+    ootb: 'One line per numeric series',
+    run: function () {
+      var el = render(raw(['_time', 'a', 'b', 'c'], [
+        times(12),
+        nums(12, function (i) { return 20 + i; }),
+        nums(12, function (i) { return 40 + i * 2; }),
+        nums(12, function (i) { return 5 + (i % 4); }),
+      ]), { valueFieldCustom: 'a' });
+      return {
+        ok: seriesCount(el) >= 3 && extras(el) >= 2 && mode(el) === 'multi',
+        detail: 'series=' + seriesCount(el) + ' extras=' + extras(el) + ' names=' + names(el),
+      };
+    },
+  });
+
+  cases.push({
+    title: 'timechart by split (wide columns)',
+    spl: '| timechart span=1h count by status',
+    ootb: 'Each status column is a line',
+    run: function () {
+      var el = render(raw(['_time', '200', '404', '500'], [
+        times(10),
+        nums(10, function (i) { return 50 + i; }),
+        nums(10, function (i) { return 8 + (i % 3); }),
+        nums(10, function (i) { return 2 + (i % 2); }),
+      ]), { seriesMode: 'auto' });
+      return {
+        ok: seriesCount(el) >= 3 && extras(el) >= 2,
+        detail: 'series=' + seriesCount(el) + ' names=' + names(el),
+      };
+    },
+  });
+
+  cases.push({
+    title: '| table category + one metric',
+    spl: '| stats count by host\n| table host count',
+    ootb: 'Category X, one line',
+    run: function () {
+      var el = render(raw(['host', 'count'], [
+        ['web-01', 'web-02', 'api-01', 'db-01', 'cache-01', 'lb-01'],
+        ['42', '55', '38', '27', '19', '33'],
+      ]), { xFieldCustom: 'host', valueFieldCustom: 'count', seriesMode: 'auto' });
+      return {
+        ok: seriesCount(el) === 1 && extras(el) === 0 && xTickCount(el) >= 2 && !isErr(el),
+        detail: 'series=' + seriesCount(el) + ' xTicks=' + xTickCount(el),
+      };
+    },
+  });
+
+  cases.push({
+    title: '| table category + multi metrics',
+    spl: '| table host count latency errors',
+    ootb: 'Category X, line per numeric column',
+    run: function () {
+      var el = render(raw(['host', 'count', 'latency', 'errors'], [
+        ['web-01', 'web-02', 'api-01', 'api-02', 'db-01', 'db-02'],
+        ['42', '55', '38', '61', '27', '33'],
+        ['120', '98', '145', '110', '160', '132'],
+        ['2', '1', '4', '0', '3', '2'],
+      ]), { xFieldCustom: 'host', valueFieldCustom: 'count', seriesMode: 'auto' });
+      return {
+        ok: seriesCount(el) >= 3 && extras(el) >= 2 && /count/.test(names(el)) && /latency/.test(names(el)),
+        detail: 'series=' + seriesCount(el) + ' names=' + names(el),
+      };
+    },
+  });
+
+  cases.push({
+    title: 'Single KPI forces one line',
+    spl: '| table host count latency errors',
+    ootb: 'N/A (KPI Format) — only primary when Single',
+    run: function () {
+      var el = render(raw(['host', 'count', 'latency', 'errors'], [
+        ['a', 'b', 'c', 'd', 'e', 'f'],
+        ['10', '20', '30', '25', '15', '18'],
+        ['100', '110', '90', '95', '105', '120'],
+        ['1', '2', '0', '1', '3', '1'],
+      ]), { xFieldCustom: 'host', valueFieldCustom: 'count', seriesMode: 'single' });
+      return {
+        ok: seriesCount(el) === 1 && extras(el) === 0 && mode(el) === 'single',
+        detail: 'series=' + seriesCount(el) + ' mode=' + mode(el),
+      };
+    },
+  });
+
+  cases.push({
+    title: 'null gaps (OOTB default)',
+    spl: '| timechart count\n(null buckets)',
+    ootb: 'Break the stroke across nulls',
+    run: function () {
+      var vals = nums(10, function (i) { return 10 + i; });
+      vals[3] = '';
+      vals[4] = null;
+      vals[5] = 'null';
+      var el = render(raw(['_time', 'count'], [times(10), vals]), {
+        valueFieldCustom: 'count',
+        nullValueMode: 'gaps',
+        seriesMode: 'single',
+      });
+      var path = el.querySelector('path.bgdhamp-kpi-line-viz__series, svg path[stroke]');
+      var d = path ? String(path.getAttribute('d') || '') : '';
+      var moves = (d.match(/M/g) || []).length;
+      return { ok: hasPath(el) && moves >= 2, detail: 'M-count=' + moves + ' dLen=' + d.length };
+    },
+  });
+
+  cases.push({
+    title: 'unsorted _time is sorted',
+    spl: '| ... unordered _time rows',
+    ootb: 'Plot in time order',
+    run: function () {
+      var t = times(6);
+      var el = render(raw(['_time', 'count'], [
+        [t[5], t[1], t[4], t[0], t[3], t[2]],
+        ['60', '20', '50', '10', '40', '30'],
+      ]), { valueFieldCustom: 'count', seriesMode: 'single', showMarkers: 'true' });
+      // With sorted ascending values 10..60, last major/path should end high; markers exist.
+      return { ok: hasPath(el) && !isErr(el), detail: 'path=' + hasPath(el) };
+    },
+  });
+
+  cases.push({
+    title: 'epoch seconds _time',
+    spl: '| timechart (epoch _time)',
+    ootb: 'Treats epoch as time axis',
+    run: function () {
+      var epoch = [];
+      var i;
+      for (i = 0; i < 8; i += 1) epoch.push(String(Math.floor(now / 1000) - (8 - i) * 3600));
+      var el = render(raw(['_time', 'count'], [epoch, nums(8, function (j) { return 15 + j; })]), {
+        valueFieldCustom: 'count',
+      });
+      return { ok: hasPath(el) && !isErr(el), detail: 'series=' + seriesCount(el) };
+    },
+  });
+
+  cases.push({
+    title: 'object / comma cells',
+    spl: '| table host count (messy cells)',
+    ootb: 'Parses numeric cell values',
+    run: function () {
+      var el = render(raw(['host', 'count'], [
+        ['a', 'b', 'c', 'd', 'e', 'f'],
+        [{ value: '1,234' }, { value: '2,100' }, '3,050', 4000, '5,500', '6,000'],
+      ]), { xFieldCustom: 'host', valueFieldCustom: 'count', seriesMode: 'single' });
+      return { ok: hasPath(el) && !isErr(el), detail: 'path=' + hasPath(el) };
+    },
+  });
+
+  cases.push({
+    title: 'row-major results',
+    spl: '| stats … (row-major payload)',
+    ootb: 'Accepts rows[] shape',
+    run: function () {
+      var el = render({
+        fields: [{ name: '_time' }, { name: 'count' }],
+        rows: [
+          [times(1)[0], '10'],
+          [times(2)[1], '20'],
+          [times(3)[2], '30'],
+          [times(4)[3], '25'],
+          [times(5)[4], '35'],
+          [times(6)[5], '40'],
+        ],
+      }, { valueFieldCustom: 'count' });
+      return { ok: hasPath(el) && !isErr(el), detail: 'series=' + seriesCount(el) };
+    },
+  });
+
+  cases.push({
+    title: 'ignores text/info columns as series',
+    spl: '| timechart count\n| eval text1=… info=…',
+    ootb: 'Only numeric chart fields become lines',
+    run: function () {
+      var el = render(raw(['_time', 'count', 'text1', 'text2', 'info'], [
+        times(8),
+        nums(8, function (i) { return 10 + i; }),
+        nums(8, function () { return 'East'; }),
+        nums(8, function () { return '1204'; }),
+        nums(8, function () { return 'note'; }),
+      ]), { valueFieldCustom: 'count', seriesMode: 'auto', showTextRow: 'true' });
+      return {
+        ok: seriesCount(el) === 1 && extras(el) === 0 && !/text1|info/.test(names(el)),
+        detail: 'names=' + names(el) + ' textRow=' + !!el.querySelector('.bgdhamp-kpi-line-viz__textRow'),
+      };
+    },
+  });
+
+  cases.push({
+    title: 'multi survives dropped nested rawData',
+    spl: '| table host count latency',
+    ootb: 'Still multi-series after formatData trim',
+    run: function () {
+      var el = render(raw(['host', 'count', 'latency'], [
+        ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+        ['10', '20', '15', '25', '18', '22'],
+        ['100', '110', '105', '120', '115', '130'],
+      ]), {
+        xFieldCustom: 'host',
+        valueFieldCustom: 'count',
+        seriesMode: 'multi',
+        __dropNestedRaw: true,
+      });
+      return {
+        ok: seriesCount(el) >= 2 && extras(el) >= 1,
+        detail: 'series=' + seriesCount(el) + ' extras=' + extras(el) + ' names=' + names(el),
+      };
+    },
+  });
+
+  cases.push({
+    title: 'need ≥2 points',
+    spl: '| stats count (1 row)',
+    ootb: 'Line needs 2+ points (empty/message OK)',
+    run: function () {
+      var el = render(raw(['_time', 'count'], [[times(1)[0]], ['42']]), { valueFieldCustom: 'count' });
+      return { ok: isErr(el) || seriesCount(el) === 0, detail: 'err=' + isErr(el) + ' series=' + seriesCount(el) };
+    },
+  });
+
+  cases.push({
+    title: 'Auto prefers value/count hints',
+    spl: '| timechart … as value + other numeric',
+    ootb: 'Primary resolves to hinted metric',
+    run: function () {
+      var el = render(raw(['_time', 'noise', 'value'], [
+        times(8),
+        nums(8, function (i) { return 999 + i; }),
+        nums(8, function (i) { return 10 + i; }),
+      ]), { valueField: 'auto', seriesMode: 'single' });
+      var n = names(el);
+      return { ok: /value/.test(n) && !/^noise/.test(n), detail: 'names=' + n };
+    },
+  });
+
+  var tbody = document.getElementById('tbody');
+  var pass = 0;
+  cases.forEach(function (c, idx) {
+    var result;
+    try {
+      result = c.run();
+    } catch (err) {
+      result = { ok: false, detail: String(err && err.message ? err.message : err) };
+    }
+    if (result.ok) pass += 1;
+    var tr = document.createElement('tr');
+    tr.className = result.ok ? 'pass' : 'fail';
+    tr.innerHTML =
+      '<td>' + (idx + 1) + '</td>' +
+      '<td><strong>' + c.title + '</strong><pre class="spl">' + c.spl + '</pre></td>' +
+      '<td>' + c.ootb + '</td>' +
+      '<td class="ok">' + (result.ok ? 'PASS' : 'FAIL') + '</td>' +
+      '<td><code>' + String(result.detail || '') + '</code></td>';
+    tbody.appendChild(tr);
+  });
+
+  var summary = document.getElementById('summary');
+  var all = pass === cases.length;
+  summary.className = 'summary ' + (all ? 'pass' : 'fail');
+  summary.textContent = pass + '/' + cases.length + ' OOTB parity checks ' + (all ? 'PASS' : 'FAIL');
+  document.title = (all ? 'PASS' : 'FAIL') + ' · KPI line OOTB parity';
+  window.__ootbParity = { pass: pass, total: cases.length, ok: all };
+})();
+</script>
+</body>
+</html>

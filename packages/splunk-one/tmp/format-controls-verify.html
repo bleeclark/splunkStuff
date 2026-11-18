@@ -291,8 +291,61 @@
     };
   });
   add(lineTests, 'seriesMode multi', function () {
-    var el = render('line', merge(lineBase, { seriesMode: 'multi', valueField: 'current', comparison: 'false', showLegend: 'true' }));
-    return { ok: count(el, 'path') >= 1, detail: 'paths=' + count(el, 'path') };
+    var el = render('line', merge(lineBase, {
+      seriesMode: 'multi', valueField: 'current', comparison: 'false', showLegend: 'true',
+    }));
+    var root = el.querySelector('.bgdhamp-kpi-line-viz');
+    var extras = root ? root.getAttribute('data-bgdhamp-extra-series') : null;
+    var seriesPaths = count(el, 'path.bgdhamp-kpi-line-viz__series');
+    return {
+      ok: seriesPaths >= 2 && Number(extras) >= 1,
+      detail: 'seriesPaths=' + seriesPaths + ' extras=' + extras + ' names=' + (root && root.getAttribute('data-bgdhamp-series-names')),
+    };
+  });
+  add(lineTests, 'seriesMode multi table host/count/latency', function () {
+    host.innerHTML = '';
+    var el = document.createElement('div');
+    el.style.width = '420px';
+    el.style.height = '240px';
+    host.appendChild(el);
+    var viz = new LineViz(el);
+    var tableRaw = {
+      fields: [{ name: 'host' }, { name: 'count' }, { name: 'latency' }, { name: 'errors' }],
+      columns: [
+        ['web-01', 'web-02', 'api-01', 'api-02', 'db-01', 'db-02'],
+        ['42', '55', '38', '61', '27', '33'],
+        ['120', '98', '145', '110', '160', '132'],
+        ['2', '1', '4', '0', '3', '2'],
+      ],
+    };
+    viz.updateView(
+      viz.formatData(tableRaw),
+      cfg(LINE_NS, {
+        xFieldCustom: 'host',
+        valueFieldCustom: 'count',
+        seriesMode: 'multi',
+        comparison: 'false',
+        yScale: 'auto',
+        showMajor: 'false',
+        showLegend: 'true',
+        showXAxis: 'true',
+        backgroundMode: 'transparent',
+        stroke: '#1E93C6',
+      })
+    );
+    var root = el.querySelector('.bgdhamp-kpi-line-viz');
+    var seriesPaths = count(el, 'path.bgdhamp-kpi-line-viz__series');
+    var extras = root ? Number(root.getAttribute('data-bgdhamp-extra-series') || 0) : 0;
+    return {
+      ok: seriesPaths >= 3 && extras >= 2,
+      detail:
+        'seriesPaths=' +
+        seriesPaths +
+        ' extras=' +
+        extras +
+        ' names=' +
+        (root && root.getAttribute('data-bgdhamp-series-names')),
+    };
   });
   add(lineTests, 'shadeBetween', function () {
     var el = render('line', merge(lineBase, { shadeBetween: 'true', comparison: 'true' }));
