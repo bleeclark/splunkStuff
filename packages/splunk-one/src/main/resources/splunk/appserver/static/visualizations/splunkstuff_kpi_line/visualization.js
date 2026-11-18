@@ -15,8 +15,9 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
+    /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '202611180810-kpi-line-text-contrast';
+    var VIZ_BUILD = '202611181220-kpi-line-945';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
@@ -76,11 +77,59 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         console.log.apply(console, args);
     }
 
+    function propertyNamespace(viz) {
+        if (viz && typeof viz.getPropertyNamespaceInfo === 'function') {
+            try {
+                var info = viz.getPropertyNamespaceInfo();
+                if (info && info.propertyNamespace) {
+                    var ns = String(info.propertyNamespace);
+                    return ns.charAt(ns.length - 1) === '.' ? ns : ns + '.';
+                }
+            } catch (ignoreErr) {
+                /* SplunkVisualizationBase may not expose namespace in all contexts */
+            }
+        }
+        return NS;
+    }
+
+    /**
+     * Splunk 9.4.x Format keys use the installed app id in the namespace.
+     * Also accept bare prop / suffix matches so Appearance/Data still apply after transfer.
+     */
+    function findConfigValue(config, prop, viz) {
+        if (config == null || typeof config !== 'object') {
+            return { found: false, value: undefined };
+        }
+        var ns = propertyNamespace(viz || readConfig._activeViz);
+        var candidates = [ns + prop, NS + prop, prop];
+        var ci;
+        for (ci = 0; ci < candidates.length; ci += 1) {
+            var v = config[candidates[ci]];
+            if (v !== undefined && v !== null) {
+                return { found: true, value: v };
+            }
+        }
+        var suffix = '.' + prop;
+        var keys = Object.keys(config);
+        var ki;
+        for (ki = 0; ki < keys.length; ki += 1) {
+            var key = keys[ki];
+            if (key.length >= suffix.length && key.slice(-suffix.length) === suffix) {
+                var v2 = config[key];
+                if (v2 !== undefined && v2 !== null) {
+                    return { found: true, value: v2 };
+                }
+            }
+        }
+        return { found: false, value: undefined };
+    }
+
     function readConfig(config, prop, defaultVal) {
-        if (config == null || typeof config !== 'object') return defaultVal;
-        var v = config[NS + prop];
-        if (v === undefined || v === null || v === '') return defaultVal;
-        return v;
+        var found = findConfigValue(config, prop, readConfig._activeViz);
+        if (!found.found || found.value === '') {
+            return defaultVal;
+        }
+        return found.value;
     }
 
     function readBool(config, prop, defaultVal) {
@@ -89,8 +138,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         if (v === true) return true;
         if (v === false) return false;
         var s = String(v).toLowerCase();
-        if (s === 'true' || s === '1' || s === 'yes') return true;
-        if (s === 'false' || s === '0' || s === 'no') return false;
+        if (s === 'true' || s === '1' || s === 'yes' || s === 'on') return true;
+        if (s === 'false' || s === '0' || s === 'no' || s === 'off') return false;
         return defaultVal;
     }
 
@@ -109,18 +158,35 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     }
 
     function sanitizeHexColor(raw, fallback) {
-        if (typeof raw !== 'string') return fallback;
-        var s = raw.trim();
+        if (raw == null) return fallback;
+        var s = String(raw).trim();
+        if (!s) return fallback;
         if (/^#[0-9A-Fa-f]{6}$/.test(s)) return s;
+        if (/^#[0-9A-Fa-f]{3}$/.test(s)) {
+            return (
+                '#' +
+                s.charAt(1) +
+                s.charAt(1) +
+                s.charAt(2) +
+                s.charAt(2) +
+                s.charAt(3) +
+                s.charAt(3)
+            );
+        }
+        if (/^rgba?\(\s*[\d.]+\s*,/.test(s)) return s;
         return fallback;
     }
 
-    /** Hex (#RRGGBB) or rgb/rgba(...) for threshold fills / strokes. */
+    /** Hex (#RRGGBB/#RGB), transparent, or rgb/rgba(...) for fills / strokes. */
     function sanitizeCssColor(raw, fallback) {
-        if (typeof raw !== 'string') return fallback;
-        var s = raw.trim();
+        if (raw == null) return fallback;
+        var s = String(raw).trim();
         if (!s) return fallback;
+        if (s.toLowerCase() === 'transparent') return 'transparent';
         if (/^#[0-9A-Fa-f]{6}$/.test(s)) return s;
+        if (/^#[0-9A-Fa-f]{3}$/.test(s)) {
+            return sanitizeHexColor(s, fallback);
+        }
         if (/^rgba?\(\s*[\d.]+\s*,/.test(s)) return s;
         return fallback;
     }
@@ -1459,6 +1525,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     }
 
     return SplunkVisualizationBase.extend({
+        initialize: function () {
+            // Splunk Enterprise 9.4 custom viz lifecycle
+            if (this.el && this.el.classList) {
+                this.el.classList.add('bgdhamp-kpi-line-viz-host');
+            }
+            this._lastData = null;
+            this._lastConfig = null;
+        },
+
         getInitialDataParams: function () {
             return {
                 outputMode: SplunkVisualizationBase.COLUMN_MAJOR_OUTPUT_MODE,
@@ -1507,12 +1582,14 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var t0 = debugEnabled() && typeof performance !== 'undefined' ? performance.now() : 0;
             try {
             var viz = this;
+            readConfig._activeViz = viz;
             if (config == null || typeof config !== 'object') {
                 log('updateView: config missing or non-object — using {}');
                 config = {};
             }
             this._lastData = data;
             this._lastConfig = config;
+            log('updateView: propertyNamespace', propertyNamespace(viz));
             if (typeof this._docHoverCleanup === 'function') {
                 this._docHoverCleanup();
                 this._docHoverCleanup = null;
@@ -1554,11 +1631,19 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 'points',
                 values.length
             );
-            var backgroundRaw = readConfig(config, 'background', 'transparent');
-            var background =
+            var backgroundMode = String(readConfig(config, 'backgroundMode', 'transparent') || 'transparent')
+                .trim()
+                .toLowerCase();
+            var backgroundRaw = readConfig(config, 'background', '#01417F');
+            var background;
+            if (
+                backgroundMode === 'transparent' ||
                 String(backgroundRaw == null ? '' : backgroundRaw).trim().toLowerCase() === 'transparent'
-                    ? 'transparent'
-                    : sanitizeCssColor(backgroundRaw, 'transparent');
+            ) {
+                background = 'transparent';
+            } else {
+                background = sanitizeCssColor(backgroundRaw, '#01417F');
+            }
             var textColorRaw = readConfig(config, 'textColor', null);
             var textColor;
             if (textColorRaw != null && String(textColorRaw).trim() !== '') {

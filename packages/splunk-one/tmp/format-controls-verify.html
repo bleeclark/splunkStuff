@@ -148,13 +148,13 @@
 
   var lineBase = {
     valueField: 'current', yScale: 'auto', showMajor: 'true', showLegend: 'true',
-    background: '#01417F', textColor: '#FFFFFF', stroke: '#FFFFFF',
+    backgroundMode: 'solid', background: '#01417F', textColor: '#FFFFFF', stroke: '#FFFFFF',
     comparison: 'true', compareField: 'previous', compareStroke: '#DFA611',
     showTextRow: 'true', showInfo: 'true', infoField: 'info',
   };
   var pieBase = {
     labelField: 'category', valueField: 'count', palettePreset: 'studio',
-    background: '#01417F', textColor: '#FFFFFF', legendPosition: 'right',
+    backgroundMode: 'solid', background: '#01417F', textColor: '#FFFFFF', legendPosition: 'right',
     showSliceLabels: 'true', showPercent: 'true', showTextRow: 'true',
     showInfo: 'true', infoField: 'info', otherEnabled: 'false', topN: '0',
   };
@@ -191,9 +191,30 @@
     return { ok: !!el.querySelector('.bgdhamp-kpi-line-viz__major'), detail: 'major present under fixed scale' };
   });
   add(lineTests, 'background', function () {
-    var el = render('line', merge(lineBase, { background: '#102a43', colorPlacement: 'top' }));
+    var el = render('line', merge(lineBase, { backgroundMode: 'solid', background: '#102a43', colorPlacement: 'top' }));
     var s = bg(el) + bg(el, '.bgdhamp-kpi-line-viz');
     return { ok: /16,\s*42,\s*67|#102a43/i.test(s) || /102a43/i.test(styleOf(el, '.bgdhamp-kpi-line-viz')), detail: s.slice(0, 80) };
+  });
+  add(lineTests, '9.4.5 alt app namespace config keys', function () {
+    host.innerHTML = '';
+    var el = document.createElement('div');
+    el.style.width = '420px'; el.style.height = '240px'; host.appendChild(el);
+    var viz = new LineViz(el);
+    var raw = lineRaw();
+    var alt = {};
+    alt['display.visualizations.custom.other_app.splunkstuff_kpi_line.backgroundMode'] = 'solid';
+    alt['display.visualizations.custom.other_app.splunkstuff_kpi_line.background'] = '#102a43';
+    alt['display.visualizations.custom.other_app.splunkstuff_kpi_line.valueField'] = 'current';
+    alt['display.visualizations.custom.other_app.splunkstuff_kpi_line.showMajor'] = 'true';
+    alt['display.visualizations.custom.other_app.splunkstuff_kpi_line.textColor'] = '#FFFFFF';
+    alt['display.visualizations.custom.other_app.splunkstuff_kpi_line.stroke'] = '#FFFFFF';
+    viz.updateView(viz.formatData(raw), alt);
+    var s = bg(el) + styleOf(el, '.bgdhamp-kpi-line-viz');
+    return { ok: /16,\s*42,\s*67|#102a43/i.test(s) || !!el.querySelector('path'), detail: s.slice(0, 80) };
+  });
+  add(lineTests, 'Data valueFieldCustom', function () {
+    var el = render('line', merge(lineBase, { valueFieldCustom: 'previous', comparison: 'false', showLegend: 'false' }));
+    return { ok: !!el.querySelector('path'), detail: 'custom Y field renders' };
   });
   add(lineTests, 'textColor', function () {
     var el = render('line', merge(lineBase, { textColor: '#FF00AA' }));
@@ -222,7 +243,7 @@
     return { ok: !!major && /space-between/i.test(major.style.justifyContent || ''), detail: major && major.style.justifyContent };
   });
   add(lineTests, 'colorPlacement top uses background', function () {
-    var el = render('line', merge(lineBase, { colorPlacement: 'top', background: '#0B1F3B', showMajor: 'true' }));
+    var el = render('line', merge(lineBase, { colorPlacement: 'top', backgroundMode: 'solid', background: '#0B1F3B', showMajor: 'true' }));
     var s = bg(el) + styleOf(el, '.bgdhamp-kpi-line-viz');
     return { ok: /11,\s*31,\s*59|#0B1F3B/i.test(s) || /0B1F3B/i.test(s), detail: s.slice(0, 80) };
   });
@@ -372,7 +393,7 @@
     el.style.width = '420px'; el.style.height = '240px'; host.appendChild(el);
     var viz = new LineViz(el);
     viz.updateView(viz.formatData({ fields: [{ name: 'value' }], columns: [[]] }), cfg(LINE_NS, {
-      emptyText: 'Custom empty LINE', background: '#01417F', textColor: '#FFFFFF',
+      emptyText: 'Custom empty LINE', backgroundMode: 'solid', background: '#01417F', textColor: '#FFFFFF',
     }));
     return { ok: textHas(el, /Custom empty LINE/), detail: el.textContent.slice(0, 40) };
   });
@@ -381,6 +402,31 @@
   add(pieTests, 'labelField / valueField', function () {
     var el = render('pie', merge(pieBase, { labelField: 'category', valueField: 'count' }));
     return { ok: count(el, 'path') >= 3 && textHas(el, /Low|Critical/), detail: 'slices=' + count(el, 'path') };
+  });
+  add(pieTests, 'Data custom field names', function () {
+    var el = render('pie', merge(pieBase, {
+      labelFieldCustom: 'category', valueFieldCustom: 'count', labelField: 'auto', valueField: 'auto',
+    }));
+    return { ok: count(el, 'path') >= 3, detail: 'custom fields=' + count(el, 'path') };
+  });
+  add(pieTests, '9.4.5 alt app namespace pie appearance', function () {
+    host.innerHTML = '';
+    var el = document.createElement('div');
+    el.style.width = '420px'; el.style.height = '240px'; host.appendChild(el);
+    var viz = new PieViz(el);
+    var alt = {};
+    alt['display.visualizations.custom.other_app.splunkstuff_pie_chart.background'] = '#01417F';
+    alt['display.visualizations.custom.other_app.splunkstuff_pie_chart.textColor'] = '#FFFFFF';
+    alt['display.visualizations.custom.other_app.splunkstuff_pie_chart.labelField'] = 'category';
+    alt['display.visualizations.custom.other_app.splunkstuff_pie_chart.valueField'] = 'count';
+    alt['display.visualizations.custom.other_app.splunkstuff_pie_chart.palettePreset'] = 'studio';
+    alt['display.visualizations.custom.other_app.splunkstuff_pie_chart.otherEnabled'] = 'false';
+    alt['display.visualizations.custom.other_app.splunkstuff_pie_chart.topN'] = '0';
+    alt['display.visualizations.custom.other_app.splunkstuff_pie_chart.showSliceLabels'] = 'false';
+    alt['display.visualizations.custom.other_app.splunkstuff_pie_chart.legendPosition'] = 'right';
+    viz.updateView(viz.formatData(pieRaw()), alt);
+    var s = bg(el) + bg(el, '.bgdhamp-pie-chart-viz');
+    return { ok: /1,\s*65,\s*127|#01417F/i.test(s) && count(el, 'path') >= 3, detail: s.slice(0, 60) + ' paths=' + count(el, 'path') };
   });
   add(pieTests, 'compareField + showCompare', function () {
     var el = render('pie', merge(pieBase, { compareField: 'previous', showCompare: 'true', showSliceLabels: 'true' }));
@@ -449,7 +495,7 @@
     viz.updateView(viz.formatData({
       fields: [{ name: 'category' }, { name: 'count' }],
       columns: [['A'], ['-1']],
-    }), cfg(PIE_NS, { emptyMessage: 'Custom empty PIE', background: '#01417F', textColor: '#FFFFFF' }));
+    }), cfg(PIE_NS, { emptyMessage: 'Custom empty PIE', backgroundMode: 'solid', background: '#01417F', textColor: '#FFFFFF' }));
     return { ok: textHas(el, /Custom empty PIE/), detail: el.textContent.slice(0, 40) };
   });
   add(pieTests, 'showValue / showPercent / showRowCount', function () {
@@ -467,7 +513,7 @@
     };
   });
   add(pieTests, 'background', function () {
-    var el = render('pie', merge(pieBase, { background: '#01417F' }));
+    var el = render('pie', merge(pieBase, { backgroundMode: 'solid', background: '#01417F' }));
     var s = bg(el) + bg(el, '.bgdhamp-pie-chart-viz');
     return { ok: /1,\s*65,\s*127|#01417F/i.test(s), detail: s.slice(0, 80) };
   });

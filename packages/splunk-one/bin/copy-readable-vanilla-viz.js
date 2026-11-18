@@ -148,7 +148,14 @@ function copyReadableVanillaViz(pkgRoot) {
         path.join(root, 'stage/appserver/static/visualizations'),
     ];
 
-    const vanillaAssets = ['visualization.js', 'visualization.css', 'formatter.html'];
+    const vanillaAssets = [
+        'visualization.js',
+        'visualization.css',
+        'formatter.html',
+        'preview.png',
+        'visualizations.conf.snippet',
+        'README-DELIVER.md',
+    ];
     const vizIdsForAssetCopy = Array.from(new Set([].concat(VANILLA_VIZ_IDS, Object.keys(VIZ_SELF_CONTAINED_SHARED))));
 
     vizIdsForAssetCopy.forEach((vizId) => {

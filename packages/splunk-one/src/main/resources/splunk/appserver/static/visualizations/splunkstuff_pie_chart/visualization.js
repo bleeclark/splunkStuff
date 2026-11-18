@@ -4,7 +4,9 @@
  * Vanilla AMD for Splunk 9.x custom visualizations.
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
+    /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
+    var VIZ_BUILD = '202611181220-pie-945';
     /** Optional text1..text3 strip + info icon — same contract as kpi_line / sparkline. */
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
@@ -482,12 +484,59 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         };
     }
 
+    function propertyNamespace(viz) {
+        if (viz && typeof viz.getPropertyNamespaceInfo === 'function') {
+            try {
+                var info = viz.getPropertyNamespaceInfo();
+                if (info && info.propertyNamespace) {
+                    var ns = String(info.propertyNamespace);
+                    return ns.charAt(ns.length - 1) === '.' ? ns : ns + '.';
+                }
+            } catch (ignoreErr) {
+                /* SplunkVisualizationBase may not expose namespace in all contexts */
+            }
+        }
+        return NS;
+    }
+
+    /**
+     * Splunk 9.4.x Format keys use the installed app id in the namespace.
+     * Also accept bare prop / suffix matches so Appearance/Data still apply after transfer.
+     */
+    function findConfigValue(config, prop, viz) {
+        if (config == null || typeof config !== 'object') {
+            return { found: false, value: undefined };
+        }
+        var ns = propertyNamespace(viz || readConfig._activeViz);
+        var candidates = [ns + prop, NS + prop, prop];
+        var ci;
+        for (ci = 0; ci < candidates.length; ci += 1) {
+            var v = config[candidates[ci]];
+            if (v !== undefined && v !== null) {
+                return { found: true, value: v };
+            }
+        }
+        var suffix = '.' + prop;
+        var keys = Object.keys(config);
+        var ki;
+        for (ki = 0; ki < keys.length; ki += 1) {
+            var key = keys[ki];
+            if (key.length >= suffix.length && key.slice(-suffix.length) === suffix) {
+                var v2 = config[key];
+                if (v2 !== undefined && v2 !== null) {
+                    return { found: true, value: v2 };
+                }
+            }
+        }
+        return { found: false, value: undefined };
+    }
+
     function readConfig(config, prop, fallback) {
-        var v = config && config[NS + prop];
-        if (v === undefined || v === null || v === '') {
+        var found = findConfigValue(config, prop, readConfig._activeViz);
+        if (!found.found || found.value === '') {
             return fallback;
         }
-        return v;
+        return found.value;
     }
 
     function readString(config, prop, fallback) {
@@ -529,6 +578,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
     function safeColor(raw, fallback) {
         var s = String(raw == null ? '' : raw).trim();
+        if (!s) {
+            return fallback;
+        }
+        if (s.toLowerCase() === 'transparent') {
+            return 'transparent';
+        }
         if (/^#[0-9A-Fa-f]{6}$/.test(s)) {
             return s;
         }
@@ -542,6 +597,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 s.charAt(3) +
                 s.charAt(3)
             );
+        }
+        if (/^rgba?\(\s*[\d.]+\s*,/.test(s)) {
+            return s;
         }
         return fallback;
     }
@@ -659,11 +717,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
     function readOptions(config) {
         var palettePreset = readString(config, 'palettePreset', 'studio') || 'studio';
+        var labelCustom = readString(config, 'labelFieldCustom', '');
+        var valueCustom = readString(config, 'valueFieldCustom', '');
+        var compareCustom = readString(config, 'compareFieldCustom', '');
+        var colorCustom = readString(config, 'colorFieldCustom', '');
         return {
-            labelField: readFieldChoice(config, 'labelField', ''),
-            valueField: readFieldChoice(config, 'valueField', ''),
-            compareField: readFieldChoice(config, 'compareField', ''),
-            colorField: readFieldChoice(config, 'colorField', ''),
+            labelField: labelCustom || readFieldChoice(config, 'labelField', ''),
+            valueField: valueCustom || readFieldChoice(config, 'valueField', ''),
+            compareField: compareCustom || readFieldChoice(config, 'compareField', ''),
+            colorField: colorCustom || readFieldChoice(config, 'colorField', ''),
             topN: Math.floor(readNumber(config, 'topN', 5, 0, 1000)),
             otherEnabled: readBool(config, 'otherEnabled', true),
             otherLabel: readString(config, 'otherLabel', 'Other') || 'Other',
@@ -1593,6 +1655,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     }
 
     return SplunkVisualizationBase.extend({
+        initialize: function () {
+            // Splunk Enterprise 9.4 custom viz lifecycle
+            if (this.el && this.el.classList) {
+                this.el.classList.add('bgdhamp-pie-chart-viz-host');
+            }
+            this._lastData = null;
+            this._lastConfig = null;
+        },
+
         getInitialDataParams: function () {
             return {
                 outputMode: SplunkVisualizationBase.COLUMN_MAJOR_OUTPUT_MODE,
@@ -1606,7 +1677,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
         updateView: function (data, config) {
             var viz = this;
+            readConfig._activeViz = viz;
             var ownerDoc = (this.el && this.el.ownerDocument) || document;
+            if (config == null || typeof config !== 'object') {
+                config = {};
+            }
+            this._lastData = data;
+            this._lastConfig = config;
             if (this._infoCleanup) {
                 this._infoCleanup();
                 this._infoCleanup = null;
@@ -1644,10 +1721,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             this.el.style.setProperty('background-color', opts.background, 'important');
             this.el.style.color = opts.textColor;
             this.el.setAttribute('data-pie-token-prefix', opts.tokenPrefix);
+            this.el.setAttribute('data-bgdhamp-viz-build', VIZ_BUILD);
 
             if (model.error || !slices.length || total <= 0) {
                 var emptyRoot = document.createElement('div');
                 emptyRoot.className = 'bgdhamp-pie-chart-viz bgdhamp-pie-chart-viz--empty';
+                emptyRoot.setAttribute('data-bgdhamp-viz-build', VIZ_BUILD);
                 emptyRoot.style.backgroundColor = opts.background;
                 emptyRoot.style.color = opts.textColor;
                 emptyRoot.style.width = '100%';
@@ -1691,6 +1770,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
             root.style.backgroundColor = opts.background;
             root.style.color = opts.textColor;
+            root.setAttribute('data-bgdhamp-viz-build', VIZ_BUILD);
 
             if (opts.title) {
                 var head = document.createElement('div');
@@ -2109,7 +2189,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             };
         },
 
-        reflow: function () {},
+        reflow: function () {
+            if (this._lastData) {
+                this.updateView(this._lastData, this._lastConfig == null ? {} : this._lastConfig);
+            }
+        },
 
         remove: function () {
             if (this._infoCleanup) {
@@ -2120,6 +2204,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 this._pieCleanup();
                 this._pieCleanup = null;
             }
+            this._lastData = null;
+            this._lastConfig = null;
             this.el.innerHTML = '';
         },
     });
