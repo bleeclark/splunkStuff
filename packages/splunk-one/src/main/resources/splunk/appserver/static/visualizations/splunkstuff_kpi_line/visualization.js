@@ -16,7 +16,7 @@
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '202611161002-kpi-line-flush';
+    var VIZ_BUILD = '202611180810-kpi-line-text-contrast';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
@@ -1030,9 +1030,19 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return { min: lo, max: hi };
     }
 
+    /** Keep tiny ratios readable (0.0028 → not "0"). */
+    function formatNumber(v) {
+        if (!isFinite(v)) return '—';
+        var abs = Math.abs(v);
+        if (abs > 0 && abs < 0.01) {
+            return v.toLocaleString(undefined, { maximumSignificantDigits: 4 });
+        }
+        return v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+
     function formatDelta(d) {
         if (!isFinite(d)) return '—';
-        return (d >= 0 ? '\u25b2 ' : '\u25bc ') + d.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        return (d >= 0 ? '\u25b2 ' : '\u25bc ') + formatNumber(d);
     }
 
     function formatHoverTime(times, ms, idx, timeLike) {
@@ -1050,7 +1060,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
     function formatHoverValue(v, unit) {
         if (!isFinite(v)) return '—';
-        return v.toLocaleString(undefined, { maximumFractionDigits: 2 }) + String(unit || '');
+        return formatNumber(v) + String(unit || '');
     }
 
     function clearHoverOverlay(svg, tooltip, hoverAnnEl) {
@@ -1544,10 +1554,19 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 'points',
                 values.length
             );
-            var goodColor = sanitizeHexColor(readConfig(config, 'goodColor', '#01417F'), '#01417F');
-            var badColor = sanitizeHexColor(readConfig(config, 'badColor', '#DFA611'), '#DFA611');
-            var textColor = sanitizeHexColor(readConfig(config, 'textColor', '#FFFFFF'), '#FFFFFF');
-            var background = sanitizeHexColor(readConfig(config, 'background', '#0B1F3B'), '#0B1F3B');
+            var backgroundRaw = readConfig(config, 'background', 'transparent');
+            var background =
+                String(backgroundRaw == null ? '' : backgroundRaw).trim().toLowerCase() === 'transparent'
+                    ? 'transparent'
+                    : sanitizeCssColor(backgroundRaw, 'transparent');
+            var textColorRaw = readConfig(config, 'textColor', null);
+            var textColor;
+            if (textColorRaw != null && String(textColorRaw).trim() !== '') {
+                textColor = sanitizeHexColor(textColorRaw, '#FFFFFF');
+            } else {
+                // Dark panel / navy fill → white; otherwise white with shadow still reads on light panels.
+                textColor = '#FFFFFF';
+            }
             var emptyText = String(readConfig(config, 'emptyText', '') || '');
 
             // --- Empty / insufficient points (emptyText when set) ---
@@ -1693,8 +1712,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 compareAnnotations = pickAligned(compareAnnotationsFull, ds.indices);
             }
 
+            // Y scale: Auto (default) fits all plotted series; Fixed uses Format min/max.
+            var yScaleMode = String(readConfig(config, 'yScale', 'auto') || 'auto')
+                .trim()
+                .toLowerCase();
+            if (yScaleMode !== 'fixed') {
+                yScaleMode = 'auto';
+            }
             var scale = bounds(readConfig(config, 'min', 0), readConfig(config, 'max', 100));
-            if (seriesMode === 'multi' || cmpValues) {
+            if (yScaleMode === 'auto' || seriesMode === 'multi' || cmpValues) {
                 var fitArrays = [plotValues];
                 if (cmpValues) {
                     fitArrays.push(cmpValues);
@@ -1706,8 +1732,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
             var strokeRaw = readConfig(config, 'stroke', null);
             var stroke = sanitizeHexColor(
-                strokeRaw != null && String(strokeRaw).trim() !== '' ? strokeRaw : '#FFFFFF',
-                '#FFFFFF'
+                strokeRaw != null && String(strokeRaw).trim() !== '' ? strokeRaw : '#01417F',
+                '#01417F'
             );
             var unit = String(readConfig(config, 'unit', '') || '');
             var subheader = String(readConfig(config, 'subheader', '') || '');
@@ -1771,8 +1797,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
 
             var delta = trendColors.trendDelta(plotValues);
-            var trendBg = trendColors.trendBackground(delta, goodColor, badColor);
-            trendColors.applyTrendHostStyle(this.el, trendBg, textColor);
+            // No good/bad trend fills — tile always uses Format background (default transparent).
+            var tileBg = background;
+            trendColors.applyTrendHostStyle(this.el, tileBg, textColor);
 
             var last = plotValues[plotValues.length - 1];
 
@@ -1792,17 +1819,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
             var chartH = Math.max(40, height - subheaderH - majorH - textRowH);
 
-            // Chart-only (no major row) uses Format background — Classic-like panels stay light/neutral.
-            var containerBg =
-                !showMajor || colorPlacement === 'top' ? background : trendBg;
-            var chartStripBg =
-                !showMajor || colorPlacement === 'top' ? background : trendBg;
-            var classicChart = !showMajor;
+            var containerBg = tileBg;
+            var chartStripBg = tileBg;
+            var classicChart = !showMajor || background === 'transparent';
             var guideStroke = classicChart ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.22)';
-            // Chart-only on light panels: default white stroke is invisible — use goodColor like OOTB.
-            if (classicChart && (strokeRaw == null || String(strokeRaw).trim() === '')) {
-                stroke = goodColor;
-            }
 
             log(
                 'layout:',
@@ -1854,8 +1874,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 textRow.style.height = TEXT_ROW_HEIGHT_PX + 'px';
                 textRow.style.boxSizing = 'border-box';
                 textRow.style.overflow = 'hidden';
-                textRow.style.background = 'rgba(0,0,0,0.18)';
+                textRow.style.background = 'rgba(0,0,0,0.42)';
                 textRow.style.color = textColor;
+                textRow.style.textShadow = '0 1px 1px rgba(0,0,0,0.45)';
+                textRow.style.fontWeight = '600';
                 var linkPrefix = splunkPathPrefix(ownerDoc);
                 var linkTarget =
                     String(readConfig(config, 'linkTarget', 'newTab') || '')
@@ -1903,9 +1925,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 majorRow.style.textAlign = centerMajor ? 'center' : '';
                 var major = ownerDoc.createElement('div');
                 major.className = 'bgdhamp-kpi-line-viz__majorVal';
-                major.textContent = isFinite(last)
-                    ? last.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                    : '—';
+                major.textContent = isFinite(last) ? formatNumber(last) : '—';
                 if (unit) {
                     var unitSpan = ownerDoc.createElement('span');
                     unitSpan.className = 'bgdhamp-kpi-line-viz__unit';
@@ -1919,7 +1939,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 trend.style.marginLeft = centerMajor ? '6px' : '';
                 trend.textContent = formatDelta(delta);
 
-                trendColors.applyTrendSurfaceStyle(majorRow, trendBg);
+                trendColors.applyTrendSurfaceStyle(majorRow, tileBg);
 
                 majorRow.appendChild(major);
                 majorRow.appendChild(trend);
@@ -2210,9 +2230,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     tick.setAttribute('y', String(chartH - 2));
                     tick.setAttribute(
                         'fill',
-                        classicChart ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)'
+                        classicChart || background === 'transparent'
+                            ? 'rgba(255,255,255,0.92)'
+                            : 'rgba(255,255,255,0.85)'
                     );
-                    tick.setAttribute('font-size', '9');
+                    tick.setAttribute('font-size', '10');
+                    tick.setAttribute('font-weight', '600');
                     tick.setAttribute('text-anchor', 'middle');
                     var label = isFinite(norm.ms[idx])
                         ? new Date(norm.ms[idx]).toLocaleTimeString(undefined, {
@@ -2407,7 +2430,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             function repaintTrend() {
                 repaintPass += 1;
                 log('repaintTrend pass', repaintPass);
-                repaintTrendTileCompat(vizHost, root, chartWrap, majorRow, trendBg, textColor);
+                repaintTrendTileCompat(vizHost, root, chartWrap, majorRow, tileBg, textColor);
                 trendColors.applyTrendSurfaceStyle(root, containerBg);
                 trendColors.applyTrendSurfaceStyle(chartWrap, chartStripBg);
                 chartBg.setAttribute('fill', chartStripBg);

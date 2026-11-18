@@ -1,0 +1,10 @@
+<nav>
+    <view name="profile" default="true" />
+    <view name="page_assets" />
+    <collection label="Documentation">
+        <view name="profile_assets" />
+        <view name="profile_high_patches" />
+        <view name="profile_critical_patches" />
+        <view name="profile_endpoints" />
+    </collection>
+</nav>

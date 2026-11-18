@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<view template="so_cyber_profile:/templates/profile_high_patches.html" type="html">
+    <label>High Patches</label>
+</view>

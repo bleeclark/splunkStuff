@@ -148,6 +148,42 @@ function buildPath(values, width, height, { padLeft, padRight, padTop, padBottom
         .join(' ');
 }
 
+function buildAreaPath(values, width, height, pads) {
+    const line = buildPath(values, width, height, pads);
+    if (!line) return '';
+    const { padLeft, padRight, padBottom } = pads;
+    const n = values.length;
+    const innerW = Math.max(1, width - padLeft - padRight);
+    const xStep = n > 1 ? innerW / (n - 1) : innerW;
+    const x0 = padLeft;
+    const xN = padLeft + (n - 1) * xStep;
+    const baseline = height - padBottom;
+    return `${line} L ${xN.toFixed(2)} ${baseline.toFixed(2)} L ${x0.toFixed(2)} ${baseline.toFixed(2)} Z`;
+}
+
+function niceAxisTicks(min, max, count) {
+    const span = max - min || 1;
+    const rough = span / Math.max(1, count - 1);
+    const pow = Math.pow(10, Math.floor(Math.log10(rough)));
+    const candidates = [1, 2, 2.5, 5, 10].map((m) => m * pow);
+    let step = candidates[0];
+    for (let i = 0; i < candidates.length; i += 1) {
+        if (rough <= candidates[i]) {
+            step = candidates[i];
+            break;
+        }
+        step = candidates[i];
+    }
+    const start = Math.ceil(min / step) * step;
+    const ticks = [];
+    for (let v = start; v <= max + step * 0.001; v += step) {
+        ticks.push(Number(v.toPrecision(12)));
+        if (ticks.length > 12) break;
+    }
+    if (!ticks.length) ticks.push(min, max);
+    return ticks;
+}
+
 function computeAnomalies(values, mode, sensitivity) {
     const m = mode || 'none';
     const s = Number.isFinite(Number(sensitivity)) ? Number(sensitivity) : 3;
@@ -242,8 +278,15 @@ export default function LineChart({
     // drilldown
     drilldown = false,
     drilldownQuery,
-    // axis
-    showXAxis = false,
+    // axis + area
+    showXAxis = true,
+    showYAxis = true,
+    xTickCount = 5,
+    yTickCount = 4,
+    showArea = true,
+    areaColor,
+    axisColor = 'rgba(255,255,255,0.55)',
+    gridColor = 'rgba(255,255,255,0.10)',
     // padding
     padLeft = 12,
     padRight = 12,
@@ -313,11 +356,36 @@ export default function LineChart({
 
     const { majorText, unitText } = useMemo(() => formatMajor(last, unit), [last, unit]);
 
-    // Reduce padding when header is visible so the chart isn't cramped.
-    const effPadLeft = showMajor ? Math.min(padLeft, 10) : padLeft;
-    const effPadRight = showMajor ? Math.min(padRight, 10) : padRight;
-    const effPadTop = showMajor ? Math.min(padTop, 2) : padTop;
-    const effPadBottom = showMajor ? Math.min(padBottom, 12) : padBottom;
+    // Skip axis chrome on tiny spark tiles; keep room for labels on larger plots.
+    const drawXAxis = showXAxis && chartH >= 88;
+    const drawYAxis = showYAxis && chartH >= 88;
+    const effPadLeft = drawYAxis
+        ? Math.max(padLeft, showMajor ? 34 : 40)
+        : showMajor
+          ? Math.min(padLeft, 10)
+          : padLeft;
+    const effPadRight = showMajor ? Math.max(padRight, 8) : Math.max(padRight, 6);
+    const effPadTop = drawYAxis
+        ? Math.max(padTop, showMajor ? 6 : 10)
+        : showMajor
+          ? Math.min(padTop, 2)
+          : padTop;
+    const effPadBottom = drawXAxis
+        ? Math.max(padBottom, showMajor ? 18 : 22)
+        : showMajor
+          ? Math.min(padBottom, 12)
+          : padBottom;
+    const resolvedAreaColor =
+        areaColor ||
+        (typeof stroke === 'string' && stroke.indexOf('rgb') === 0
+            ? stroke.replace(/rgba?\(([^)]+)\)/, (_, inner) => {
+                  const parts = inner.split(',').map((p) => p.trim());
+                  if (parts.length >= 3) {
+                      return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, 0.22)`;
+                  }
+                  return 'rgba(255,255,255,0.18)';
+              })
+            : 'rgba(255,255,255,0.18)');
 
     const processed = useMemo(() => {
         const out = normalized.series.map((s) => {
@@ -356,22 +424,28 @@ export default function LineChart({
         return { min: lo, max: hi };
     }, [processed, min, max]);
 
+    const pathPads = useMemo(
+        () => ({
+            padLeft: effPadLeft,
+            padRight: effPadRight,
+            padTop: effPadTop,
+            padBottom: effPadBottom,
+            min: domain.min,
+            max: domain.max,
+        }),
+        [effPadLeft, effPadRight, effPadTop, effPadBottom, domain]
+    );
+
     const paths = useMemo(
         () =>
             processed.series.map((s) => ({
                 id: s.id,
                 color: s.color,
-                d: buildPath(s.values, width, chartH, {
-                    padLeft: effPadLeft,
-                    padRight: effPadRight,
-                    padTop: effPadTop,
-                    padBottom: effPadBottom,
-                    min: domain.min,
-                    max: domain.max,
-                }),
+                d: buildPath(s.values, width, chartH, pathPads),
+                areaD: showArea ? buildAreaPath(s.values, width, chartH, pathPads) : '',
                 values: s.values,
             })),
-        [processed, width, chartH, effPadLeft, effPadRight, effPadTop, effPadBottom, domain]
+        [processed, width, chartH, pathPads, showArea]
     );
 
     const cmpPaths = useMemo(
@@ -424,6 +498,41 @@ export default function LineChart({
         },
         [chartH, effPadTop, effPadBottom, domain]
     );
+
+    const xTicks = useMemo(() => {
+        if (!drawXAxis || processed.len < 2) return [];
+        const count = Math.max(2, Math.min(xTickCount, processed.len));
+        const idxs = Array.from({ length: count }, (_, i) =>
+            Math.round((i * (processed.len - 1)) / (count - 1))
+        );
+        const uniq = [...new Set(idxs)];
+        return uniq.map((i) => {
+            let label = '';
+            if (processed.timeLike && Number.isFinite(processed.ms[i])) {
+                const d = new Date(processed.ms[i]);
+                label = d.toLocaleString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            } else if (processed.times[i] != null) {
+                label = String(processed.times[i]);
+            } else {
+                label = String(i + 1);
+            }
+            return { idx: i, x: toX(i), label };
+        });
+    }, [drawXAxis, xTickCount, processed, toX]);
+
+    const yTicks = useMemo(() => {
+        if (!drawYAxis) return [];
+        return niceAxisTicks(domain.min, domain.max, yTickCount).map((v) => ({
+            value: v,
+            y: toY(v),
+            label: formatValue(v),
+        }));
+    }, [drawYAxis, yTickCount, domain, toY]);
 
     useLayoutEffect(() => {
         if (!showHover || n < 2 || !vizDocument || !vizDocument.defaultView) return undefined;
@@ -567,22 +676,6 @@ export default function LineChart({
             ? formatTimeForHover(processed.times[hoverIdx], processed.ms[hoverIdx], processed.timeLike)
             : '';
     const hoverValue = hoverIdx != null ? formatValue(hoverPrimary) : '';
-
-    // X ticks (minimal)
-    const ticks = useMemo(() => {
-        if (!showXAxis || !processed.timeLike || processed.ms.length < 2) return [];
-        const count = 4;
-        const idxs = Array.from({ length: count }, (_, i) =>
-            Math.round((i * (processed.ms.length - 1)) / (count - 1))
-        );
-        return idxs.map((i) => ({
-            idx: i,
-            x: toX(i),
-            label: Number.isFinite(processed.ms[i])
-                ? new Date(processed.ms[i]).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-                : String(processed.times[i] ?? ''),
-        }));
-    }, [showXAxis, processed, toX]);
 
     const yFor = (v) => toY(v);
     const thLo = Number.isFinite(Number(thresholdMin)) ? Number(thresholdMin) : null;
@@ -768,13 +861,21 @@ export default function LineChart({
                         />
                     ) : null}
 
-                    {/* rails */}
+                    {/* plot frame */}
                     <line
                         x1={effPadLeft}
                         y1={chartH - effPadBottom}
                         x2={width - effPadRight}
                         y2={chartH - effPadBottom}
-                        stroke="rgba(255,255,255,0.18)"
+                        stroke={axisColor}
+                        strokeWidth={1}
+                    />
+                    <line
+                        x1={effPadLeft}
+                        y1={effPadTop}
+                        x2={effPadLeft}
+                        y2={chartH - effPadBottom}
+                        stroke={axisColor}
                         strokeWidth={1}
                     />
                     <line
@@ -782,9 +883,46 @@ export default function LineChart({
                         y1={effPadTop}
                         x2={width - effPadRight}
                         y2={effPadTop}
-                        stroke="rgba(255,255,255,0.10)"
+                        stroke={gridColor}
                         strokeWidth={1}
                     />
+
+                    {/* y-axis grid + labels */}
+                    {yTicks.map((t) => (
+                        <g key={`y-${t.value}`}>
+                            <line
+                                x1={effPadLeft}
+                                y1={t.y}
+                                x2={width - effPadRight}
+                                y2={t.y}
+                                stroke={gridColor}
+                                strokeWidth={1}
+                            />
+                            <text
+                                x={effPadLeft - 6}
+                                y={t.y + 3}
+                                textAnchor="end"
+                                fill={axisColor}
+                                fontSize="10"
+                            >
+                                {t.label}
+                            </text>
+                        </g>
+                    ))}
+
+                    {/* area fill under primary / series */}
+                    {showArea
+                        ? paths.map((p, idx) =>
+                              p.areaD ? (
+                                  <path
+                                      key={`area-${p.id}`}
+                                      d={p.areaD}
+                                      fill={idx === 0 ? resolvedAreaColor : 'rgba(255,255,255,0.08)'}
+                                      stroke="none"
+                                  />
+                              ) : null
+                          )
+                        : null}
 
                     {/* comparison overlay */}
                     {cmpPaths.map((p) => (
@@ -827,17 +965,26 @@ export default function LineChart({
                     })}
 
                     {/* x-axis ticks */}
-                    {ticks.map((t) => (
-                        <text
-                            key={`tick-${t.idx}`}
-                            x={t.x}
-                            y={chartH - 2}
-                            textAnchor="middle"
-                            fill="rgba(255,255,255,0.65)"
-                            fontSize="10"
-                        >
-                            {t.label}
-                        </text>
+                    {xTicks.map((t) => (
+                        <g key={`xtick-${t.idx}`}>
+                            <line
+                                x1={t.x}
+                                y1={chartH - effPadBottom}
+                                x2={t.x}
+                                y2={chartH - effPadBottom + 4}
+                                stroke={axisColor}
+                                strokeWidth={1}
+                            />
+                            <text
+                                x={t.x}
+                                y={chartH - 4}
+                                textAnchor="middle"
+                                fill={axisColor}
+                                fontSize="9"
+                            >
+                                {t.label}
+                            </text>
+                        </g>
                     ))}
 
                     {/* hover marker */}

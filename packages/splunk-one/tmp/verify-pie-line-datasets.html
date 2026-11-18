@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Verify pie + dual-stream line</title>
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: #e8ebef;
+    color: #1d2733;
+  }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .lead { font-size: 13px; color: #5c6773; margin: 0 0 16px; max-width: 960px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .toolbar button {
+    border: 1px solid #c9ced6;
+    background: #fff;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .toolbar button.active {
+    background: #01417f;
+    border-color: #01417f;
+    color: #fff;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    max-width: 1200px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #d5d9de;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .card-h {
+    padding: 10px 14px;
+    background: #f7f8fa;
+    border-bottom: 1px solid #d5d9de;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .card-b { padding: 12px; }
+  .host {
+    width: 100%;
+    height: 320px;
+    border: 1px dashed #c9ced6;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .meta {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #5c6773;
+    line-height: 1.45;
+  }
+  .meta code {
+    background: #f0f2f5;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+  .swatches { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.15);
+  }
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <h1>Pie + dual-stream line verification</h1>
+  <p class="lead">
+    Line shows <strong>two streams</strong> (<code>current</code> + <code>previous</code>).
+    Pie uses Dashboard Studio default seriesColors. Switch datasets below.
+  </p>
+  <div class="toolbar" id="toolbar"></div>
+  <div class="grid">
+    <section class="card">
+      <div class="card-h">splunkstuff_kpi_line — two streams</div>
+      <div class="card-b">
+        <div class="host" id="lineHost"></div>
+        <p class="meta" id="lineMeta">Loading…</p>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-h">splunkstuff_pie_chart — Studio colors</div>
+      <div class="card-b">
+        <div class="host" id="pieHost"></div>
+        <p class="meta" id="pieMeta">Loading…</p>
+        <div class="swatches" id="swatches"></div>
+      </div>
+    </section>
+  </div>
+
+<script>
+  var factories = [];
+  window.define = function (deps, factory) { factories.push(factory); };
+</script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js?v=202611180750"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js?v=202611180750"></script>
+<script>
+  var Base = {
+    COLUMN_MAJOR_OUTPUT_MODE: 'json_cols',
+    extend: function (proto) {
+      function Viz(el) { this.el = el; }
+      Viz.prototype = proto;
+      return Viz;
+    },
+  };
+  var LineViz = factories[0](Base);
+  var PieViz = factories[1](Base);
+  var LINE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
+  var PIE_NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
+
+  var STUDIO_COLORS = [
+    '#7B56DB', '#009CEB', '#00CDAF', '#DD9900', '#FF677B', '#CB2196', '#813193', '#0051B5',
+  ];
+
+  function dualLineRaw(current, previous) {
+    var now = Date.now();
+    var times = [];
+    var i;
+    for (i = 0; i < current.length; i += 1) {
+      times.push(new Date(now - (current.length - i) * 3600000).toISOString());
+    }
+    return {
+      fields: [{ name: '_time' }, { name: 'current' }, { name: 'previous' }],
+      columns: [
+        times,
+        current.map(String),
+        previous.map(String),
+      ],
+    };
+  }
+
+  function pieRaw(slices) {
+    return {
+      fields: [{ name: 'category' }, { name: 'count' }],
+      columns: [
+        slices.map(function (s) { return s.label; }),
+        slices.map(function (s) { return String(s.value); }),
+      ],
+    };
+  }
+
+  var DATASETS = [
+    {
+      id: 'ops',
+      label: 'Ops current vs previous',
+      current: [42, 48, 51, 47, 55, 62, 58, 66],
+      previous: [38, 40, 44, 49, 46, 50, 53, 52],
+      pie: [
+        { label: 'Critical', value: 42 },
+        { label: 'High', value: 88 },
+        { label: 'Medium', value: 156 },
+        { label: 'Low', value: 310 },
+      ],
+    },
+    {
+      id: 'traffic',
+      label: 'Traffic dual stream',
+      current: [1200, 1800, 2400, 2100, 3200, 3900, 3600, 4100],
+      previous: [900, 1100, 1500, 1700, 1600, 2100, 2500, 2800],
+      pie: [
+        { label: 'AWS', value: 210 },
+        { label: 'Azure', value: 145 },
+        { label: 'GCP', value: 96 },
+        { label: 'On-prem', value: 64 },
+      ],
+    },
+    {
+      id: 'spike',
+      label: 'Spike vs baseline',
+      current: [12, 18, 15, 220, 30, 28, 25, 40],
+      previous: [14, 16, 17, 19, 18, 20, 21, 22],
+      pie: [
+        { label: 'Phish', value: 57 },
+        { label: 'Malware', value: 23 },
+        { label: 'Auth', value: 41 },
+        { label: 'Other', value: 12 },
+      ],
+    },
+  ];
+
+  var lineEl = document.createElement('div');
+  lineEl.style.width = '100%';
+  lineEl.style.height = '100%';
+  document.getElementById('lineHost').appendChild(lineEl);
+  var pieEl = document.createElement('div');
+  pieEl.style.width = '100%';
+  pieEl.style.height = '100%';
+  document.getElementById('pieHost').appendChild(pieEl);
+
+  var lineViz = new LineViz(lineEl);
+  var pieViz = new PieViz(pieEl);
+
+  function render(ds) {
+    var lineConfig = {};
+    lineConfig[LINE_NS + 'valueField'] = 'current';
+    lineConfig[LINE_NS + 'compareField'] = 'previous';
+    lineConfig[LINE_NS + 'seriesMode'] = 'multi';
+    lineConfig[LINE_NS + 'yScale'] = 'auto';
+    lineConfig[LINE_NS + 'showMajor'] = 'true';
+    lineConfig[LINE_NS + 'colorPlacement'] = 'top';
+    lineConfig[LINE_NS + 'background'] = 'transparent';
+    lineConfig[LINE_NS + 'textColor'] = '#FFFFFF';
+    lineConfig[LINE_NS + 'stroke'] = '#01417F';
+    lineConfig[LINE_NS + 'stroke'] = '#FFFFFF';
+    lineConfig[LINE_NS + 'showHover'] = 'true';
+    lineConfig[LINE_NS + 'showXAxis'] = 'true';
+    lineConfig[LINE_NS + 'showLegend'] = 'true';
+
+    var pieConfig = {};
+    pieConfig[PIE_NS + 'labelField'] = 'category';
+    pieConfig[PIE_NS + 'valueField'] = 'count';
+    pieConfig[PIE_NS + 'title'] = ds.label;
+    pieConfig[PIE_NS + 'showSliceLabels'] = 'true';
+    pieConfig[PIE_NS + 'legendPosition'] = 'right';
+    pieConfig[PIE_NS + 'palettePreset'] = 'studio';
+    pieConfig[PIE_NS + 'background'] = '#01417F';
+    pieConfig[PIE_NS + 'textColor'] = '#FFFFFF';
+    pieConfig[PIE_NS + 'textColor'] = '#3C444D';
+
+    lineViz.updateView(lineViz.formatData(dualLineRaw(ds.current, ds.previous)), lineConfig);
+    pieViz.updateView(pieViz.formatData(pieRaw(ds.pie)), pieConfig);
+
+    var build =
+      (lineEl.querySelector('[data-bgdhamp-viz-build]') &&
+        lineEl.querySelector('[data-bgdhamp-viz-build]').getAttribute('data-bgdhamp-viz-build')) ||
+      '(missing)';
+    document.getElementById('lineMeta').innerHTML =
+      'Streams <code>current</code>=' +
+      ds.current.join(', ') +
+      ' · <code>previous</code>=' +
+      ds.previous.join(', ') +
+      ' · Y Auto · build <code>' +
+      build +
+      '</code>';
+    document.getElementById('pieMeta').innerHTML =
+      'Palette <code>studio</code> · slices ' +
+      ds.pie
+        .map(function (s) {
+          return s.label + '=' + s.value;
+        })
+        .join(', ');
+
+    var sw = document.getElementById('swatches');
+    sw.innerHTML = '';
+    STUDIO_COLORS.slice(0, ds.pie.length).forEach(function (c) {
+      var d = document.createElement('div');
+      d.className = 'swatch';
+      d.style.background = c;
+      d.title = c;
+      sw.appendChild(d);
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.toolbar button'), function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-id') === ds.id);
+    });
+  }
+
+  var toolbar = document.getElementById('toolbar');
+  DATASETS.forEach(function (ds) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = ds.label;
+    btn.setAttribute('data-id', ds.id);
+    btn.addEventListener('click', function () {
+      render(ds);
+    });
+    toolbar.appendChild(btn);
+  });
+
+  render(DATASETS[0]);
+  window.__verifyDemo = { render: render, DATASETS: DATASETS };
+</script>
+</body>
+</html>

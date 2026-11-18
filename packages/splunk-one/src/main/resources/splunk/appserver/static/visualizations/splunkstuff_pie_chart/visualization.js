@@ -10,7 +10,32 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
 
-    var DEFAULT_PALETTE = [
+    // Dashboard Studio default seriesColors (also used by modern Splunk pie).
+    var STUDIO_PALETTE = [
+        '#7B56DB',
+        '#009CEB',
+        '#00CDAF',
+        '#DD9900',
+        '#FF677B',
+        '#CB2196',
+        '#813193',
+        '#0051B5',
+        '#008C80',
+        '#99B100',
+        '#FFA476',
+        '#FF6ACE',
+        '#AE8CFF',
+        '#00689D',
+        '#00490A',
+        '#465D00',
+        '#9D6300',
+        '#F6540B',
+        '#FF969E',
+        '#E47BFE',
+    ];
+    // Classic Simple XML / older charting defaults.
+    var CLASSIC_PALETTE = ['#1E93C6', '#F2B827', '#D6563C', '#6A5C9E', '#31A35F', '#EDA35A', '#CC7B38', '#6DC7B1'];
+    var BGDHAMP_PALETTE = [
         '#01417F',
         '#DFA611',
         '#5CC05C',
@@ -25,8 +50,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         '#64B5CD',
     ];
 
+    var DEFAULT_PALETTE = STUDIO_PALETTE;
+
     var PALETTE_PRESETS = {
-        splunk: DEFAULT_PALETTE,
+        splunk: STUDIO_PALETTE,
+        studio: STUDIO_PALETTE,
+        classic: CLASSIC_PALETTE,
+        bgdhamp: BGDHAMP_PALETTE,
         calm: ['#005F73', '#0A9396', '#94D2BD', '#E9D8A6', '#EE9B00', '#CA6702', '#BB3E03', '#AE2012'],
         bright: ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7', '#56B4E9', '#F0E442', '#7A5195'],
         accessible: ['#0072B2', '#D55E00', '#009E73', '#CC79A7', '#E69F00', '#56B4E9', '#999999', '#000000'],
@@ -628,7 +658,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     }
 
     function readOptions(config) {
-        var palettePreset = readString(config, 'palettePreset', 'splunk') || 'splunk';
+        var palettePreset = readString(config, 'palettePreset', 'studio') || 'studio';
         return {
             labelField: readFieldChoice(config, 'labelField', ''),
             valueField: readFieldChoice(config, 'valueField', ''),
@@ -654,8 +684,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             sliceLabelMinPercent: readNumber(config, 'sliceLabelMinPercent', 0, 0, 100),
             title: String(readConfig(config, 'title', '') || ''),
             emptyMessage: readString(config, 'emptyMessage', 'No data to display.') || 'No data to display.',
-            background: safeColor(readConfig(config, 'background', '#FFFFFF'), '#FFFFFF'),
-            textColor: safeColor(readConfig(config, 'textColor', '#3C444D'), '#3C444D'),
+            background: safeColor(readConfig(config, 'background', '#01417F'), '#01417F'),
+            textColor: safeColor(readConfig(config, 'textColor', '#FFFFFF'), '#FFFFFF'),
             palettePreset: palettePreset,
             palette: parsePalette(readConfig(config, 'palette', ''), palettePreset),
             colorMap: parseColorMap(readConfig(config, 'colorMap', '')),
@@ -1231,6 +1261,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         var maxY = geometry.height - 18;
         var gap = opts.showPercent || opts.showValue ? 22 : 16;
         var i;
+        // Keep callouts off the legend/inspector side so labels don't stack on the side panel.
+        var allowLeft = opts.calloutSides !== 'right';
+        var allowRight = opts.calloutSides !== 'left';
 
         for (i = 0; i < slices.length; i += 1) {
             var angle = angles[i];
@@ -1241,11 +1274,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 continue;
             }
             side = Math.cos(angle) >= 0 ? 'right' : 'left';
+            if ((side === 'left' && !allowLeft) || (side === 'right' && !allowRight)) {
+                callouts[i] = null;
+                continue;
+            }
             item = {
                 idx: i,
                 angle: angle,
                 side: side,
-                targetY: geometry.cy + Math.sin(angle) * (geometry.outerR + 34),
+                targetY: geometry.cy + Math.sin(angle) * (geometry.outerR + 28),
             };
             if (side === 'right') {
                 right.push(item);
@@ -1604,24 +1641,56 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             }
 
             this.el.style.backgroundColor = opts.background;
+            this.el.style.setProperty('background-color', opts.background, 'important');
             this.el.style.color = opts.textColor;
             this.el.setAttribute('data-pie-token-prefix', opts.tokenPrefix);
 
             if (model.error || !slices.length || total <= 0) {
+                var emptyRoot = document.createElement('div');
+                emptyRoot.className = 'bgdhamp-pie-chart-viz bgdhamp-pie-chart-viz--empty';
+                emptyRoot.style.backgroundColor = opts.background;
+                emptyRoot.style.color = opts.textColor;
+                emptyRoot.style.width = '100%';
+                emptyRoot.style.height = '100%';
                 var empty = document.createElement('div');
                 empty.className = 'bgdhamp-pie-chart-viz__err';
                 empty.textContent = model.error || opts.emptyMessage;
-                this.el.appendChild(empty);
+                emptyRoot.appendChild(empty);
+                this.el.appendChild(emptyRoot);
                 return;
             }
 
+            var legendPos = String(opts.legendPosition || 'none').toLowerCase();
+            if (legendPos !== 'left' && legendPos !== 'right' && legendPos !== 'top' && legendPos !== 'bottom') {
+                legendPos = 'none';
+            }
+            // Slice callouts + side legend in the same gutter overlap; park left/right legend under the pie.
+            var stackSideBelow =
+                opts.showSliceLabels && (legendPos === 'left' || legendPos === 'right' || opts.showInspector);
+            var layoutLegend = legendPos;
+            if (stackSideBelow && (legendPos === 'left' || legendPos === 'right')) {
+                layoutLegend = 'bottom';
+            }
+            // Once stacked below, both callout sides are free again.
+            opts.calloutSides = stackSideBelow
+                ? 'both'
+                : legendPos === 'left'
+                  ? 'right'
+                  : legendPos === 'right'
+                    ? 'left'
+                    : 'both';
+
             var root = document.createElement('div');
             root.className =
-                'bgdhamp-pie-chart-viz bgdhamp-pie-chart-viz--legend-' +
-                String(opts.legendPosition || 'right').toLowerCase();
+                'bgdhamp-pie-chart-viz bgdhamp-pie-chart-viz--legend-' + layoutLegend;
             if (opts.showSliceLabels) {
                 root.className += ' bgdhamp-pie-chart-viz--slice-labels';
             }
+            if (stackSideBelow) {
+                root.className += ' bgdhamp-pie-chart-viz--stack-side';
+            }
+            root.style.backgroundColor = opts.background;
+            root.style.color = opts.textColor;
 
             if (opts.title) {
                 var head = document.createElement('div');
@@ -1644,8 +1713,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 textRow.style.height = TEXT_ROW_HEIGHT_PX + 'px';
                 textRow.style.boxSizing = 'border-box';
                 textRow.style.overflow = 'hidden';
-                textRow.style.background = 'rgba(0,0,0,0.08)';
+                textRow.style.background = 'rgba(0,0,0,0.35)';
                 textRow.style.color = opts.textColor;
+                textRow.style.fontWeight = '600';
+                textRow.style.textShadow = '0 1px 1px rgba(0,0,0,0.4)';
                 var linkPrefix = splunkPathPrefix(ownerDoc);
                 var linkTarget =
                     String(readConfig(config, 'linkTarget', 'newTab') || '')
@@ -1704,9 +1775,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 pieBox.className += ' bgdhamp-pie-chart-viz__pie--slice-labels';
             }
             var svg = createSvgEl('svg');
+            // Compact geometry so the full pie fits short dashboard tiles (avoids bottom clipping).
             var geometry = opts.showSliceLabels
-                ? { width: 520, height: 300, cx: 260, cy: 150, outerR: 92 }
-                : { width: 200, height: 200, cx: 100, cy: 100, outerR: 88 };
+                ? { width: 520, height: 260, cx: 260, cy: 130, outerR: 78 }
+                : { width: 200, height: 200, cx: 100, cy: 100, outerR: 82 };
             svg.setAttribute('viewBox', '0 0 ' + geometry.width + ' ' + geometry.height);
             svg.setAttribute('width', '100%');
             svg.setAttribute('height', '100%');
@@ -1778,7 +1850,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 if (callouts[idx]) {
                     callouts[idx].classList.add('bgdhamp-pie-chart-viz__callout--active');
                 }
-                rows[idx].classList.add('bgdhamp-pie-chart-viz__legend-row--active');
+                if (rows[idx]) {
+                    rows[idx].classList.add('bgdhamp-pie-chart-viz__legend-row--active');
+                }
                 updateInspector(inspector, slices[idx], opts, model);
                 if (e) {
                     setTooltip(tooltip, slices[idx], model, opts, root, e, paths[idx]);
@@ -1947,74 +2021,77 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             pieBox.appendChild(svg);
             main.appendChild(pieBox);
 
-            for (i = 0; i < slices.length; i += 1) {
-                var row = document.createElement('button');
-                row.type = 'button';
-                row.className = 'bgdhamp-pie-chart-viz__legend-row';
-                var swatch = document.createElement('span');
-                swatch.className = 'bgdhamp-pie-chart-viz__swatch';
-                swatch.style.backgroundColor = slices[i].color;
-                var text = document.createElement('span');
-                text.className = 'bgdhamp-pie-chart-viz__legend-text';
-                appendText(text, slices[i].label);
-                if (opts.showValue) {
-                    appendText(text, ' - ' + valueText(slices[i].value));
+            if (layoutLegend !== 'none') {
+                for (i = 0; i < slices.length; i += 1) {
+                    var row = document.createElement('button');
+                    row.type = 'button';
+                    row.className = 'bgdhamp-pie-chart-viz__legend-row';
+                    var swatch = document.createElement('span');
+                    swatch.className = 'bgdhamp-pie-chart-viz__swatch';
+                    swatch.style.backgroundColor = slices[i].color;
+                    var text = document.createElement('span');
+                    text.className = 'bgdhamp-pie-chart-viz__legend-text';
+                    appendText(text, slices[i].label);
+                    if (opts.showValue) {
+                        appendText(text, ' - ' + valueText(slices[i].value));
+                    }
+                    if (opts.showPercent) {
+                        appendText(text, ' (' + pctText(slices[i].percent, 1) + ')');
+                    }
+                    if (opts.showRowCount) {
+                        appendText(text, ' - ' + valueText(slices[i].rowCount) + ' rows');
+                    }
+                    if (opts.showCompare && slices[i].compareValue !== null) {
+                        appendText(text, ' - delta ' + compareText(slices[i]));
+                    }
+                    row.appendChild(swatch);
+                    row.appendChild(text);
+                    (function (idx, legendRow) {
+                        var enter = function (e) {
+                            setActive(idx, e);
+                        };
+                        var move = function (e) {
+                            setTooltip(tooltip, slices[idx], model, opts, root, e, legendRow);
+                        };
+                        var leave = function () {
+                            hideTooltip();
+                        };
+                        var focus = function (e) {
+                            setActive(idx);
+                            setTooltip(tooltip, slices[idx], model, opts, root, e, legendRow);
+                        };
+                        var click = function () {
+                            activateClick(idx);
+                        };
+                        legendRow.addEventListener('pointerenter', enter);
+                        legendRow.addEventListener('pointermove', move);
+                        legendRow.addEventListener('pointerleave', leave);
+                        legendRow.addEventListener('mouseenter', enter);
+                        legendRow.addEventListener('mousemove', move);
+                        legendRow.addEventListener('mouseleave', leave);
+                        legendRow.addEventListener('focus', focus);
+                        legendRow.addEventListener('blur', leave);
+                        legendRow.addEventListener('click', click);
+                        cleanup.push(function () {
+                            legendRow.removeEventListener('pointerenter', enter);
+                            legendRow.removeEventListener('pointermove', move);
+                            legendRow.removeEventListener('pointerleave', leave);
+                            legendRow.removeEventListener('mouseenter', enter);
+                            legendRow.removeEventListener('mousemove', move);
+                            legendRow.removeEventListener('mouseleave', leave);
+                            legendRow.removeEventListener('focus', focus);
+                            legendRow.removeEventListener('blur', leave);
+                            legendRow.removeEventListener('click', click);
+                        });
+                    })(i, row);
+                    rows.push(row);
+                    legend.appendChild(row);
                 }
-                if (opts.showPercent) {
-                    appendText(text, ' (' + pctText(slices[i].percent, 1) + ')');
-                }
-                if (opts.showRowCount) {
-                    appendText(text, ' - ' + valueText(slices[i].rowCount) + ' rows');
-                }
-                if (opts.showCompare && slices[i].compareValue !== null) {
-                    appendText(text, ' - delta ' + compareText(slices[i]));
-                }
-                row.appendChild(swatch);
-                row.appendChild(text);
-                (function (idx, legendRow) {
-                    var enter = function (e) {
-                        setActive(idx, e);
-                    };
-                    var move = function (e) {
-                        setTooltip(tooltip, slices[idx], model, opts, root, e, legendRow);
-                    };
-                    var leave = function () {
-                        hideTooltip();
-                    };
-                    var focus = function (e) {
-                        setActive(idx);
-                        setTooltip(tooltip, slices[idx], model, opts, root, e, legendRow);
-                    };
-                    var click = function () {
-                        activateClick(idx);
-                    };
-                    legendRow.addEventListener('pointerenter', enter);
-                    legendRow.addEventListener('pointermove', move);
-                    legendRow.addEventListener('pointerleave', leave);
-                    legendRow.addEventListener('mouseenter', enter);
-                    legendRow.addEventListener('mousemove', move);
-                    legendRow.addEventListener('mouseleave', leave);
-                    legendRow.addEventListener('focus', focus);
-                    legendRow.addEventListener('blur', leave);
-                    legendRow.addEventListener('click', click);
-                    cleanup.push(function () {
-                        legendRow.removeEventListener('pointerenter', enter);
-                        legendRow.removeEventListener('pointermove', move);
-                        legendRow.removeEventListener('pointerleave', leave);
-                        legendRow.removeEventListener('mouseenter', enter);
-                        legendRow.removeEventListener('mousemove', move);
-                        legendRow.removeEventListener('mouseleave', leave);
-                        legendRow.removeEventListener('focus', focus);
-                        legendRow.removeEventListener('blur', leave);
-                        legendRow.removeEventListener('click', click);
-                    });
-                })(i, row);
-                rows.push(row);
-                legend.appendChild(row);
+                side.appendChild(legend);
             }
-
-            side.appendChild(legend);
-            main.appendChild(side);
+            if (layoutLegend !== 'none' || opts.showInspector) {
+                main.appendChild(side);
+            }
             root.appendChild(main);
             root.appendChild(tooltip);
             this.el.appendChild(root);
