@@ -17,11 +17,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '202611181415-kpi-line-appearance';
+    var VIZ_BUILD = '202611181430-kpi-line-ootb';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
     var MAX_MULTI_SERIES = 8;
+    /** Classic OOTB line blue — readable on Search/light panels. */
+    var OOTB_LINE_STROKE = '#1E93C6';
     /** Prefer these names when Format valueField is Auto (_time + metric). */
     var VALUE_FIELD_HINTS = [
         'value',
@@ -51,15 +53,16 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         'region',
         'type',
     ];
+    /** Studio / Classic series colors (same family as OOTB line charts). */
     var SERIES_PALETTE = [
-        '#FFFFFF',
-        '#7EB6FF',
-        '#DFA611',
-        '#5CC05C',
-        '#F47A22',
-        '#9B6BFF',
-        '#00A9D4',
-        '#E85B79',
+        '#1E93C6',
+        '#F2B827',
+        '#D6563C',
+        '#6A5C9E',
+        '#31A35F',
+        '#EDA844',
+        '#32918F',
+        '#CE4B29',
     ];
     /** Skip metadata and text-row columns when Auto picks the Y series. */
     var SKIP_VALUE_FIELDS = {
@@ -258,6 +261,120 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return fallback;
     }
 
+    /** Relative luminance 0–1 for hex colors; null if unparsable. */
+    function hexLuminance(hex) {
+        var s = sanitizeHexColor(hex, '');
+        if (!s || s.charAt(0) !== '#' || s.length !== 7) {
+            return null;
+        }
+        var r = parseInt(s.slice(1, 3), 16) / 255;
+        var g = parseInt(s.slice(3, 5), 16) / 255;
+        var b = parseInt(s.slice(5, 7), 16) / 255;
+        function lin(c) {
+            return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        }
+        return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    }
+
+    function isLightSurface(bg) {
+        if (!bg || String(bg).toLowerCase() === 'transparent') {
+            return true;
+        }
+        var lum = hexLuminance(bg);
+        return lum == null ? false : lum > 0.55;
+    }
+
+    /** OOTB-like default stroke: Splunk blue on light panels, white on dark tiles. */
+    function defaultStrokeForBackground(bg) {
+        return isLightSurface(bg) ? OOTB_LINE_STROKE : '#FFFFFF';
+    }
+
+    /**
+     * Prefer Format stroke, but never leave a near-invisible line (e.g. white on Search).
+     */
+    function resolveLineStroke(strokeRaw, background) {
+        var fallback = defaultStrokeForBackground(background);
+        var stroke =
+            strokeRaw != null && String(strokeRaw).trim() !== ''
+                ? sanitizeHexColor(strokeRaw, fallback)
+                : fallback;
+        var strokeLum = hexLuminance(stroke);
+        if (strokeLum == null) {
+            return fallback;
+        }
+        if (isLightSurface(background) && strokeLum > 0.82) {
+            return OOTB_LINE_STROKE;
+        }
+        if (!isLightSurface(background) && strokeLum < 0.18) {
+            return '#FFFFFF';
+        }
+        return stroke;
+    }
+
+    /**
+     * X positions: time-proportional when _time parses (OOTB line), else equal category spacing.
+     */
+    function buildXCoords(n, width, padL, padR, msArr, timeLike) {
+        var iw = Math.max(1, width - padL - padR);
+        var xs = [];
+        var i;
+        if (n <= 0) {
+            return xs;
+        }
+        if (n === 1) {
+            xs.push(padL + iw / 2);
+            return xs;
+        }
+        if (timeLike && msArr && msArr.length >= n) {
+            var tMin = Infinity;
+            var tMax = -Infinity;
+            var ok = 0;
+            for (i = 0; i < n; i += 1) {
+                if (isFinite(msArr[i])) {
+                    if (msArr[i] < tMin) {
+                        tMin = msArr[i];
+                    }
+                    if (msArr[i] > tMax) {
+                        tMax = msArr[i];
+                    }
+                    ok += 1;
+                }
+            }
+            if (ok >= 2 && tMax > tMin) {
+                for (i = 0; i < n; i += 1) {
+                    if (isFinite(msArr[i])) {
+                        xs.push(padL + ((msArr[i] - tMin) / (tMax - tMin)) * iw);
+                    } else {
+                        xs.push(padL + (i / (n - 1)) * iw);
+                    }
+                }
+                return xs;
+            }
+        }
+        var step = iw / (n - 1);
+        for (i = 0; i < n; i += 1) {
+            xs.push(padL + i * step);
+        }
+        return xs;
+    }
+
+    function nearestIndexFromX(x, xCoords) {
+        if (!xCoords || !xCoords.length) {
+            return 0;
+        }
+        var best = 0;
+        var bestDist = Infinity;
+        var i;
+        for (i = 0; i < xCoords.length; i += 1) {
+            var d = Math.abs(xCoords[i] - x);
+            if (d < bestDist) {
+                bestDist = d;
+                best = i;
+            }
+        }
+        return best;
+    }
+
     /* --- Inlined former ./bgdhampTrendColors (no separate AMD file) --- */
     var trendColors = (function () {
         function trendDelta(values) {
@@ -372,6 +489,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             return clampNum(Math.round((mapped.x - padLeft) / xStep), 0, pointCount - 1);
         }
         return {
+            viewportToSvgUserXY: viewportToSvgUserXY,
             seriesIndexFromPointerMeet: seriesIndexFromPointerMeet,
         };
     })();
@@ -1004,8 +1122,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
 
     /**
      * nullMode: gaps (break line), zero (treat null as 0), connect (skip nulls, keep stroke).
+     * Optional xCoords: OOTB-style time-proportional X (same length as values).
      */
-    function buildPath(values, width, height, padL, padR, padT, padB, vmin, vmax, nullMode) {
+    function buildPath(values, width, height, padL, padR, padT, padB, vmin, vmax, nullMode, xCoords) {
         var mode = nullMode === 'zero' || nullMode === 'connect' ? nullMode : 'gaps';
         var iw = Math.max(1, width - padL - padR);
         var ih = Math.max(1, height - padT - padB);
@@ -1029,7 +1148,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 }
             }
             var ratio = clamp((v - vmin) / (vmax - vmin), 0, 1);
-            var x = padL + i * xStep;
+            var x =
+                xCoords && isFinite(xCoords[i]) ? xCoords[i] : padL + i * xStep;
             var y = padT + ih - ratio * ih;
             parts.push((penUp ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1));
             penUp = false;
@@ -1038,18 +1158,26 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return plotted >= 2 ? parts.join(' ') : '';
     }
 
+    function xAtIndex(i, padL, xStep, xCoords) {
+        if (xCoords && isFinite(xCoords[i])) {
+            return xCoords[i];
+        }
+        return padL + i * xStep;
+    }
+
     /** Area fill per contiguous finite segment so null gaps do not poison the path. */
-    function buildAreaPath(values, width, height, padL, padR, padT, padB, vmin, vmax, nullMode) {
+    function buildAreaPath(values, width, height, padL, padR, padT, padB, vmin, vmax, nullMode, xCoords) {
         var mode = nullMode === 'zero' || nullMode === 'connect' ? nullMode : 'gaps';
         if (mode !== 'gaps') {
-            var line = buildPath(values, width, height, padL, padR, padT, padB, vmin, vmax, mode);
+            var line = buildPath(values, width, height, padL, padR, padT, padB, vmin, vmax, mode, xCoords);
             if (!line) {
                 return '';
             }
             var nAll = values.length;
             var iwAll = Math.max(1, width - padL - padR);
             var xStepAll = nAll > 1 ? iwAll / (nAll - 1) : 0;
-            var lastX = padL + (nAll - 1) * xStepAll;
+            var lastX = xAtIndex(nAll - 1, padL, xStepAll, xCoords);
+            var firstXAll = xAtIndex(0, padL, xStepAll, xCoords);
             var baselineY = height - padB;
             return (
                 line +
@@ -1058,7 +1186,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 ' ' +
                 baselineY.toFixed(1) +
                 ' L' +
-                padL.toFixed(1) +
+                firstXAll.toFixed(1) +
                 ' ' +
                 baselineY.toFixed(1) +
                 ' Z'
@@ -1079,12 +1207,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 return;
             }
             var s;
-            var firstX = padL + seg[0].i * xStep;
-            var lastSegX = padL + seg[seg.length - 1].i * xStep;
+            var firstX = xAtIndex(seg[0].i, padL, xStep, xCoords);
+            var lastSegX = xAtIndex(seg[seg.length - 1].i, padL, xStep, xCoords);
             for (s = 0; s < seg.length; s += 1) {
                 parts.push(
                     (s === 0 ? 'M' : 'L') +
-                        (padL + seg[s].i * xStep).toFixed(1) +
+                        xAtIndex(seg[s].i, padL, xStep, xCoords).toFixed(1) +
                         ' ' +
                         seg[s].y.toFixed(1)
                 );
@@ -1107,7 +1235,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return parts.join(' ');
     }
 
-    function buildBetweenPath(primaryValues, compareValues, width, height, padL, padR, padT, padB, vmin, vmax, nullMode) {
+    function buildBetweenPath(primaryValues, compareValues, width, height, padL, padR, padT, padB, vmin, vmax, nullMode, xCoords) {
         var mode = nullMode === 'zero' || nullMode === 'connect' ? nullMode : 'gaps';
         var n = Math.min(primaryValues.length, compareValues.length);
         if (n < 2) {
@@ -1145,8 +1273,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 bottom = [];
                 continue;
             }
-            top.push({ x: padL + i * xStep, y: yAt(pv) });
-            bottom.push({ x: padL + i * xStep, y: yAt(cv) });
+            top.push({ x: xAtIndex(i, padL, xStep, xCoords), y: yAt(pv) });
+            bottom.push({ x: xAtIndex(i, padL, xStep, xCoords), y: yAt(cv) });
         }
         if (top.length < 2) {
             return '';
@@ -1533,7 +1661,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return out;
     }
 
-    function appendAnnotationMarks(svg, ownerDoc, values, annotations, width, chartH, padL, padR, padT, padB, scale, color, showLabels) {
+    function appendAnnotationMarks(svg, ownerDoc, values, annotations, width, chartH, padL, padR, padT, padB, scale, color, showLabels, xCoords) {
         if (!values || !annotations || values.length < 2) {
             return;
         }
@@ -1547,7 +1675,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (!label || !isFinite(values[i])) {
                 continue;
             }
-            var x = padL + i * xStep;
+            var x = xAtIndex(i, padL, xStep, xCoords);
             var ratio = clamp((Number(values[i]) - scale.min) / (scale.max - scale.min), 0, 1);
             var y = padT + ih - ratio * ih;
             var mark = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -2081,11 +2209,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 scale = fitScaleToSeries(scale, fitArrays);
             }
             var strokeRaw = readConfig(config, 'stroke', null);
-            // Default white so the line stays visible on the default navy solid fill.
-            var stroke = sanitizeHexColor(
-                strokeRaw != null && String(strokeRaw).trim() !== '' ? strokeRaw : '#FFFFFF',
-                '#FFFFFF'
-            );
+            // Auto-contrast like OOTB: Splunk blue on light/Search panels, white on dark tiles.
+            var stroke = resolveLineStroke(strokeRaw, background);
             var unit = String(readConfig(config, 'unit', '') || '');
             var subheader = String(readConfig(config, 'subheader', '') || '');
             var useThreshold = readBool(config, 'threshold', false);
@@ -2352,6 +2477,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 return padT + ih - clamp(ratio, 0, 1) * ih;
             }
 
+            // OOTB-like: space points by _time when available; equal spacing for categories.
+            var xCoords = buildXCoords(plotValues.length, width, padL, padR, norm.ms, norm.timeLike);
+
             var chartBg = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
             chartBg.setAttribute('class', 'bgdhamp-kpi-line-viz__chartBg');
             chartBg.setAttribute('x', '0');
@@ -2421,7 +2549,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     padB,
                     scale.min,
                     scale.max,
-                    nullValueMode
+                    nullValueMode,
+                    xCoords
                 );
                 if (areaD) {
                     var areaPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -2445,7 +2574,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     padB,
                     scale.min,
                     scale.max,
-                    nullValueMode
+                    nullValueMode,
+                    xCoords
                 );
                 if (betweenD) {
                     var betweenPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -2460,7 +2590,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var legendItems = [];
             var ei;
             for (ei = 0; ei < extraSeries.length; ei += 1) {
-                var extraColor = SERIES_PALETTE[(ei + 2) % SERIES_PALETTE.length];
+                var extraColor = SERIES_PALETTE[(ei + 1) % SERIES_PALETTE.length];
                 var extraD = buildPath(
                     extraSeries[ei].values,
                     width,
@@ -2471,7 +2601,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     padB,
                     scale.min,
                     scale.max,
-                    nullValueMode
+                    nullValueMode,
+                    xCoords
                 );
                 if (extraD) {
                     var extraPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -2479,7 +2610,9 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     extraPath.setAttribute('fill', 'none');
                     extraPath.setAttribute('stroke', extraColor);
                     extraPath.setAttribute('stroke-width', String(Math.max(1, strokeWidth - 0.5)));
-                    extraPath.setAttribute('stroke-opacity', '0.85');
+                    extraPath.setAttribute('stroke-linecap', 'round');
+                    extraPath.setAttribute('stroke-linejoin', 'round');
+                    extraPath.setAttribute('stroke-opacity', '0.95');
                     extraPath.setAttribute('vector-effect', 'non-scaling-stroke');
                     svg.appendChild(extraPath);
                     legendItems.push({ name: extraSeries[ei].name, color: extraColor });
@@ -2498,13 +2631,16 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     padB,
                     scale.min,
                     scale.max,
-                    nullValueMode
+                    nullValueMode,
+                    xCoords
                 );
                 if (cmpD) {
                     cmpPath.setAttribute('d', cmpD);
                     cmpPath.setAttribute('fill', 'none');
                     cmpPath.setAttribute('stroke', compareStroke);
                     cmpPath.setAttribute('stroke-width', String(strokeWidth));
+                    cmpPath.setAttribute('stroke-linecap', 'round');
+                    cmpPath.setAttribute('stroke-linejoin', 'round');
                     cmpPath.setAttribute('stroke-dasharray', '6 4');
                     cmpPath.setAttribute('stroke-opacity', '0.9');
                     cmpPath.setAttribute('vector-effect', 'non-scaling-stroke');
@@ -2527,7 +2663,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 padB,
                 scale.min,
                 scale.max,
-                nullValueMode
+                nullValueMode,
+                xCoords
             );
             if (mainD) {
                 var mainPath = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -2535,6 +2672,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 mainPath.setAttribute('fill', 'none');
                 mainPath.setAttribute('stroke', stroke);
                 mainPath.setAttribute('stroke-width', String(strokeWidth));
+                mainPath.setAttribute('stroke-linecap', 'round');
+                mainPath.setAttribute('stroke-linejoin', 'round');
                 mainPath.setAttribute('vector-effect', 'non-scaling-stroke');
                 svg.appendChild(mainPath);
                 legendItems.unshift({
@@ -2556,7 +2695,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                         mv = 0;
                     }
                     var mDot = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    mDot.setAttribute('cx', (padL + miMark * xStepMark).toFixed(1));
+                    mDot.setAttribute('cx', xAtIndex(miMark, padL, xStepMark, xCoords).toFixed(1));
                     mDot.setAttribute('cy', yFor(mv).toFixed(1));
                     mDot.setAttribute('r', '2.5');
                     mDot.setAttribute('fill', stroke);
@@ -2582,7 +2721,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 padB,
                 scale,
                 stroke,
-                showAnnotationLabels
+                showAnnotationLabels,
+                xCoords
             );
             if (cmpValues) {
                 appendAnnotationMarks(
@@ -2598,7 +2738,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     padB,
                     scale,
                     compareStroke,
-                    showAnnotationLabels
+                    showAnnotationLabels,
+                    xCoords
                 );
             }
 
@@ -2608,7 +2749,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var ai;
             for (ai = 0; ai < n; ai += 1) {
                 if (!anomalyFlags[ai]) continue;
-                var ax = padL + ai * xStep;
+                var ax = xAtIndex(ai, padL, xStep, xCoords);
                 var ay = yFor(plotValues[ai]);
                 var dot = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 dot.setAttribute('cx', ax.toFixed(1));
@@ -2673,7 +2814,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 var ti;
                 for (ti = 0; ti < tickCount; ti += 1) {
                     var idx = Math.round((ti * (n - 1)) / (tickCount - 1));
-                    var tx = padL + idx * xStep;
+                    var tx = xAtIndex(idx, padL, xStep, xCoords);
                     var xTickMark = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
                     xTickMark.setAttribute('x1', tx.toFixed(1));
                     xTickMark.setAttribute('y1', String(chartH - padB));
@@ -2749,21 +2890,27 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                         clearHoverOverlay(svg, tooltip, hoverAnnEl);
                         return;
                     }
-                    var idx = hoverMath.seriesIndexFromPointerMeet(
-                        e.clientX,
-                        e.clientY,
-                        svg,
-                        width,
-                        chartH,
-                        padL,
-                        padR,
-                        n
-                    );
-                    if (idx === null) {
+                    var mapped = hoverMath.viewportToSvgUserXY
+                        ? hoverMath.viewportToSvgUserXY(e.clientX, e.clientY, svg, width, chartH)
+                        : null;
+                    var idx =
+                        mapped && xCoords && xCoords.length
+                            ? nearestIndexFromX(mapped.x, xCoords)
+                            : hoverMath.seriesIndexFromPointerMeet(
+                                  e.clientX,
+                                  e.clientY,
+                                  svg,
+                                  width,
+                                  chartH,
+                                  padL,
+                                  padR,
+                                  n
+                              );
+                    if (idx === null || idx === undefined) {
                         clearHoverOverlay(svg, tooltip, hoverAnnEl);
                         return;
                     }
-                    var hx = padL + idx * xStep;
+                    var hx = xAtIndex(idx, padL, xStep, xCoords);
                     var hy = yFor(plotValues[idx]);
                     updateHoverOverlay(svg, tooltip, ownerDoc, {
                         hx: hx,
