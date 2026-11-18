@@ -1,3 +1,3 @@
 import { mountCriticalPatchesPage } from '../profile/CriticalPatchesPage';
 
-mountCriticalPatchesPage();
+mountCriticalPatchesPage('Critical Patches');

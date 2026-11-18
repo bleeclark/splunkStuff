@@ -3,7 +3,7 @@
 const shell = require('shelljs');
 const path = require('path');
 const webpack = require('webpack');
-const OS = require('os').platform().toLocaleLowerCase();
+const OS = require('os').platform().toLowerCase();
 
 const arg = process.argv[2];
 const commands = ['build', 'link', 'watch'];
@@ -93,9 +93,24 @@ function linkApp() {
     }
 
     if (OS.startsWith('win')) {
-        shell.exec(`mklink /J "${target}" "${stageDir}"`);
+        const result = shell.exec(`mklink /J "${target}" "${stageDir}"`);
+        if (!result || result.code !== 0) {
+            shell.echo(
+                `Failed to link ${target} -> ${stageDir}` +
+                    (result && result.stderr ? `: ${String(result.stderr).trim()}` : '')
+            );
+            shell.exit(result && typeof result.code === 'number' ? result.code : 1);
+        }
     } else {
-        shell.ln('-sf', stageDir, target);
+        const result = shell.ln('-sf', stageDir, target);
+        if (result && typeof result.code === 'number' && result.code !== 0) {
+            shell.echo(`Failed to link ${target} -> ${stageDir}`);
+            shell.exit(result.code);
+        }
+        if (!shell.test('-e', target) && !shell.test('-L', target)) {
+            shell.echo(`Failed to link ${target} -> ${stageDir}`);
+            shell.exit(1);
+        }
     }
     shell.echo(`Linked ${target} -> ${stageDir}`);
 }

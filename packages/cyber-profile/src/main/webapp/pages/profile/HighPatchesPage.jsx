@@ -34,7 +34,7 @@ const DEFAULT_ASSET_FILTERS = {
     search: '',
 };
 
-function HighPatchesApp() {
+function HighPatchesApp({ title }) {
     const [entity, setEntity] = useState('');
     const [mode, setMode] = useState('assets');
     const [filters, setFilters] = useState(DEFAULT_ASSET_FILTERS);
@@ -63,7 +63,7 @@ function HighPatchesApp() {
 
     return (
         <Page>
-            <PageHeader title="Cyber Profile" />
+            <PageHeader title={title || 'High Patches'} />
 
             <div className="ss-profile-entity-bar">
                 <div style={{ minWidth: 200, flex: '1 1 240px', maxWidth: 340 }}>
@@ -156,7 +156,7 @@ function HighPatchesApp() {
     );
 }
 
-export function mountHighPatchesPage() {
+export function mountHighPatchesPage(title) {
     getUserTheme()
         .then((theme) => {
             const themed = {
@@ -170,7 +170,7 @@ export function mountHighPatchesPage() {
                 colorTextDefault: '#FFFFFF',
                 interactiveColorText: '#FFFFFF',
             };
-            layout(<HighPatchesApp />, { theme: themed });
+            layout(<HighPatchesApp title={title || 'High Patches'} />, { theme: themed });
         })
         .catch((e) => {
             const errorEl = document.createElement('span');

@@ -7,7 +7,12 @@
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    font-family: 'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    /* Match Dashboard Studio chart typography (regular weight, platform sans). */
+    font-family: 'Splunk Platform Sans', 'Splunk Data Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 400;
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .bgdhamp-pie-chart-viz--empty {
@@ -42,11 +47,12 @@
 .bgdhamp-pie-chart-viz__title {
     flex: 0 0 auto;
     padding: 8px 12px 4px;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 500;
     line-height: 1.3;
     opacity: 1;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    letter-spacing: 0;
+    text-shadow: none;
 }
 
 .bgdhamp-pie-chart-viz__textRow {
@@ -190,19 +196,21 @@
 
 .bgdhamp-pie-chart-viz__callout-text {
     fill: currentColor;
-    font-size: 12px;
-    font-weight: 700;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 400;
     dominant-baseline: middle;
+    /* Thin halo for contrast on blue — heavy stroke made labels look “too bold”. */
     paint-order: stroke fill;
-    stroke: rgba(1, 65, 127, 0.92);
-    stroke-width: 3px;
+    stroke: rgba(1, 65, 127, 0.55);
+    stroke-width: 1.25px;
     stroke-linejoin: round;
 }
 
 .bgdhamp-pie-chart-viz__callout-value {
     font-size: 11px;
-    font-weight: 600;
-    opacity: 1;
+    font-weight: 400;
+    opacity: 0.92;
 }
 
 .bgdhamp-pie-chart-viz__callout--dim {
@@ -241,7 +249,7 @@
 }
 
 .bgdhamp-pie-chart-viz__inspector-label {
-    font-weight: 700;
+    font-weight: 500;
     margin-bottom: 6px;
 }
 
@@ -254,7 +262,8 @@
     min-height: 0;
     min-width: 0;
     overflow: auto;
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 400;
     line-height: 1.45;
 }
 
@@ -313,7 +322,7 @@
 }
 
 .bgdhamp-pie-chart-viz__metric strong {
-    font-weight: 700;
+    font-weight: 500;
     text-align: right;
 }
 
@@ -335,7 +344,7 @@
 }
 
 .bgdhamp-pie-chart-viz__tooltip-title {
-    font-weight: 700;
+    font-weight: 500;
     margin-bottom: 6px;
 }
 
@@ -346,7 +355,7 @@
 }
 
 .bgdhamp-pie-chart-viz__breakdown-title {
-    font-weight: 700;
+    font-weight: 500;
     margin-bottom: 4px;
 }
 

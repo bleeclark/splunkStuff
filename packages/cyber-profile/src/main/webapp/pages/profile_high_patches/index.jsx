@@ -1,3 +1,3 @@
 import { mountHighPatchesPage } from '../profile/HighPatchesPage';
 
-mountHighPatchesPage();
+mountHighPatchesPage('High Patches');
