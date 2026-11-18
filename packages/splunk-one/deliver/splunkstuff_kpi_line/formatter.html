@@ -108,8 +108,11 @@
         Background behind the Text1–Text3 row. Use a dark color for contrast on light text.
     </div>
     <splunk-control-group label="Line stroke">
-        <splunk-color-picker name="{{VIZ_NAMESPACE}}.stroke" value="#FFFFFF"></splunk-color-picker>
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.stroke" value="#1E93C6"></splunk-color-picker>
     </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Default matches Classic OOTB line blue. On dark solid backgrounds the viz auto-switches to white if the stroke would disappear.
+    </div>
     <splunk-control-group label="Line stroke width, px">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.strokeWidth" value="2"></splunk-text-input>
     </splunk-control-group>
