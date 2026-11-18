@@ -154,15 +154,18 @@
 
   // ---- LINE SCENARIOS ----
   (function () {
-    var ui = mountCard('LINE · defaults + auto scale', 'line');
+    var ui = mountCard('LINE · Studio-like defaults + auto scale', 'line');
     var raw = lineRawSingle();
     ui.viz.updateView(ui.viz.formatData(raw), cfg(LINE_NS, {
-      valueField: 'value', yScale: 'auto', showMajor: 'true', showHover: 'true',
+      valueField: 'value', yScale: 'auto', showHover: 'true',
+      backgroundMode: 'solid', background: '#01417F', textColor: '#FFFFFF', stroke: '#FFFFFF',
     }));
     var checks = [];
     assert(checks, 'root mounted', !!ui.el.querySelector('.bgdhamp-kpi-line-viz'));
-    assert(checks, 'major value shown', !!ui.el.querySelector('.bgdhamp-kpi-line-viz__major'));
+    assert(checks, 'no major KPI row by default', !ui.el.querySelector('.bgdhamp-kpi-line-viz__major'));
     assert(checks, 'path drawn', !!ui.el.querySelector('path'));
+    assert(checks, 'Y ticks present', ui.el.querySelectorAll('.bgdhamp-kpi-line-viz__yTick').length >= 2);
+    assert(checks, 'X ticks present', ui.el.querySelectorAll('.bgdhamp-kpi-line-viz__xTick').length >= 2);
     assert(checks, 'build id present', !!ui.el.querySelector('[data-bgdhamp-viz-build]'));
     results.push(finish(ui, checks));
   })();

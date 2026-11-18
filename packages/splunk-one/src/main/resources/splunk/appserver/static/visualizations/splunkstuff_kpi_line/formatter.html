@@ -90,10 +90,13 @@
 
 <form class="splunk-formatter-section" section-label="Major value">
     <splunk-control-group label="Show major value + delta row">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.showMajor" value="true"></splunk-text-input>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showMajor" value="false">
+            <option value="false">Off</option>
+            <option value="true">On</option>
+        </splunk-radio-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        <strong>true</strong> or <strong>false</strong> - hide the headline row for a chart-only tile.
+        Default Off for Studio-like chart. Turn On for a KPI headline + delta row.
     </div>
     <splunk-control-group label="Center major + trend">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.centerMajor" value="true"></splunk-text-input>
@@ -288,27 +291,44 @@
 </form>
 
 <form class="splunk-formatter-section" section-label="Axis and drilldown">
+    <splunk-control-group label="Show Y-axis scale">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYAxis" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Studio-like numeric Y ticks from Auto/Fixed scale. Auto-reserves left padding.
+    </div>
+    <splunk-control-group label="Show Y gridlines">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYGrid" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show X-axis ticks">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showXAxis" value="true">
+            <option value="true">On</option>
+            <option value="false">Off</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Uses parsed <strong>_time</strong> when available. Auto-bumps bottom padding.
+    </div>
     <splunk-control-group label="padLeft">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.padLeft" value="0"></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="padRight">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.padRight" value="0"></splunk-text-input>
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.padRight" value="8"></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="padTop">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.padTop" value="2"></splunk-text-input>
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.padTop" value="8"></splunk-text-input>
     </splunk-control-group>
     <splunk-control-group label="padBottom">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.padBottom" value="0"></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Defaults are flush to the tile edges. Raise padBottom if you enable X-axis ticks (auto-bumps to 14 when empty).
-    </div>
-
-    <splunk-control-group label="Show X-axis ticks">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.showXAxis" value="false"></splunk-text-input>
-    </splunk-control-group>
-    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Uses parsed <strong>_time</strong> when available
+        Leave at 0 to let Y/X axes auto-pad. Set higher only to force extra margin.
     </div>
     <splunk-control-group label="Drilldown click opens Search">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.drilldown" value="false"></splunk-text-input>

@@ -6,7 +6,7 @@
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_pie_chart.';
-    var VIZ_BUILD = '202611181220-pie-945';
+    var VIZ_BUILD = '202611181315-pie-studio-font';
     /** Optional text1..text3 strip + info icon — same contract as kpi_line / sparkline. */
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
@@ -1795,8 +1795,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 textRow.style.overflow = 'hidden';
                 textRow.style.background = 'rgba(0,0,0,0.35)';
                 textRow.style.color = opts.textColor;
-                textRow.style.fontWeight = '600';
-                textRow.style.textShadow = '0 1px 1px rgba(0,0,0,0.4)';
+                textRow.style.fontWeight = '400';
+                textRow.style.textShadow = 'none';
                 var linkPrefix = splunkPathPrefix(ownerDoc);
                 var linkTarget =
                     String(readConfig(config, 'linkTarget', 'newTab') || '')

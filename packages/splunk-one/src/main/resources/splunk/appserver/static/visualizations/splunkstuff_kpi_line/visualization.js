@@ -17,7 +17,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '202611181220-kpi-line-945';
+    var VIZ_BUILD = '202611181247-kpi-line-studio-axes';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
@@ -1106,6 +1106,61 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return v.toLocaleString(undefined, { maximumFractionDigits: 2 });
     }
 
+    /** Studio-like Y tick steps (nice numbers across [min, max]). */
+    function buildYTicks(min, max, targetCount) {
+        var lo = Number(min);
+        var hi = Number(max);
+        var count = Math.max(2, Math.floor(Number(targetCount) || 5));
+        if (!isFinite(lo) || !isFinite(hi)) {
+            return [0, 1];
+        }
+        if (hi < lo) {
+            var swap = lo;
+            lo = hi;
+            hi = swap;
+        }
+        if (!(hi > lo)) {
+            hi = lo + 1;
+        }
+        var range = hi - lo;
+        var rough = range / (count - 1);
+        var exp = Math.floor(Math.log(rough) / Math.LN10);
+        var pow = Math.pow(10, exp);
+        var frac = rough / pow;
+        var niceFrac;
+        if (frac <= 1) niceFrac = 1;
+        else if (frac <= 2) niceFrac = 2;
+        else if (frac <= 5) niceFrac = 5;
+        else niceFrac = 10;
+        var step = niceFrac * pow;
+        var start = Math.ceil(lo / step) * step;
+        var ticks = [];
+        var v;
+        var guard = 0;
+        for (v = start; v <= hi + step * 0.001 && guard < 24; v += step) {
+            ticks.push(v);
+            guard += 1;
+        }
+        if (!ticks.length) {
+            ticks = [lo, hi];
+        } else if (ticks[0] > lo + step * 0.05) {
+            ticks.unshift(lo);
+        }
+        if (ticks[ticks.length - 1] < hi - step * 0.05) {
+            ticks.push(hi);
+        }
+        return ticks;
+    }
+
+    function estimateYAxisPad(ticks) {
+        var maxLen = 2;
+        var i;
+        for (i = 0; i < ticks.length; i += 1) {
+            maxLen = Math.max(maxLen, String(formatNumber(ticks[i])).length);
+        }
+        return Math.min(76, Math.max(36, Math.round(maxLen * 7.2 + 12)));
+    }
+
     function formatDelta(d) {
         if (!isFinite(d)) return '—';
         return (d >= 0 ? '\u25b2 ' : '\u25bc ') + formatNumber(d);
@@ -1828,7 +1883,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var target = useThreshold ? readFloat(config, 'target', 50) : null;
             var anomalyMode = String(readConfig(config, 'anomalies', 'none'));
             var anomalySens = readInt(config, 'anomalySensitivity', 3);
-            var showXAxis = readBool(config, 'showXAxis', false);
+            // Studio-like defaults: axes on, major KPI number off (can re-enable in Format).
+            var showXAxis = readBool(config, 'showXAxis', true);
+            var showYAxis = readBool(config, 'showYAxis', true);
+            var showYGrid = readBool(config, 'showYGrid', true);
             // Splunk formatter text fields may omit the key; only explicit false disables hover.
             var showHover = readBool(config, 'showHover', true);
             if (readConfig(config, 'showHover', null) === null) {
@@ -1839,7 +1897,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 readConfig(config, 'drilldownQuery', 'search index=_internal | stats count') || ''
             );
 
-            var showMajor = readBool(config, 'showMajor', true);
+            var showMajor = readBool(config, 'showMajor', false);
             var centerMajor = readBool(config, 'centerMajor', true);
             var colorPlacement = String(readConfig(config, 'colorPlacement', 'full') || 'full').toLowerCase();
             if (colorPlacement !== 'top') colorPlacement = 'full';
@@ -1856,14 +1914,14 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 'rgba(255,255,255,0.5)'
             );
             var showHoverAnnotation = readBool(config, 'showHoverAnnotation', false);
-            // Flush-to-edge defaults (KPI tile). Bump padBottom when X-axis ticks are on.
+            // Chart margins — Studio mode auto-bumps when axes are enabled.
             var padLeftCfg = readFloat(config, 'padLeft', 0);
-            var padRightCfg = readFloat(config, 'padRight', 0);
-            var padTopCfg = readFloat(config, 'padTop', 2);
+            var padRightCfg = readFloat(config, 'padRight', 8);
+            var padTopCfg = readFloat(config, 'padTop', 8);
             var padBottomCfg = readFloat(config, 'padBottom', 0);
             if (!isFinite(padLeftCfg)) padLeftCfg = 0;
-            if (!isFinite(padRightCfg)) padRightCfg = 0;
-            if (!isFinite(padTopCfg)) padTopCfg = 2;
+            if (!isFinite(padRightCfg)) padRightCfg = 8;
+            if (!isFinite(padTopCfg)) padTopCfg = 8;
             if (!isFinite(padBottomCfg)) padBottomCfg = 0;
 
             var textCells = collectTextCells(stringFields, readConfig, config);
@@ -1899,8 +1957,21 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var padR = Math.max(0, padRightCfg);
             var padT = Math.max(0, padTopCfg);
             var padB = Math.max(0, padBottomCfg);
-            if (showXAxis && padB < 14) {
-                padB = 14;
+            var yTicks = showYAxis ? buildYTicks(scale.min, scale.max, 5) : [];
+            if (showYAxis) {
+                var autoPadL = estimateYAxisPad(yTicks);
+                if (padL < autoPadL) {
+                    padL = autoPadL;
+                }
+                if (padT < 8) {
+                    padT = 8;
+                }
+                if (padR < 8) {
+                    padR = 8;
+                }
+            }
+            if (showXAxis && padB < 18) {
+                padB = 18;
             }
             var chartH = Math.max(40, height - subheaderH - majorH - textRowH);
 
@@ -1908,6 +1979,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var chartStripBg = tileBg;
             var classicChart = !showMajor || background === 'transparent';
             var guideStroke = classicChart ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.22)';
+            var axisLabelFill = textColor || '#FFFFFF';
+            var gridStroke =
+                background === 'transparent' || classicChart
+                    ? 'rgba(255,255,255,0.18)'
+                    : 'rgba(255,255,255,0.16)';
 
             log(
                 'layout:',
@@ -2066,6 +2142,23 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             chartBg.setAttribute('height', String(chartH));
             chartBg.setAttribute('fill', chartStripBg);
             svg.appendChild(chartBg);
+
+            if (showYAxis && showYGrid && yTicks.length) {
+                var gi;
+                for (gi = 0; gi < yTicks.length; gi += 1) {
+                    var gy = yFor(yTicks[gi]);
+                    var gLine = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    gLine.setAttribute('class', 'bgdhamp-kpi-line-viz__yGrid');
+                    gLine.setAttribute('x1', String(padL));
+                    gLine.setAttribute('y1', gy.toFixed(1));
+                    gLine.setAttribute('x2', String(width - padR));
+                    gLine.setAttribute('y2', gy.toFixed(1));
+                    gLine.setAttribute('stroke', gridStroke);
+                    gLine.setAttribute('stroke-width', '1');
+                    gLine.setAttribute('vector-effect', 'non-scaling-stroke');
+                    svg.appendChild(gLine);
+                }
+            }
 
             if (useThreshold && isFinite(thMin)) {
                 var rectLo = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -2304,30 +2397,90 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 svg.appendChild(dot);
             }
 
-            if (showXAxis && norm.timeLike && norm.ms.length >= 2) {
-                var tickCount = 4;
+            if (showYAxis && yTicks.length) {
+                var yAxisLine = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
+                yAxisLine.setAttribute('class', 'bgdhamp-kpi-line-viz__yAxis');
+                yAxisLine.setAttribute('x1', String(padL));
+                yAxisLine.setAttribute('y1', String(padT));
+                yAxisLine.setAttribute('x2', String(padL));
+                yAxisLine.setAttribute('y2', String(chartH - padB));
+                yAxisLine.setAttribute('stroke', guideStroke);
+                yAxisLine.setAttribute('stroke-width', '1');
+                yAxisLine.setAttribute('vector-effect', 'non-scaling-stroke');
+                svg.appendChild(yAxisLine);
+
+                var yi;
+                for (yi = 0; yi < yTicks.length; yi += 1) {
+                    var yTickVal = yTicks[yi];
+                    var yTickY = yFor(yTickVal);
+                    var yTickMark = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    yTickMark.setAttribute('x1', String(padL - 4));
+                    yTickMark.setAttribute('y1', yTickY.toFixed(1));
+                    yTickMark.setAttribute('x2', String(padL));
+                    yTickMark.setAttribute('y2', yTickY.toFixed(1));
+                    yTickMark.setAttribute('stroke', guideStroke);
+                    yTickMark.setAttribute('stroke-width', '1');
+                    svg.appendChild(yTickMark);
+
+                    var yLabel = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    yLabel.setAttribute('class', 'bgdhamp-kpi-line-viz__yTick');
+                    yLabel.setAttribute('x', String(padL - 6));
+                    yLabel.setAttribute('y', yTickY.toFixed(1));
+                    yLabel.setAttribute('fill', axisLabelFill);
+                    yLabel.setAttribute('font-size', '10');
+                    yLabel.setAttribute('font-weight', '600');
+                    yLabel.setAttribute('text-anchor', 'end');
+                    yLabel.setAttribute('dominant-baseline', 'middle');
+                    yLabel.textContent = formatNumber(yTickVal);
+                    svg.appendChild(yLabel);
+                }
+            }
+
+            if (showXAxis && n >= 2) {
+                var xAxisLine = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
+                xAxisLine.setAttribute('class', 'bgdhamp-kpi-line-viz__xAxis');
+                xAxisLine.setAttribute('x1', String(padL));
+                xAxisLine.setAttribute('y1', String(chartH - padB));
+                xAxisLine.setAttribute('x2', String(width - padR));
+                xAxisLine.setAttribute('y2', String(chartH - padB));
+                xAxisLine.setAttribute('stroke', guideStroke);
+                xAxisLine.setAttribute('stroke-width', '1');
+                xAxisLine.setAttribute('vector-effect', 'non-scaling-stroke');
+                svg.appendChild(xAxisLine);
+
+                var tickCount = Math.min(5, n);
                 var ti;
                 for (ti = 0; ti < tickCount; ti += 1) {
                     var idx = Math.round((ti * (n - 1)) / (tickCount - 1));
                     var tx = padL + idx * xStep;
+                    var xTickMark = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    xTickMark.setAttribute('x1', tx.toFixed(1));
+                    xTickMark.setAttribute('y1', String(chartH - padB));
+                    xTickMark.setAttribute('x2', tx.toFixed(1));
+                    xTickMark.setAttribute('y2', String(chartH - padB + 4));
+                    xTickMark.setAttribute('stroke', guideStroke);
+                    xTickMark.setAttribute('stroke-width', '1');
+                    svg.appendChild(xTickMark);
+
                     var tick = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    tick.setAttribute('class', 'bgdhamp-kpi-line-viz__xTick');
                     tick.setAttribute('x', tx.toFixed(1));
-                    tick.setAttribute('y', String(chartH - 2));
-                    tick.setAttribute(
-                        'fill',
-                        classicChart || background === 'transparent'
-                            ? 'rgba(255,255,255,0.92)'
-                            : 'rgba(255,255,255,0.85)'
-                    );
+                    tick.setAttribute('y', String(chartH - 3));
+                    tick.setAttribute('fill', axisLabelFill);
                     tick.setAttribute('font-size', '10');
                     tick.setAttribute('font-weight', '600');
                     tick.setAttribute('text-anchor', 'middle');
-                    var label = isFinite(norm.ms[idx])
-                        ? new Date(norm.ms[idx]).toLocaleTimeString(undefined, {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                          })
-                        : String(times[idx] != null ? times[idx] : '');
+                    var label;
+                    if (norm.timeLike && isFinite(norm.ms[idx])) {
+                        label = new Date(norm.ms[idx]).toLocaleTimeString(undefined, {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                        });
+                    } else if (times[idx] != null) {
+                        label = String(times[idx]);
+                    } else {
+                        label = String(idx + 1);
+                    }
                     tick.textContent = label;
                     svg.appendChild(tick);
                 }

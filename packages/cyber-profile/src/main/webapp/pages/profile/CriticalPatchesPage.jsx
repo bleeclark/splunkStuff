@@ -34,7 +34,7 @@ const DEFAULT_ASSET_FILTERS = {
     search: '',
 };
 
-function CriticalPatchesApp() {
+function CriticalPatchesApp({ title }) {
     const [entity, setEntity] = useState('');
     const [mode, setMode] = useState('assets');
     const [filters, setFilters] = useState(DEFAULT_ASSET_FILTERS);
@@ -63,7 +63,7 @@ function CriticalPatchesApp() {
 
     return (
         <Page>
-            <PageHeader title="Cyber Profile" />
+            <PageHeader title={title || 'Critical Patches'} />
 
             <div className="ss-profile-entity-bar">
                 <div style={{ minWidth: 200, flex: '1 1 220px', maxWidth: 320 }}>
@@ -157,7 +157,7 @@ function CriticalPatchesApp() {
     );
 }
 
-export function mountCriticalPatchesPage() {
+export function mountCriticalPatchesPage(title) {
     getUserTheme()
         .then((theme) => {
             const themed = {
@@ -171,7 +171,7 @@ export function mountCriticalPatchesPage() {
                 colorTextDefault: '#FFFFFF',
                 interactiveColorText: '#FFFFFF',
             };
-            layout(<CriticalPatchesApp />, { theme: themed });
+            layout(<CriticalPatchesApp title={title || 'Critical Patches'} />, { theme: themed });
         })
         .catch((e) => {
             const errorEl = document.createElement('span');

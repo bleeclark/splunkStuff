@@ -332,7 +332,47 @@
   });
   add(lineTests, 'showXAxis', function () {
     var on = render('line', merge(lineBase, { showXAxis: 'true', padBottom: '16' }));
-    return { ok: count(on, 'svg text') >= 1 || /AM|PM|:/.test(on.textContent || ''), detail: 'x ticks/labels' };
+    return {
+      ok: count(on, '.bgdhamp-kpi-line-viz__xTick') >= 2 || count(on, 'svg text') >= 1,
+      detail: 'x ticks=' + count(on, '.bgdhamp-kpi-line-viz__xTick'),
+    };
+  });
+  add(lineTests, 'showYAxis / showYGrid', function () {
+    var on = render('line', merge(lineBase, {
+      showMajor: 'false', showYAxis: 'true', showYGrid: 'true', showXAxis: 'true', yScale: 'auto',
+    }));
+    var off = render('line', merge(lineBase, { showYAxis: 'false', showYGrid: 'false' }));
+    return {
+      ok:
+        count(on, '.bgdhamp-kpi-line-viz__yTick') >= 2 &&
+        count(on, '.bgdhamp-kpi-line-viz__yGrid') >= 2 &&
+        count(off, '.bgdhamp-kpi-line-viz__yTick') === 0,
+      detail:
+        'yTicks=' +
+        count(on, '.bgdhamp-kpi-line-viz__yTick') +
+        ' grid=' +
+        count(on, '.bgdhamp-kpi-line-viz__yGrid') +
+        ' off=' +
+        count(off, '.bgdhamp-kpi-line-viz__yTick'),
+    };
+  });
+  add(lineTests, 'Studio-like defaults axes without major', function () {
+    var el = render('line', {
+      valueField: 'current',
+      yScale: 'auto',
+      backgroundMode: 'solid',
+      background: '#01417F',
+      textColor: '#FFFFFF',
+      stroke: '#FFFFFF',
+    });
+    return {
+      ok:
+        !el.querySelector('.bgdhamp-kpi-line-viz__major') &&
+        count(el, '.bgdhamp-kpi-line-viz__yTick') >= 2 &&
+        count(el, '.bgdhamp-kpi-line-viz__xTick') >= 2 &&
+        !!el.querySelector('path'),
+      detail: 'chart-only with Y/X ticks',
+    };
   });
   add(lineTests, 'drilldown + drilldownQuery wired', function () {
     var el = render('line', merge(lineBase, { drilldown: 'true', drilldownQuery: 'search index=_internal | stats count' }));
