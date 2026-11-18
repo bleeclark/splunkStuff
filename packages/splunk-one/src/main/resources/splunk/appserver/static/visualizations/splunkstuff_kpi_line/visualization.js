@@ -17,7 +17,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '202611181345-kpi-line-no-trend-y';
+    var VIZ_BUILD = '202611181405-kpi-line-table-fix';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
@@ -401,6 +401,56 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return '';
     }
 
+    /**
+     * Accept column-major, row-major, or raw result objects from Splunk Search.
+     * | table / stats panels occasionally arrive as rows/results depending on host path.
+     */
+    function normalizeSearchData(rawData) {
+        if (!rawData || typeof rawData !== 'object') {
+            return { fields: [], columns: [] };
+        }
+        var fields = rawData.fields || [];
+        if (rawData.columns && rawData.columns.length) {
+            return { fields: fields, columns: rawData.columns };
+        }
+        var c;
+        var r;
+        if (rawData.rows && rawData.rows.length) {
+            var colCount = fields.length;
+            if (!colCount && rawData.rows[0] && rawData.rows[0].length) {
+                colCount = rawData.rows[0].length;
+                fields = [];
+                for (c = 0; c < colCount; c += 1) {
+                    fields.push({ name: 'field' + c });
+                }
+            }
+            var cols = [];
+            for (c = 0; c < colCount; c += 1) {
+                cols[c] = [];
+                for (r = 0; r < rawData.rows.length; r += 1) {
+                    cols[c].push(rawData.rows[r] ? rawData.rows[r][c] : null);
+                }
+            }
+            return { fields: fields, columns: cols };
+        }
+        if (rawData.results && rawData.results.length) {
+            if (!fields.length) {
+                fields = Object.keys(rawData.results[0] || {}).map(function (k) {
+                    return { name: k };
+                });
+            }
+            var cols2 = [];
+            for (c = 0; c < fields.length; c += 1) {
+                var name = fieldName(fields, c);
+                cols2[c] = rawData.results.map(function (row) {
+                    return row ? row[name] : null;
+                });
+            }
+            return { fields: fields, columns: cols2 };
+        }
+        return { fields: fields, columns: [] };
+    }
+
     function findTimeColumnIndex(rawData) {
         if (!rawData || !rawData.fields) return -1;
         var i;
@@ -426,9 +476,16 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     }
 
     /** Prefer a string/category column for X labels when SPL is | table / | stats by … */
-    function pickCategoryColumnIndex(rawData, valueIdx) {
+    function pickCategoryColumnIndex(rawData, valueIdx, xField) {
         if (!rawData || !rawData.columns || !rawData.fields) {
             return -1;
+        }
+        var wanted = normalizeName(xField);
+        if (wanted && wanted !== 'auto' && wanted !== 'none' && wanted !== '_time') {
+            var explicit = findFieldIndex(rawData.fields, xField);
+            if (explicit >= 0 && explicit !== valueIdx) {
+                return explicit;
+            }
         }
         var h;
         var c;
@@ -438,6 +495,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 return hinted;
             }
         }
+        // First non-numeric, non-skipped column (typical | table label, count).
         for (c = 0; c < rawData.columns.length; c += 1) {
             if (c === valueIdx) {
                 continue;
@@ -450,10 +508,21 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 return c;
             }
         }
+        // Fall back to first other column (even if numeric — e.g. status codes).
+        for (c = 0; c < rawData.columns.length; c += 1) {
+            if (c === valueIdx) {
+                continue;
+            }
+            var name2 = fieldName(rawData.fields, c);
+            if (isSkippedValueField(name2) || name2 === '_time') {
+                continue;
+            }
+            return c;
+        }
         return -1;
     }
 
-    function reorderValuesAndTimesByTime(rawData, valueIdx, timeIdx) {
+    function reorderValuesAndTimesByTime(rawData, valueIdx, timeIdx, xField) {
         var valCol = rawData.columns[valueIdx];
         var n = valCol ? valCol.length : 0;
         if (!n) return { values: [], times: [], rowOrder: [], categoryField: '' };
@@ -463,7 +532,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             for (pi = 0; pi < n; pi += 1) {
                 plainOrder.push(pi);
             }
-            var catIdx = pickCategoryColumnIndex(rawData, valueIdx);
+            var catIdx = pickCategoryColumnIndex(rawData, valueIdx, xField);
             var catCol = catIdx >= 0 ? rawData.columns[catIdx] : null;
             return {
                 values: valCol.map(function (v) {
@@ -741,7 +810,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return pickNumericColumnIndex(rawData);
     }
 
-    function buildSeriesFromRaw(rawData, valueField) {
+    function buildSeriesFromRaw(rawData, valueField, xField) {
         if (!rawData || !rawData.columns || rawData.columns.length === 0) {
             return { values: [], times: [], rowOrder: [], fieldName: '', stringFields: {} };
         }
@@ -750,7 +819,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             return { values: [], times: [], rowOrder: [], fieldName: '', stringFields: {} };
         }
         var tIdx = findTimeColumnIndex(rawData);
-        var out = reorderValuesAndTimesByTime(rawData, idx, tIdx);
+        var out = reorderValuesAndTimesByTime(rawData, idx, tIdx, xField);
         out.fieldName = fieldName(rawData.fields, idx);
         out.columnIndex = idx;
         out.stringFields = stringFieldsInOrder(rawData, out.rowOrder, idx);
@@ -1709,12 +1778,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
          * X axis is _time when present; Y / major number is the resolved value field.
          */
         formatData: function (rawData) {
-            var safe = rawData && rawData.columns ? rawData : { columns: [], fields: [] };
+            var safe = normalizeSearchData(rawData);
             if (!safe.columns.length) {
                 log('formatData: empty columns');
                 return { rawData: safe, values: [], times: [], fieldName: '', stringFields: {} };
             }
-            var series = buildSeriesFromRaw(safe, 'auto');
+            var series = buildSeriesFromRaw(safe, 'auto', 'auto');
             if (!series.values.length) {
                 // Classic OOTB shows empty panel — soft-fail instead of VisualizationError.
                 log('formatData: no numeric column — soft empty');
@@ -1726,13 +1795,16 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 'points',
                 series.values.length,
                 '_time',
-                findTimeColumnIndex(safe) >= 0
+                findTimeColumnIndex(safe) >= 0,
+                'x',
+                series.categoryField || '(row)'
             );
             return {
                 rawData: safe,
                 values: series.values,
                 times: series.times,
                 fieldName: series.fieldName,
+                categoryField: series.categoryField || '',
                 stringFields: series.stringFields || {},
             };
         },
@@ -1772,14 +1844,24 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var valueField = valueFieldCustom
                 ? valueFieldCustom
                 : String(readConfig(config, 'valueField', 'auto') || 'auto').trim() || 'auto';
-            var rawData = data && data.rawData ? data.rawData : null;
+            var xFieldCustom = String(readConfig(config, 'xFieldCustom', '') || '').trim();
+            var xField = xFieldCustom
+                ? xFieldCustom
+                : String(readConfig(config, 'xField', 'auto') || 'auto').trim() || 'auto';
+            var rawData = normalizeSearchData(
+                data && data.rawData ? data.rawData : data && data.columns ? data : null
+            );
+            if (!rawData.columns.length && data && data.values) {
+                rawData = null;
+            }
             var series =
-                rawData && rawData.columns
-                    ? buildSeriesFromRaw(rawData, valueField)
+                rawData && rawData.columns && rawData.columns.length
+                    ? buildSeriesFromRaw(rawData, valueField, xField)
                     : {
                           values: (data && data.values) || [],
                           times: (data && data.times) || [],
                           fieldName: (data && data.fieldName) || '',
+                          categoryField: (data && data.categoryField) || '',
                           stringFields: (data && data.stringFields) || {},
                       };
             var values = series.values || [];
@@ -1788,8 +1870,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             log(
                 'updateView: valueField',
                 valueField,
+                'xField',
+                xField,
                 'resolved',
                 series.fieldName || '(none)',
+                'x',
+                series.categoryField || '(none)',
                 'points',
                 values.length
             );
@@ -1809,10 +1895,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var textColorRaw = readConfig(config, 'textColor', null);
             var textColor;
             if (textColorRaw != null && String(textColorRaw).trim() !== '') {
-                textColor = sanitizeHexColor(textColorRaw, '#FFFFFF');
+                textColor = sanitizeHexColor(textColorRaw, background === 'transparent' ? '#1D2733' : '#FFFFFF');
             } else {
-                // Dark panel / navy fill → white; otherwise white with shadow still reads on light panels.
-                textColor = '#FFFFFF';
+                // Search / transparent panels are light — use dark ink. Solid navy tiles stay white.
+                textColor = background === 'transparent' ? '#1D2733' : '#FFFFFF';
             }
             var emptyText = String(readConfig(config, 'emptyText', '') || '');
 
@@ -1846,7 +1932,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (nullValueMode !== 'zero' && nullValueMode !== 'connect') {
                 nullValueMode = 'gaps';
             }
-            var showMarkers = readBool(config, 'showMarkers', false);
+            var markersCfg = readConfig(config, 'showMarkers', null);
+            var showMarkers = markersCfg == null ? false : readBool(config, 'showMarkers', false);
             var showLegend = readBool(config, 'showLegend', true);
             var chartStyle = String(readConfig(config, 'chartStyle', '') || '')
                 .trim()
@@ -2053,6 +2140,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var last = plotValues[plotValues.length - 1];
 
             var norm = normalizeTimes(times, plotValues.length);
+            var isCategorical = !norm.timeLike;
+            // Table / stats-by categories: show point markers by default so the series is obvious.
+            if (markersCfg == null && isCategorical) {
+                showMarkers = true;
+            }
             var anomalyFlags = computeAnomalies(plotValues, anomalyMode, anomalySens);
 
             var width = Math.max(120, this.el.clientWidth || 400);
@@ -2079,17 +2171,24 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (showXAxis && padB < 18) {
                 padB = 18;
             }
+            // Keep first/last category labels inside the plot for | table results.
+            if (isCategorical && showXAxis) {
+                if (padL < 28) {
+                    padL = 28;
+                }
+                if (padR < 28) {
+                    padR = 28;
+                }
+            }
             var chartH = Math.max(40, height - subheaderH - majorH - textRowH);
 
             var containerBg = tileBg;
             var chartStripBg = tileBg;
             var classicChart = !showMajor || background === 'transparent';
-            var guideStroke = classicChart ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.22)';
-            var axisLabelFill = textColor || '#FFFFFF';
-            var gridStroke =
-                background === 'transparent' || classicChart
-                    ? 'rgba(255,255,255,0.18)'
-                    : 'rgba(255,255,255,0.16)';
+            var onLightPanel = background === 'transparent';
+            var guideStroke = onLightPanel || classicChart ? 'rgba(29,39,51,0.28)' : 'rgba(255,255,255,0.22)';
+            var axisLabelFill = textColor || (onLightPanel ? '#1D2733' : '#FFFFFF');
+            var gridStroke = onLightPanel ? 'rgba(29,39,51,0.12)' : 'rgba(255,255,255,0.16)';
 
             log(
                 'layout:',
@@ -2443,7 +2542,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     mDot.setAttribute('cy', yFor(mv).toFixed(1));
                     mDot.setAttribute('r', '2.5');
                     mDot.setAttribute('fill', stroke);
-                    mDot.setAttribute('stroke', classicChart ? '#fff' : 'rgba(0,0,0,0.25)');
+                    mDot.setAttribute(
+                        'stroke',
+                        onLightPanel ? '#FFFFFF' : classicChart ? '#fff' : 'rgba(0,0,0,0.25)'
+                    );
                     mDot.setAttribute('stroke-width', '1');
                     svg.appendChild(mDot);
                 }

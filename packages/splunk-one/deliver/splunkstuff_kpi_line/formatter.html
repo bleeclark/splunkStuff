@@ -11,14 +11,35 @@
 -->
 <form class="splunk-formatter-section" section-label="Data">
     <div style="font-size: 11px; color: #666; margin: 0 0 8px 0;">
-        Map search columns for Splunk 9.4 Search / Classic. X uses <strong>_time</strong> when present.
-        Type the exact column name in the custom fields below when Auto is wrong.
+        Map search columns for Splunk 9.4 Search / Classic.
+        X uses <strong>_time</strong> when present; otherwise a category column from
+        <strong>| table</strong> / <strong>| stats by …</strong>.
+        Type exact column names below when Auto is wrong.
     </div>
+    <splunk-control-group label="X category field name">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.xFieldCustom" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        For table SPL without _time (example: <strong>host</strong> or <strong>sourcetype</strong>).
+        Leave blank for Auto.
+    </div>
+    <splunk-control-group label="X category preset">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.xField" value="auto">
+            <option value="auto">Auto</option>
+            <option value="host">host</option>
+            <option value="sourcetype">sourcetype</option>
+            <option value="source">source</option>
+            <option value="category">category</option>
+            <option value="name">name</option>
+            <option value="status">status</option>
+            <option value="user">user</option>
+        </splunk-radio-input>
+    </splunk-control-group>
     <splunk-control-group label="Y value field name">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.valueFieldCustom" value=""></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Exact search column for the line Y values and major number (example: <strong>count</strong> or <strong>avg_latency</strong>).
+        Exact search column for the line Y values (example: <strong>count</strong> or <strong>avg_latency</strong>).
         Leave blank to use the preset / Auto below.
     </div>
     <splunk-control-group label="Y value preset">
