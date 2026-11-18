@@ -101,15 +101,27 @@ function deriveDomainFromSeries(seriesList) {
     return { min: min - pad, max: max + pad };
 }
 
+/** NaN-safe SMA: only finite samples contribute; gaps stay NaN. */
 function sma(values, windowSize) {
     const w = Math.max(1, Math.floor(Number(windowSize) || 1));
     if (w <= 1) return values.slice();
     const out = [];
-    let sum = 0;
     for (let i = 0; i < values.length; i += 1) {
-        sum += values[i];
-        if (i >= w) sum -= values[i - w];
-        out.push(sum / Math.min(i + 1, w));
+        if (!Number.isFinite(Number(values[i]))) {
+            out.push(NaN);
+            continue;
+        }
+        let sum = 0;
+        let count = 0;
+        const start = Math.max(0, i - w + 1);
+        for (let j = start; j <= i; j += 1) {
+            const sample = Number(values[j]);
+            if (Number.isFinite(sample)) {
+                sum += sample;
+                count += 1;
+            }
+        }
+        out.push(count ? sum / count : NaN);
     }
     return out;
 }

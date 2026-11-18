@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <title>Format controls verify — every option</title>
-<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css?v=notrend" />
-<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css?v=notrend" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.css?v=tablefix" />
+<link rel="stylesheet" href="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.css?v=tablefix" />
 <style>
   body { margin: 0; padding: 14px; font-family: Helvetica, Arial, sans-serif; background: #e8ebef; color: #1d2733; }
   h1 { font-size: 18px; margin: 0 0 6px; }
@@ -36,8 +36,8 @@
   var factories = [];
   window.define = function (deps, factory) { factories.push(factory); };
 </script>
-<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js?v=notrend"></script>
-<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js?v=notrend"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_kpi_line/visualization.js?v=tablefix"></script>
+<script src="../src/main/resources/splunk/appserver/static/visualizations/splunkstuff_pie_chart/visualization.js?v=tablefix"></script>
 <script>
 (function () {
   var Base = {
@@ -401,38 +401,41 @@
       ],
     };
     viz.updateView(viz.formatData(raw), cfg(LINE_NS, {
-      yScale: 'auto', showYAxis: 'true', showXAxis: 'true', backgroundMode: 'solid',
-      background: '#01417F', textColor: '#FFFFFF', stroke: '#FFFFFF',
+      yScale: 'auto', showXAxis: 'true', backgroundMode: 'transparent', stroke: '#01417F',
     }));
     var ticks = Array.prototype.map.call(el.querySelectorAll('.bgdhamp-kpi-line-viz__xTick'), function (t) {
       return t.textContent;
     }).join(',');
     return {
-      ok: !!el.querySelector('path') && /web-01|web-02|db-01/.test(ticks + el.textContent),
-      detail: 'path + category ticks=' + ticks,
+      ok:
+        !!el.querySelector('path') &&
+        el.querySelectorAll('circle').length >= 3 &&
+        /web-01|web-02|db-01/.test(ticks) &&
+        /1[Dd]2733|#1D2733|29,\s*39,\s*51/i.test((el.style.color || '') + (el.style.cssText || '')),
+      detail: 'path+markers+ticks=' + ticks + ' color=' + (el.style.color || ''),
     };
   });
-  add(lineTests, 'table SPL object cells + commas', function () {
+  add(lineTests, 'table SPL row-major + object cells', function () {
     host.innerHTML = '';
     var el = document.createElement('div');
     el.style.width = '420px';
     el.style.height = '240px';
     host.appendChild(el);
     var viz = new LineViz(el);
-    var raw = {
+    var rowMajor = {
       fields: [{ name: 'category' }, { name: 'value' }],
-      columns: [
-        [{ value: 'A' }, { value: 'B' }, { value: 'C' }],
-        [{ value: '1,000' }, { value: '2,500' }, { value: '3,200' }],
+      rows: [
+        [{ value: 'A' }, { value: '1,000' }],
+        [{ value: 'B' }, { value: '2,500' }],
+        [{ value: 'C' }, { value: '3,200' }],
       ],
     };
-    viz.updateView(viz.formatData(raw), cfg(LINE_NS, {
-      yScale: 'auto', showMajor: 'false', backgroundMode: 'solid',
-      background: '#01417F', textColor: '#FFFFFF', stroke: '#FFFFFF',
+    viz.updateView(viz.formatData(rowMajor), cfg(LINE_NS, {
+      yScale: 'auto', showMajor: 'false', backgroundMode: 'transparent', stroke: '#01417F',
     }));
     return {
       ok: !!el.querySelector('path') && !el.querySelector('.bgdhamp-kpi-line-viz__err'),
-      detail: 'object/comma cells render path',
+      detail: 'row-major object/comma cells render path',
     };
   });
   add(lineTests, 'drilldown + drilldownQuery wired', function () {
