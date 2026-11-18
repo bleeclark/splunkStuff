@@ -17,7 +17,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '202611181247-kpi-line-studio-axes';
+    var VIZ_BUILD = '202611181345-kpi-line-no-trend-y';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
@@ -35,6 +35,22 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         'score',
     ];
     var COMPARE_FIELD_HINTS = ['previous', 'prior', 'baseline', 'compare', 'target', 'last', 'prev'];
+    /** Category / X labels for | table / | stats by … results (no _time). */
+    var CATEGORY_FIELD_HINTS = [
+        'category',
+        'host',
+        'name',
+        'label',
+        'sourcetype',
+        'source',
+        'user',
+        'status',
+        'method',
+        'action',
+        'index',
+        'region',
+        'type',
+    ];
     var SERIES_PALETTE = [
         '#FFFFFF',
         '#7EB6FF',
@@ -60,6 +76,49 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         text3: true,
         info: true,
     };
+
+    /** Unwrap Splunk table / JSON cell objects (and nested arrays). */
+    function cellValue(cell) {
+        var guard = 0;
+        var raw = cell;
+        while (raw != null && guard < 6) {
+            if (Array.isArray(raw)) {
+                raw = raw.length ? raw[0] : null;
+                guard += 1;
+                continue;
+            }
+            if (typeof raw === 'object' && raw.value != null) {
+                raw = raw.value;
+                guard += 1;
+                continue;
+            }
+            break;
+        }
+        return raw;
+    }
+
+    /** Parse numeric cells the way Studio / pie do — objects, commas, percents. */
+    function parseNum(cell) {
+        if (typeof cell === 'number' && isFinite(cell)) {
+            return cell;
+        }
+        var raw = cellValue(cell);
+        if (raw == null || raw === '') {
+            return NaN;
+        }
+        if (typeof raw === 'number' && isFinite(raw)) {
+            return raw;
+        }
+        var s = String(raw)
+            .replace(/,/g, '')
+            .replace(/%$/, '')
+            .trim();
+        if (!s || s.toLowerCase() === 'null' || s.toLowerCase() === 'nan') {
+            return NaN;
+        }
+        var n = parseFloat(s, 10);
+        return isFinite(n) ? n : NaN;
+    }
 
     /** Splunk loads AMD in a browser context; guard for odd embeds. */
     function debugEnabled() {
@@ -352,7 +411,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     }
 
     function timeSortKey(rawData, timeIdx, rowIdx) {
-        var cell = rawData.columns[timeIdx][rowIdx];
+        var cell = cellValue(rawData.columns[timeIdx][rowIdx]);
         if (cell == null || cell === '') return 0;
         if (typeof cell === 'number' && isFinite(cell)) return cell;
         var s = String(cell).trim();
@@ -362,26 +421,63 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
         var ms = Date.parse(s);
         if (isFinite(ms)) return ms / 1000;
-        var fb = parseFloat(s, 10);
+        var fb = parseNum(cell);
         return isFinite(fb) ? fb : 0;
+    }
+
+    /** Prefer a string/category column for X labels when SPL is | table / | stats by … */
+    function pickCategoryColumnIndex(rawData, valueIdx) {
+        if (!rawData || !rawData.columns || !rawData.fields) {
+            return -1;
+        }
+        var h;
+        var c;
+        for (h = 0; h < CATEGORY_FIELD_HINTS.length; h += 1) {
+            var hinted = findFieldIndex(rawData.fields, CATEGORY_FIELD_HINTS[h]);
+            if (hinted >= 0 && hinted !== valueIdx) {
+                return hinted;
+            }
+        }
+        for (c = 0; c < rawData.columns.length; c += 1) {
+            if (c === valueIdx) {
+                continue;
+            }
+            var name = fieldName(rawData.fields, c);
+            if (isSkippedValueField(name) || name === '_time') {
+                continue;
+            }
+            if (!columnHasNumber(rawData, c)) {
+                return c;
+            }
+        }
+        return -1;
     }
 
     function reorderValuesAndTimesByTime(rawData, valueIdx, timeIdx) {
         var valCol = rawData.columns[valueIdx];
         var n = valCol ? valCol.length : 0;
-        if (!n) return { values: [], times: [], rowOrder: [] };
+        if (!n) return { values: [], times: [], rowOrder: [], categoryField: '' };
         if (timeIdx < 0 || !rawData.columns[timeIdx] || rawData.columns[timeIdx].length !== n) {
             var plainOrder = [];
             var pi;
             for (pi = 0; pi < n; pi += 1) {
                 plainOrder.push(pi);
             }
+            var catIdx = pickCategoryColumnIndex(rawData, valueIdx);
+            var catCol = catIdx >= 0 ? rawData.columns[catIdx] : null;
             return {
                 values: valCol.map(function (v) {
-                    return parseFloat(v, 10);
+                    return parseNum(v);
                 }),
-                times: [],
+                // Studio-like categorical X for table SPL (aligned with values).
+                times: plainOrder.map(function (ri) {
+                    if (catCol) {
+                        return cellText(catCol[ri]) || String(ri + 1);
+                    }
+                    return String(ri + 1);
+                }),
                 rowOrder: plainOrder,
+                categoryField: catIdx >= 0 ? fieldName(rawData.fields, catIdx) : '',
             };
         }
         var tcol = rawData.columns[timeIdx];
@@ -396,31 +492,18 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         });
         return {
             values: order.map(function (ri) {
-                return parseFloat(valCol[ri], 10);
+                return parseNum(valCol[ri]);
             }),
             times: order.map(function (ri) {
-                return tcol[ri];
+                return cellValue(tcol[ri]);
             }),
             rowOrder: order,
+            categoryField: '',
         };
     }
 
     function cellText(cell) {
-        var guard = 0;
-        var raw = cell;
-        while (raw != null && guard < 6) {
-            if (Array.isArray(raw)) {
-                raw = raw.length ? raw[0] : null;
-                guard += 1;
-                continue;
-            }
-            if (typeof raw === 'object' && raw.value != null) {
-                raw = raw.value;
-                guard += 1;
-                continue;
-            }
-            break;
-        }
+        var raw = cellValue(cell);
         return raw == null ? '' : String(raw).trim();
     }
 
@@ -611,7 +694,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
         var i;
         for (i = 0; i < col.length; i += 1) {
-            if (isFinite(parseFloat(col[i], 10))) {
+            if (isFinite(parseNum(col[i]))) {
                 return true;
             }
         }
@@ -680,7 +763,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             return [];
         }
         return rowOrder.map(function (ri) {
-            return parseFloat(col[ri], 10);
+            return parseNum(col[ri]);
         });
     }
 
@@ -1050,14 +1133,38 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return isFinite(n) && n > 31536000000 && n < 4102444800000;
     }
 
+    /**
+     * Avoid Date.parse('web-01') style false positives that turn table categories into times.
+     * Accept ISO / common Splunk datetime strings only.
+     */
+    function looksLikeDateTimeString(s) {
+        var t = String(s == null ? '' : s).trim();
+        if (!t) {
+            return false;
+        }
+        if (/^\d{4}-\d{2}-\d{2}([T\s].*)?$/.test(t)) {
+            return true;
+        }
+        if (/^\d{1,2}\/\d{1,2}\/\d{2,4}([,\s].*)?$/.test(t)) {
+            return true;
+        }
+        if (/^[A-Za-z]{3},?\s+\d{1,2}\s+[A-Za-z]{3}\s+\d{4}/.test(t)) {
+            return true;
+        }
+        if (/^\d{4}\/\d{2}\/\d{2}/.test(t)) {
+            return true;
+        }
+        return false;
+    }
+
     function normalizeTimes(rawTimes, len) {
         var times = Array.isArray(rawTimes) ? rawTimes.slice(0, len) : [];
         var ms = [];
         var ok = 0;
         var i;
         for (i = 0; i < len; i += 1) {
-            var t = times[i];
-            if (typeof t === 'string') {
+            var t = cellValue(times[i]);
+            if (typeof t === 'string' && looksLikeDateTimeString(t)) {
                 var parsed = Date.parse(t);
                 if (isFinite(parsed)) {
                     ms.push(parsed);
@@ -1883,10 +1990,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var target = useThreshold ? readFloat(config, 'target', 50) : null;
             var anomalyMode = String(readConfig(config, 'anomalies', 'none'));
             var anomalySens = readInt(config, 'anomalySensitivity', 3);
-            // Studio-like defaults: axes on, major KPI number off (can re-enable in Format).
+            // Chart defaults: X ticks on, Y scale/grid off, no up/down trend delta.
             var showXAxis = readBool(config, 'showXAxis', true);
-            var showYAxis = readBool(config, 'showYAxis', true);
-            var showYGrid = readBool(config, 'showYGrid', true);
+            var showYAxis = readBool(config, 'showYAxis', false);
+            var showYGrid = readBool(config, 'showYGrid', false);
             // Splunk formatter text fields may omit the key; only explicit false disables hover.
             var showHover = readBool(config, 'showHover', true);
             if (readConfig(config, 'showHover', null) === null) {
@@ -1939,7 +2046,6 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 showInfo = !!infoText;
             }
 
-            var delta = trendColors.trendDelta(plotValues);
             // No good/bad trend fills — tile always uses Format background (default transparent).
             var tileBg = background;
             trendColors.applyTrendHostStyle(this.el, tileBg, textColor);
@@ -2082,7 +2188,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (showMajor) {
                 majorRow = ownerDoc.createElement('div');
                 majorRow.className = 'bgdhamp-kpi-line-viz__major';
-                majorRow.style.justifyContent = centerMajor ? 'center' : 'space-between';
+                majorRow.style.justifyContent = centerMajor ? 'center' : 'flex-start';
                 majorRow.style.textAlign = centerMajor ? 'center' : '';
                 var major = ownerDoc.createElement('div');
                 major.className = 'bgdhamp-kpi-line-viz__majorVal';
@@ -2095,15 +2201,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     major.appendChild(unitSpan);
                 }
 
-                var trend = ownerDoc.createElement('div');
-                trend.className = 'bgdhamp-kpi-line-viz__trend';
-                trend.style.marginLeft = centerMajor ? '6px' : '';
-                trend.textContent = formatDelta(delta);
-
+                // No up/down trend delta — major value only.
                 trendColors.applyTrendSurfaceStyle(majorRow, tileBg);
 
                 majorRow.appendChild(major);
-                majorRow.appendChild(trend);
                 root.appendChild(majorRow);
             }
 
@@ -2476,8 +2577,12 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                             hour: '2-digit',
                             minute: '2-digit',
                         });
-                    } else if (times[idx] != null) {
+                    } else if (times[idx] != null && String(times[idx]).trim() !== '') {
+                        // Category / table SPL labels (host, status, …)
                         label = String(times[idx]);
+                        if (label.length > 18) {
+                            label = label.slice(0, 16) + '…';
+                        }
                     } else {
                         label = String(idx + 1);
                     }

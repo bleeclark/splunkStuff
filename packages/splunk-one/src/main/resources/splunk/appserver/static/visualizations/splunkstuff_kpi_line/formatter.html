@@ -89,20 +89,20 @@
 </form>
 
 <form class="splunk-formatter-section" section-label="Major value">
-    <splunk-control-group label="Show major value + delta row">
+    <splunk-control-group label="Show major value">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.showMajor" value="false">
             <option value="false">Off</option>
             <option value="true">On</option>
         </splunk-radio-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Default Off for Studio-like chart. Turn On for a KPI headline + delta row.
+        Optional headline number only — no up/down trend delta.
     </div>
-    <splunk-control-group label="Center major + trend">
+    <splunk-control-group label="Center major value">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.centerMajor" value="true"></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        <strong>true</strong> = centered; <strong>false</strong> = space-between (major left, delta right).
+        <strong>true</strong> = centered; <strong>false</strong> = left-aligned.
     </div>
     <splunk-control-group label="Color placement">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.colorPlacement" value="full"></splunk-text-input>
@@ -292,18 +292,18 @@
 
 <form class="splunk-formatter-section" section-label="Axis and drilldown">
     <splunk-control-group label="Show Y-axis scale">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYAxis" value="true">
-            <option value="true">On</option>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYAxis" value="false">
             <option value="false">Off</option>
+            <option value="true">On</option>
         </splunk-radio-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Studio-like numeric Y ticks from Auto/Fixed scale. Auto-reserves left padding.
+        Default Off. Optional numeric Y ticks from Auto/Fixed scale.
     </div>
     <splunk-control-group label="Show Y gridlines">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYGrid" value="true">
-            <option value="true">On</option>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYGrid" value="false">
             <option value="false">Off</option>
+            <option value="true">On</option>
         </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Show X-axis ticks">

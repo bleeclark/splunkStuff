@@ -43,13 +43,10 @@ Dashboard:
 
 Column-major results; uses `_time` when present and Auto / Format value field for the series.
 
-## Studio-like presentation (default)
+## Chart presentation (default)
 
-Defaults match a Dashboard Studio line chart more than a KPI tile:
-
-- Major value row **off**
-- **Y-axis** scale ticks + grid **on** (Auto Y fits SPL range)
-- **X-axis** time ticks **on**
+- Major value row **off** (no up/down trend delta)
+- **Y-axis** scale / grid **off**
+- **X-axis** ticks **on** (time or table categories)
+- Auto Y still scales the line to the data; ticks are optional in Format
 - Legend still shows for multi-series / compare
-
-Turn major value back on in Format → Major value if you want the old KPI headline.
