@@ -61,10 +61,15 @@
     min-height: 28px;
     max-height: 28px;
     overflow: hidden;
+    /* Different from pie/callout Splunk Platform Sans. */
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.01em;
 }
 
 .bgdhamp-pie-chart-viz__textCell {
     color: inherit;
+    font-family: inherit;
 }
 
 .bgdhamp-pie-chart-viz__info {

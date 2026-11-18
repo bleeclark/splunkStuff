@@ -17,10 +17,13 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '202611181430-kpi-line-ootb';
+    var VIZ_BUILD = '202611181500-kpi-line-textrow';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
+    /** Distinct from chart/axis type — shared with sparkline + pie text rows. */
+    var TEXT_ROW_FONT =
+        "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
     var MAX_MULTI_SERIES = 8;
     /** Classic OOTB line blue — readable on Search/light panels. */
     var OOTB_LINE_STROKE = '#1E93C6';
@@ -1701,7 +1704,40 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         }
     }
 
-    function styleTextCell(el, isFirst) {
+    function compactToken(raw) {
+        return String(raw == null ? '' : raw)
+            .trim()
+            .toLowerCase();
+    }
+
+    /**
+     * Sparkline-aligned text row colors.
+     * "tinted" softens the tile; "custom" uses Format pickers.
+     */
+    function resolveTextRowColors(config, tileTextColor) {
+        if (compactToken(readConfig(config, 'textRowStyle', 'tinted')) !== 'custom') {
+            return {
+                custom: false,
+                bg: 'rgba(0,0,0,0.18)',
+                fg: tileTextColor,
+                divider: 'rgba(255,255,255,0.25)',
+                border: 'rgba(255,255,255,0.18)',
+            };
+        }
+        var divider = sanitizeHexColor(
+            readConfig(config, 'textRowDividerColor', '#3D5A80'),
+            '#3D5A80'
+        );
+        return {
+            custom: true,
+            bg: sanitizeHexColor(readConfig(config, 'textRowBackground', '#0B1F3B'), '#0B1F3B'),
+            fg: sanitizeHexColor(readConfig(config, 'textRowTextColor', '#FFFFFF'), '#FFFFFF'),
+            divider: divider,
+            border: divider,
+        };
+    }
+
+    function styleTextCell(el, isFirst, dividerColor) {
         el.className = 'bgdhamp-kpi-line-viz__textCell';
         el.style.setProperty('flex', '1 1 0', 'important');
         el.style.setProperty('width', 'auto', 'important');
@@ -1714,10 +1750,11 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         el.style.overflow = 'hidden';
         el.style.textOverflow = 'ellipsis';
         el.style.textAlign = 'center';
+        el.style.fontFamily = TEXT_ROW_FONT;
         el.style.fontSize = '12px';
         el.style.fontWeight = '500';
         if (!isFirst) {
-            el.style.borderLeft = '1px solid rgba(255,255,255,0.25)';
+            el.style.borderLeft = '1px solid ' + (dividerColor || 'rgba(255,255,255,0.25)');
         }
     }
 
@@ -2040,10 +2077,6 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 // Search / transparent panels are light — use dark ink. Solid navy tiles stay white.
                 textColor = background === 'transparent' ? '#1D2733' : '#FFFFFF';
             }
-            var textRowBackground = sanitizeCssColor(
-                readConfig(config, 'textRowBackground', 'rgba(0,0,0,0.42)'),
-                'rgba(0,0,0,0.42)'
-            );
             var emptyText = String(readConfig(config, 'emptyText', '') || '');
 
             // --- Empty / insufficient points (emptyText when set) ---
@@ -2374,17 +2407,23 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             if (textCells.length) {
                 var textRow = ownerDoc.createElement('div');
                 textRow.className = 'bgdhamp-kpi-line-viz__textRow';
+                textRow.setAttribute('data-bgdhamp-text-cells', String(textCells.length));
                 textRow.style.display = 'flex';
                 textRow.style.flexDirection = 'row';
                 textRow.style.alignItems = 'stretch';
                 textRow.style.width = '100%';
                 textRow.style.flex = '0 0 ' + TEXT_ROW_HEIGHT_PX + 'px';
                 textRow.style.height = TEXT_ROW_HEIGHT_PX + 'px';
+                textRow.style.minHeight = TEXT_ROW_HEIGHT_PX + 'px';
+                textRow.style.maxHeight = TEXT_ROW_HEIGHT_PX + 'px';
                 textRow.style.boxSizing = 'border-box';
                 textRow.style.overflow = 'hidden';
-                textRow.style.background = textRowBackground;
-                textRow.style.setProperty('background', textRowBackground, 'important');
-                textRow.style.color = textColor;
+                textRow.style.fontFamily = TEXT_ROW_FONT;
+                var textRowColors = resolveTextRowColors(config, textColor);
+                textRow.setAttribute('data-bgdhamp-text-style', textRowColors.custom ? 'custom' : 'tinted');
+                textRow.style.setProperty('background', textRowColors.bg, 'important');
+                textRow.style.borderBottom = '1px solid ' + textRowColors.border;
+                textRow.style.setProperty('color', textRowColors.fg, 'important');
                 textRow.style.textShadow = 'none';
                 textRow.style.fontWeight = '400';
                 var linkPrefix = splunkPathPrefix(ownerDoc);
@@ -2413,7 +2452,8 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     var cell = href
                         ? makeLinkCell(ownerDoc, href, linkTarget)
                         : ownerDoc.createElement('div');
-                    styleTextCell(cell, ci === 0);
+                    styleTextCell(cell, ci === 0, textRowColors.divider);
+                    cell.setAttribute('data-bgdhamp-text-slot', String(tc.slot));
                     cell.textContent = cellTextLabel;
                     cell.setAttribute('title', cellTextLabel);
                     textRow.appendChild(cell);

@@ -364,7 +364,10 @@
     var el = render('line', merge(lineBase, {
       showTextRow: 'true',
       text1Field: 'text1',
+      textRowStyle: 'custom',
       textRowBackground: '#112233',
+      textRowTextColor: '#FFFFFF',
+      textRowDividerColor: '#3D5A80',
     }));
     var row = el.querySelector('.bgdhamp-kpi-line-viz__textRow');
     var bgv = row ? String(row.style.background || row.style.backgroundColor || '').toLowerCase() : '';
@@ -642,7 +645,10 @@
     var el = render('pie', merge(pieBase, {
       showTextRow: 'true',
       text1Field: 'text1',
+      textRowStyle: 'custom',
       textRowBackground: '#112233',
+      textRowTextColor: '#FFFFFF',
+      textRowDividerColor: '#3D5A80',
     }));
     var row = el.querySelector('.bgdhamp-pie-chart-viz__textRow');
     var bgv = row ? String(row.style.background || row.style.backgroundColor || '').toLowerCase() : '';

@@ -5,13 +5,16 @@
  */
 define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_sparkline.';
-    var VIZ_BUILD = '20261027-kpi-spark-value-field';
+    var VIZ_BUILD = '202611181500-kpi-spark-textrow';
     /** Layout budget: 35px subheader + 137px body = 172px panel default_height. */
     var SUBHEADER_HEIGHT_PX = 35;
     /** Optional text1..text3 strip between the subheader and the KPI body. */
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
+    /** Shared with line + pie text rows (distinct from chart body type). */
+    var TEXT_ROW_FONT =
+        "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
     var BODY_FRAME_HEIGHT_PX = 137;
     var PANEL_DEFAULT_HEIGHT_PX = SUBHEADER_HEIGHT_PX + BODY_FRAME_HEIGHT_PX;
     var SPARK_STRIP_HEIGHT_PX = 36;
@@ -289,6 +292,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         el.style.overflow = 'hidden';
         el.style.textOverflow = 'ellipsis';
         el.style.textAlign = 'center';
+        el.style.fontFamily = TEXT_ROW_FONT;
         el.style.fontSize = '12px';
         el.style.fontWeight = '500';
         if (!isFirst) {
@@ -1775,6 +1779,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 textRow.style.maxHeight = TEXT_ROW_HEIGHT_PX + 'px';
                 textRow.style.boxSizing = 'border-box';
                 textRow.style.overflow = 'hidden';
+                textRow.style.fontFamily = TEXT_ROW_FONT;
                 var textRowColors = resolveTextRowColors(optOr, textColor);
                 textRow.setAttribute('data-bgdhamp-text-style', textRowColors.custom ? 'custom' : 'tinted');
                 textRow.style.setProperty('background', textRowColors.bg, 'important');
