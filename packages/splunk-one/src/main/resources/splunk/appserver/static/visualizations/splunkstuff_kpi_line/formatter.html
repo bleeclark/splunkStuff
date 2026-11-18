@@ -9,13 +9,24 @@
   Avoid parentheses in section-label (and keep control labels simple): Splunk derives tab/DOM
   IDs from labels; strings like "Foo (bar)" become invalid jQuery selectors and break the format UI.
 -->
-<form class="splunk-formatter-section" section-label="Data fields">
-    <splunk-control-group label="Value field">
+<form class="splunk-formatter-section" section-label="Data">
+    <div style="font-size: 11px; color: #666; margin: 0 0 8px 0;">
+        Map search columns for Splunk 9.4 Search / Classic. X uses <strong>_time</strong> when present.
+        Type the exact column name in the custom fields below when Auto is wrong.
+    </div>
+    <splunk-control-group label="Y value field name">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.valueFieldCustom" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Exact search column for the line Y values and major number (example: <strong>count</strong> or <strong>avg_latency</strong>).
+        Leave blank to use the preset / Auto below.
+    </div>
+    <splunk-control-group label="Y value preset">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.valueField" value="auto">
             <option value="auto">Auto</option>
             <option value="value">value</option>
-            <option value="total_count">total_count</option>
             <option value="count">count</option>
+            <option value="total_count">total_count</option>
             <option value="total">total</option>
             <option value="amount">amount</option>
             <option value="sum">sum</option>
@@ -24,17 +35,16 @@
             <option value="score">score</option>
         </splunk-radio-input>
     </splunk-control-group>
-    <splunk-control-group label="Custom value field">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.valueFieldCustom" value=""></splunk-text-input>
+    <splunk-control-group label="Compare field name">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.compareFieldCustom" value=""></splunk-text-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        X axis is <strong>_time</strong> when present. The value field is the Y series and the major number.
-        <strong>Custom value field</strong> wins when set (exact search column name). Otherwise use the radio, or Auto
-        (prefers value, count, … and skips text1-text3).
+        Optional second series column (example: <strong>previous</strong>). Also turn on
+        <strong>Custom - comparison → Comparison overlay</strong>.
     </div>
 </form>
 
-<form class="splunk-formatter-section" section-label="Y-axis scale">
+<form class="splunk-formatter-section" section-label="Y axis">
     <splunk-control-group label="Y scale">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.yScale" value="auto">
             <option value="auto">Auto</option>
@@ -54,12 +64,18 @@
 </form>
 
 <form class="splunk-formatter-section" section-label="Appearance">
-    <splunk-control-group label="Background">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.background" value="transparent"></splunk-text-input>
+    <splunk-control-group label="Background mode">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.backgroundMode" value="transparent">
+            <option value="transparent">Transparent</option>
+            <option value="solid">Solid color</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Background color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.background" value="#01417F"></splunk-color-picker>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Tile fill only — no up/down trend colors. Default <strong>transparent</strong> so the dashboard panel shows through.
-        Use a hex like <strong>#0B1F3B</strong> or <strong>rgba(0,0,0,0)</strong> if you want a solid fill.
+        Use <strong>Solid color</strong> with the picker above. Transparent lets the Search/dashboard panel show through.
+        No good/bad trend fills.
     </div>
     <splunk-control-group label="Text color">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.textColor" value="#FFFFFF"></splunk-color-picker>
@@ -72,7 +88,7 @@
     </splunk-control-group>
 </form>
 
-<form class="splunk-formatter-section" section-label="Major headline and placement">
+<form class="splunk-formatter-section" section-label="Major value">
     <splunk-control-group label="Show major value + delta row">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.showMajor" value="true"></splunk-text-input>
     </splunk-control-group>
@@ -106,9 +122,16 @@
     <splunk-control-group label="Unit scale - em vs major number">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.unitScale" value="0.6"></splunk-text-input>
     </splunk-control-group>
+
+    <splunk-control-group label="Custom empty message">
+        <splunk-text-input name="{{VIZ_NAMESPACE}}.emptyText" value=""></splunk-text-input>
+    </splunk-control-group>
+    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
+        Shown when there are no points or fewer than 2 numeric points. Leave blank for defaults.
+    </div>
 </form>
 
-<form class="splunk-formatter-section" section-label="Smoothing and sampling">
+<form class="splunk-formatter-section" section-label="Line options">
     <splunk-control-group label="Smoothing">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.smoothing" value="none"></splunk-text-input>
     </splunk-control-group>
@@ -124,9 +147,7 @@
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
         0 disables downsampling
     </div>
-</form>
 
-<form class="splunk-formatter-section" section-label="General - Classic line">
     <splunk-control-group label="Chart style">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.chartStyle" value="line">
             <option value="line">Line</option>
@@ -152,9 +173,7 @@
             <option value="false">Off</option>
         </splunk-radio-input>
     </splunk-control-group>
-</form>
 
-<form class="splunk-formatter-section" section-label="Series and fill">
     <splunk-control-group label="Series mode">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.seriesMode" value="auto">
             <option value="auto">Auto (Classic-like)</option>
@@ -182,7 +201,7 @@
     </splunk-control-group>
 </form>
 
-<form class="splunk-formatter-section" section-label="Custom - comparison">
+<form class="splunk-formatter-section" section-label="Comparison">
     <splunk-control-group label="Comparison overlay">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.comparison" value="false">
             <option value="true">On</option>
@@ -199,11 +218,8 @@
             <option value="target">target</option>
         </splunk-radio-input>
     </splunk-control-group>
-    <splunk-control-group label="Custom compare field">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.compareFieldCustom" value=""></splunk-text-input>
-    </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Draws a real second series from the search (dashed). Custom name wins. No synthetic wiggle.
+        Draws a real second series from the search (dashed). Set the column under <strong>Data → Compare field name</strong>.
     </div>
     <splunk-control-group label="Compare line stroke">
         <splunk-color-picker name="{{VIZ_NAMESPACE}}.compareStroke" value="#7EB6FF"></splunk-color-picker>
@@ -246,7 +262,7 @@
     </splunk-control-group>
 </form>
 
-<form class="splunk-formatter-section" section-label="Anomalies">
+<form class="splunk-formatter-section" section-label="Interaction">
     <splunk-control-group label="Anomaly mode">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.anomalies" value="none"></splunk-text-input>
     </splunk-control-group>
@@ -256,9 +272,7 @@
     <splunk-control-group label="Sensitivity 1-10">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.anomalySensitivity" value="3"></splunk-text-input>
     </splunk-control-group>
-</form>
 
-<form class="splunk-formatter-section" section-label="Interaction">
     <splunk-control-group label="Show hover crosshair and tooltip">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.showHover" value="true"></splunk-text-input>
     </splunk-control-group>
@@ -273,7 +287,7 @@
     </div>
 </form>
 
-<form class="splunk-formatter-section" section-label="Plot area padding">
+<form class="splunk-formatter-section" section-label="Axis and drilldown">
     <splunk-control-group label="padLeft">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.padLeft" value="0"></splunk-text-input>
     </splunk-control-group>
@@ -289,9 +303,7 @@
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
         Defaults are flush to the tile edges. Raise padBottom if you enable X-axis ticks (auto-bumps to 14 when empty).
     </div>
-</form>
 
-<form class="splunk-formatter-section" section-label="Axis and drilldown">
     <splunk-control-group label="Show X-axis ticks">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.showXAxis" value="false"></splunk-text-input>
     </splunk-control-group>
@@ -306,7 +318,7 @@
     </splunk-control-group>
 </form>
 
-<form class="splunk-formatter-section" section-label="Custom - text row">
+<form class="splunk-formatter-section" section-label="Text and info">
     <splunk-control-group label="Show text row">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.showTextRow" value="true">
             <option value="true">On</option>
@@ -385,8 +397,7 @@
     <splunk-control-group label="Link search latest">
         <splunk-text-input name="{{VIZ_NAMESPACE}}.linkLatest" value=""></splunk-text-input>
     </splunk-control-group>
-</form>
-<form class="splunk-formatter-section" section-label="Custom - info">
+
     <splunk-control-group label="Show info icon">
         <splunk-radio-input name="{{VIZ_NAMESPACE}}.showInfo" value="false">
             <option value="true">On</option>
@@ -401,13 +412,5 @@
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
         Info text wins. If it is blank, the latest value of the info field is shown.
-    </div>
-</form>
-<form class="splunk-formatter-section" section-label="Empty state">
-    <splunk-control-group label="Custom empty message">
-        <splunk-text-input name="{{VIZ_NAMESPACE}}.emptyText" value=""></splunk-text-input>
-    </splunk-control-group>
-    <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Shown when there are no points or fewer than 2 numeric points. Leave blank for defaults.
     </div>
 </form>

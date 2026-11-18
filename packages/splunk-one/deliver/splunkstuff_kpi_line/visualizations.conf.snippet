@@ -1,8 +1,9 @@
 # Paste into: $SPLUNK_HOME/etc/apps/<APP_ID>/default/visualizations.conf
+# Splunk Enterprise 9.4.x custom visualization registration
 
 [splunkstuff_kpi_line]
-label = BGDHamp — KPI loaded line (vanilla AMD, full options)
-description = Readable AMD single-value + line chart; LineChart-style layout, padding, stroke, threshold styling, and hover annotation options.
+label = SplunkStuff - KPI loaded line (JavaScript)
+description = Readable AMD single-value + line chart with Classic Format options, text row, and info icon. Expects column-major results with _time and a numeric field.
 default_height = 200
 search_fragment = | timechart span=1h avg(my_metric) as value
 supports_drilldown = 0

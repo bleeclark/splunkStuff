@@ -24,8 +24,9 @@ After restart:
 
 ### Defaults that transfer as-is
 
-- **Line:** Y scale **Auto**, background **transparent** (no good/bad trend colors), dual-series / compare available in Format
-- **Pie:** Palette **Dashboard Studio** (`#7B56DB`, `#009CEB`, `#00CDAF`, …), background `#01417F`
+- **Line:** Format → **Data** for Y/compare field names; Appearance background mode Transparent/Solid; no good/bad trend colors
+- **Pie:** Format → **Data** for label/value/compare/color field names; Palette **Dashboard Studio**; background `#01417F`
+- **Splunk 9.4.5:** Format keys resolve via `getPropertyNamespaceInfo()` + suffix match (works even if app folder name differs)
 
 No Format toggles need to be set for a normal transfer. Saved dashboards keep their own Format overrides.
 

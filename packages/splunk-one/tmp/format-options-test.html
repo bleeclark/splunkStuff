@@ -177,7 +177,7 @@
       ],
     };
     ui.viz.updateView(ui.viz.formatData(raw), cfg(LINE_NS, {
-      valueField: 'value', yScale: 'fixed', min: '0', max: '100', showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B',
+      valueField: 'value', yScale: 'fixed', min: '0', max: '100', showMajor: 'true', colorPlacement: 'top', backgroundMode: 'solid', background: '#0B1F3B',
     }));
     var checks = [];
     assert(checks, 'renders with fixed scale', !!ui.el.querySelector('path'));
@@ -189,7 +189,7 @@
     var ui = mountCard('LINE · colorPlacement top + background', 'line');
     ui.viz.updateView(ui.viz.formatData(lineRawSingle()), cfg(LINE_NS, {
       valueField: 'value', yScale: 'auto', showMajor: 'true', colorPlacement: 'top',
-      background: '#102a43', stroke: '#FFFFFF', goodColor: '#01417F', badColor: '#DFA611',
+      backgroundMode: 'solid', background: '#102a43', stroke: '#FFFFFF', goodColor: '#01417F', badColor: '#DFA611',
     }));
     var checks = [];
     var root = ui.el.querySelector('.bgdhamp-kpi-line-viz');
@@ -203,7 +203,7 @@
     var ui = mountCard('LINE · dual stream + legend + area', 'line');
     ui.viz.updateView(ui.viz.formatData(lineRawDual()), cfg(LINE_NS, {
       valueField: 'current', compareField: 'previous', comparison: 'true', seriesMode: 'multi',
-      yScale: 'auto', showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B',
+      yScale: 'auto', showMajor: 'true', colorPlacement: 'top', backgroundMode: 'solid', background: '#0B1F3B',
       showLegend: 'true', showArea: 'true', shadeBetween: 'true', showXAxis: 'true',
       stroke: '#FFFFFF', compareStroke: '#7EB6FF',
     }));
@@ -217,7 +217,7 @@
   (function () {
     var ui = mountCard('LINE · thresholds + markers + SMA', 'line');
     ui.viz.updateView(ui.viz.formatData(lineRawSingle()), cfg(LINE_NS, {
-      valueField: 'value', yScale: 'auto', showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B',
+      valueField: 'value', yScale: 'auto', showMajor: 'true', colorPlacement: 'top', backgroundMode: 'solid', background: '#0B1F3B',
       threshold: 'true', thresholdMin: '20', thresholdMax: '80', target: '50',
       showMarkers: 'true', chartStyle: 'area', showArea: 'true', smoothing: 'sma', smaWindow: '3',
       showHover: 'true', showHoverAnnotation: 'true',
@@ -232,7 +232,7 @@
     var ui = mountCard('LINE · anomalies + annotations', 'line');
     ui.viz.updateView(ui.viz.formatData(lineRawDual()), cfg(LINE_NS, {
       valueField: 'current', compareField: 'previous', comparison: 'true', yScale: 'auto',
-      showMajor: 'true', colorPlacement: 'top', background: '#0B1F3B',
+      showMajor: 'true', colorPlacement: 'top', backgroundMode: 'solid', background: '#0B1F3B',
       anomalies: 'pctChange', anomalySensitivity: '2',
       annotationField: 'annotation', showAnnotationLabels: 'true',
     }));
@@ -246,7 +246,7 @@
     var ui = mountCard('LINE · text row + info + unit', 'line');
     ui.viz.updateView(ui.viz.formatData(lineRawDual()), cfg(LINE_NS, {
       valueField: 'current', yScale: 'auto', showMajor: 'true', colorPlacement: 'top',
-      background: 'transparent', textColor: '#FFFFFF', stroke: '#01417F', compareStroke: '#DFA611',
+      backgroundMode: 'transparent', background: 'transparent', textColor: '#FFFFFF', stroke: '#01417F', compareStroke: '#DFA611',
       comparison: 'true', compareField: 'previous', showLegend: 'true',
       showTextRow: 'true', text1Field: 'text1', text2Field: 'text2', text3Field: 'text3',
       text1LinkUrl: 'https://example.com/$value$', showInfo: 'true', infoField: 'info',
@@ -264,7 +264,7 @@
     var ui = mountCard('LINE · chart-only + empty message', 'line');
     ui.viz.updateView(ui.viz.formatData(lineRawEmpty()), cfg(LINE_NS, {
       valueField: 'value', showMajor: 'false', emptyText: 'Custom empty LINE',
-      background: '#0B1F3B', textColor: '#FFFFFF',
+      backgroundMode: 'solid', background: '#0B1F3B', textColor: '#FFFFFF',
     }));
     var checks = [];
     assert(checks, 'empty message shown', /Custom empty LINE/.test(ui.el.textContent || ''));
@@ -277,7 +277,7 @@
     ui.viz.updateView(ui.viz.formatData(pieRaw()), cfg(PIE_NS, {
       labelField: 'category', valueField: 'count', palettePreset: 'studio',
       title: 'Studio palette', showSliceLabels: 'true', showPercent: 'true',
-      legendPosition: 'right', background: '#01417F', textColor: '#FFFFFF',
+      legendPosition: 'right', backgroundMode: 'solid', background: '#01417F', textColor: '#FFFFFF',
       otherEnabled: 'false', topN: '0',
     }));
     var fills = Array.prototype.map.call(ui.el.querySelectorAll('path'), function (p) { return p.getAttribute('fill'); })
@@ -294,7 +294,7 @@
     ui.viz.updateView(ui.viz.formatData(pieRaw()), cfg(PIE_NS, {
       labelField: 'category', valueField: 'count', palettePreset: 'classic',
       innerRadius: '44', legendPosition: 'bottom', title: 'Classic donut',
-      showSliceLabels: 'true', background: '#01417F', textColor: '#FFFFFF',
+      showSliceLabels: 'true', backgroundMode: 'solid', background: '#01417F', textColor: '#FFFFFF',
       otherEnabled: 'false', topN: '0',
     }));
     var fills = Array.prototype.map.call(ui.el.querySelectorAll('path'), function (p) { return p.getAttribute('fill'); })
@@ -312,7 +312,7 @@
       labelField: 'category', valueField: 'count', palettePreset: 'studio',
       topN: '3', otherEnabled: 'true', otherLabel: 'Other', otherColor: '#8B9BB4',
       minSlicePercent: '1', sortMode: 'value-desc',
-      background: '#01417F', textColor: '#FFFFFF', legendPosition: 'right',
+      backgroundMode: 'solid', background: '#01417F', textColor: '#FFFFFF', legendPosition: 'right',
       title: 'Top 3 + Other', showSliceLabels: 'true',
     }));
     var checks = [];
@@ -332,7 +332,7 @@
       showTextRow: 'true', text1Field: 'text1', text2Field: 'text2', text3Field: 'text3',
       text1LinkUrlField: '', showInfo: 'true', infoField: 'info',
       palettePreset: 'studio', legendPosition: 'right', title: 'Compare + text',
-      background: '#01417F', textColor: '#FFFFFF',
+      backgroundMode: 'solid', background: '#01417F', textColor: '#FFFFFF',
       showSliceLabels: 'true', showInspector: 'true', showDataQuality: 'false',
       otherEnabled: 'false', topN: '0',
     }));
@@ -357,7 +357,7 @@
         labelField: 'category',
         valueField: 'count',
         emptyMessage: 'Custom empty PIE',
-        background: '#01417F',
+        backgroundMode: 'solid', background: '#01417F',
         textColor: '#FFFFFF',
       })
     );
