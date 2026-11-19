@@ -17,7 +17,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '202611181525-kpi-line-yaxis';
+    var VIZ_BUILD = '202611191600-kpi-line-ootb-axes';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
@@ -1406,6 +1406,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         if (/^\d{4}-\d{2}-\d{2}([T\s].*)?$/.test(t)) {
             return true;
         }
+        // Month buckets from timechart span=1mon / | table _time often look like 2026-06
+        if (/^\d{4}-\d{2}$/.test(t)) {
+            return true;
+        }
         if (/^\d{1,2}\/\d{1,2}\/\d{2,4}([,\s].*)?$/.test(t)) {
             return true;
         }
@@ -1418,34 +1422,46 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
         return false;
     }
 
+    function parseTimeToMs(raw) {
+        var t = cellValue(raw);
+        if (typeof t === 'number' && isFinite(t)) {
+            if (isLikelyEpochMs(t)) {
+                return t;
+            }
+            if (isLikelyEpochSeconds(t)) {
+                return t * 1000;
+            }
+            return NaN;
+        }
+        if (typeof t !== 'string') {
+            return NaN;
+        }
+        var s = t.trim();
+        if (!s || !looksLikeDateTimeString(s)) {
+            return NaN;
+        }
+        if (/^\d{4}-\d{2}$/.test(s)) {
+            // Treat YYYY-MM as the first of that month (UTC-safe enough for axis order).
+            var monthMs = Date.parse(s + '-01T00:00:00');
+            return isFinite(monthMs) ? monthMs : NaN;
+        }
+        var parsed = Date.parse(s);
+        return isFinite(parsed) ? parsed : NaN;
+    }
+
     function normalizeTimes(rawTimes, len) {
         var times = Array.isArray(rawTimes) ? rawTimes.slice(0, len) : [];
         var ms = [];
         var ok = 0;
         var i;
         for (i = 0; i < len; i += 1) {
-            var t = cellValue(times[i]);
-            if (typeof t === 'string' && looksLikeDateTimeString(t)) {
-                var parsed = Date.parse(t);
-                if (isFinite(parsed)) {
-                    ms.push(parsed);
-                    ok += 1;
-                    continue;
-                }
+            var parsedMs = parseTimeToMs(times[i]);
+            if (isFinite(parsedMs)) {
+                ms.push(parsedMs);
+                ok += 1;
+            } else {
+                ms.push(null);
             }
-            if (typeof t === 'number' && isFinite(t)) {
-                if (isLikelyEpochMs(t)) {
-                    ms.push(t);
-                    ok += 1;
-                    continue;
-                }
-                if (isLikelyEpochSeconds(t)) {
-                    ms.push(t * 1000);
-                    ok += 1;
-                    continue;
-                }
-            }
-            ms.push(null);
         }
         return { ms: ms, timeLike: ok >= Math.max(2, Math.floor(len * 0.7)) };
     }
@@ -2408,10 +2424,10 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             var target = useThreshold ? readFloat(config, 'target', 50) : null;
             var anomalyMode = String(readConfig(config, 'anomalies', 'none'));
             var anomalySens = readInt(config, 'anomalySensitivity', 3);
-            // Chart defaults: X ticks on. Y ticks/grid off — new key ignores sticky showYAxis=true.
+            // OOTB-like defaults: X + Y ticks/grid on (showYAxisTicks; ignores legacy showYAxis).
             var showXAxis = readBool(config, 'showXAxis', true);
-            var showYAxis = readBool(config, 'showYAxisTicks', false);
-            var showYGrid = showYAxis && readBool(config, 'showYGrid', false);
+            var showYAxis = readBool(config, 'showYAxisTicks', true);
+            var showYGrid = showYAxis && readBool(config, 'showYGrid', true);
             // Splunk formatter text fields may omit the key; only explicit false disables hover.
             var showHover = readBool(config, 'showHover', true);
             if (readConfig(config, 'showHover', null) === null) {
@@ -2901,12 +2917,15 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 });
             }
 
-            if (showMarkers && plotValues.length) {
-                var nMark = plotValues.length;
+            function appendSeriesMarkers(vals, markerStroke) {
+                if (!showMarkers || !vals || !vals.length) {
+                    return;
+                }
+                var nMark = vals.length;
                 var xStepMark = nMark > 1 ? Math.max(1, width - padL - padR) / (nMark - 1) : 0;
                 var miMark;
                 for (miMark = 0; miMark < nMark; miMark += 1) {
-                    var mv = Number(plotValues[miMark]);
+                    var mv = Number(vals[miMark]);
                     if (!isFinite(mv) && nullValueMode !== 'zero') {
                         continue;
                     }
@@ -2917,7 +2936,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     mDot.setAttribute('cx', xAtIndex(miMark, padL, xStepMark, xCoords).toFixed(1));
                     mDot.setAttribute('cy', yFor(mv).toFixed(1));
                     mDot.setAttribute('r', '2.5');
-                    mDot.setAttribute('fill', stroke);
+                    mDot.setAttribute('fill', markerStroke);
                     mDot.setAttribute(
                         'stroke',
                         onLightPanel ? '#FFFFFF' : classicChart ? '#fff' : 'rgba(0,0,0,0.25)'
@@ -2925,6 +2944,17 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     mDot.setAttribute('stroke-width', '1');
                     svg.appendChild(mDot);
                 }
+            }
+            // Markers on every series (OOTB-like), not only the primary.
+            appendSeriesMarkers(plotValues, stroke);
+            for (ei = 0; ei < extraSeries.length; ei += 1) {
+                appendSeriesMarkers(
+                    extraSeries[ei].values,
+                    SERIES_PALETTE[(ei + 1) % SERIES_PALETTE.length]
+                );
+            }
+            if (cmpValues) {
+                appendSeriesMarkers(cmpValues, compareStroke);
             }
 
             appendAnnotationMarks(
@@ -3053,10 +3083,25 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                     tick.setAttribute('text-anchor', 'middle');
                     var label;
                     if (norm.timeLike && isFinite(norm.ms[idx])) {
-                        label = new Date(norm.ms[idx]).toLocaleTimeString(undefined, {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                        });
+                        var spanMs =
+                            isFinite(norm.ms[0]) && isFinite(norm.ms[norm.ms.length - 1])
+                                ? Math.abs(norm.ms[norm.ms.length - 1] - norm.ms[0])
+                                : 0;
+                        // Month-scale series → 2026-06 style; otherwise clock time like OOTB short charts.
+                        if (spanMs >= 28 * 24 * 3600 * 1000) {
+                            var dMonth = new Date(norm.ms[idx]);
+                            var mo = dMonth.getMonth() + 1;
+                            label =
+                                dMonth.getFullYear() +
+                                '-' +
+                                (mo < 10 ? '0' : '') +
+                                mo;
+                        } else {
+                            label = new Date(norm.ms[idx]).toLocaleTimeString(undefined, {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            });
+                        }
                     } else if (times[idx] != null && String(times[idx]).trim() !== '') {
                         // Category / table SPL labels (host, status, …)
                         label = String(times[idx]);

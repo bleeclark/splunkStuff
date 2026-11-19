@@ -320,18 +320,18 @@
 
 <form class="splunk-formatter-section" section-label="Axis and drilldown">
     <splunk-control-group label="Show Y-axis ticks">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYAxisTicks" value="false">
-            <option value="false">Off</option>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYAxisTicks" value="true">
             <option value="true">On</option>
+            <option value="false">Off</option>
         </splunk-radio-input>
     </splunk-control-group>
     <div style="font-size: 11px; color: #666; margin: -6px 0 8px 0;">
-        Default Off. Draws left-side numeric ticks (separate from Value range mapping).
+        Default On (Classic OOTB-like). Left-side nice numeric ticks from Value range.
     </div>
     <splunk-control-group label="Show Y gridlines">
-        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYGrid" value="false">
-            <option value="false">Off</option>
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showYGrid" value="true">
             <option value="true">On</option>
+            <option value="false">Off</option>
         </splunk-radio-input>
     </splunk-control-group>
     <splunk-control-group label="Show X-axis ticks">
