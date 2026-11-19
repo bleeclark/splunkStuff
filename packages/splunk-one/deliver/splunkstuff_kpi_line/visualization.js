@@ -17,7 +17,7 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
     var VIZ_ID = 'splunkstuff_kpi_line';
     /** Fallback only — runtime NS comes from getPropertyNamespaceInfo() (Splunk 9.4+). */
     var NS = 'display.visualizations.custom.so_BUI_pickulationts.splunkstuff_kpi_line.';
-    var VIZ_BUILD = '202611191600-kpi-line-ootb-axes';
+    var VIZ_BUILD = '202611191621-kpi-line-x-ticks';
     var TEXT_ROW_HEIGHT_PX = 28;
     var TEXT_ROW_SLOTS = 3;
     var INFO_ICON_SIZE_PX = 18;
@@ -1505,6 +1505,45 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
             return String(Math.round(rounded));
         }
         return String(rounded);
+    }
+
+    /**
+     * Pick X tick indices from available plot width (no hard max of 5).
+     * Shows every point when labels fit; otherwise evenly thins and always keeps ends.
+     */
+    function pickXTickIndices(n, innerW, approxLabelPx) {
+        if (!(n >= 2)) {
+            return n === 1 ? [0] : [];
+        }
+        var gap = Math.max(36, (Number(approxLabelPx) || 48) + 10);
+        var plotW = Math.max(1, Number(innerW) || 1);
+        var maxTicks = Math.max(2, Math.floor(plotW / gap) + 1);
+        maxTicks = Math.min(n, maxTicks);
+        if (maxTicks >= n) {
+            var all = [];
+            var ai;
+            for (ai = 0; ai < n; ai += 1) {
+                all.push(ai);
+            }
+            return all;
+        }
+        var out = [];
+        var prev = -1;
+        var ti;
+        for (ti = 0; ti < maxTicks; ti += 1) {
+            var idx = Math.round((ti * (n - 1)) / (maxTicks - 1));
+            if (idx !== prev) {
+                out.push(idx);
+                prev = idx;
+            }
+        }
+        if (out[0] !== 0) {
+            out.unshift(0);
+        }
+        if (out[out.length - 1] !== n - 1) {
+            out.push(n - 1);
+        }
+        return out;
     }
 
     /**
@@ -3059,10 +3098,22 @@ define(['api/SplunkVisualizationBase'], function (SplunkVisualizationBase) {
                 xAxisLine.setAttribute('vector-effect', 'non-scaling-stroke');
                 svg.appendChild(xAxisLine);
 
-                var tickCount = Math.min(5, n);
+                var xLabelApproxPx = 48;
+                if (norm.timeLike) {
+                    var spanForTicks =
+                        isFinite(norm.ms[0]) && isFinite(norm.ms[norm.ms.length - 1])
+                            ? Math.abs(norm.ms[norm.ms.length - 1] - norm.ms[0])
+                            : 0;
+                    xLabelApproxPx = spanForTicks >= 28 * 24 * 3600 * 1000 ? 52 : 44;
+                } else if (times && times.length) {
+                    var sampleLabel = String(times[0] != null ? times[0] : '');
+                    if (sampleLabel.length > 18) sampleLabel = sampleLabel.slice(0, 16) + '…';
+                    xLabelApproxPx = Math.min(110, Math.max(40, sampleLabel.length * 6.2));
+                }
+                var xTickIdxs = pickXTickIndices(n, Math.max(1, width - padL - padR), xLabelApproxPx);
                 var ti;
-                for (ti = 0; ti < tickCount; ti += 1) {
-                    var idx = Math.round((ti * (n - 1)) / (tickCount - 1));
+                for (ti = 0; ti < xTickIdxs.length; ti += 1) {
+                    var idx = xTickIdxs[ti];
                     var tx = xAtIndex(idx, padL, xStep, xCoords);
                     var xTickMark = ownerDoc.createElementNS('http://www.w3.org/2000/svg', 'line');
                     xTickMark.setAttribute('x1', tx.toFixed(1));
