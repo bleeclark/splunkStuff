@@ -395,7 +395,10 @@
       showMajor: 'false', showYAxisTicks: 'true', showYGrid: 'true', showXAxis: 'true', yScale: 'auto',
     }));
     var off = render('line', merge(lineBase, { showYAxisTicks: 'false', showYGrid: 'false' }));
-    var stickyLegacy = render('line', merge(lineBase, { showYAxis: 'true', showYGrid: 'true' }));
+    // Legacy showYAxis must not force ticks when showYAxisTicks is explicitly Off.
+    var stickyLegacy = render('line', merge(lineBase, {
+      showYAxis: 'true', showYAxisTicks: 'false', showYGrid: 'true',
+    }));
     return {
       ok:
         count(on, '.bgdhamp-kpi-line-viz__yTick') >= 2 &&
@@ -409,7 +412,7 @@
         count(on, '.bgdhamp-kpi-line-viz__yGrid') +
         ' off=' +
         count(off, '.bgdhamp-kpi-line-viz__yTick') +
-        ' legacySticky=' +
+        ' legacyOff=' +
         count(stickyLegacy, '.bgdhamp-kpi-line-viz__yTick'),
     };
   });
@@ -429,7 +432,7 @@
       detail: 'bg=' + bgv,
     };
   });
-  add(lineTests, 'defaults: no major, no trend, no Y scale', function () {
+  add(lineTests, 'defaults: no major, no trend, Y+X ticks on', function () {
     var el = render('line', {
       valueField: 'current',
       yScale: 'auto',
@@ -442,11 +445,15 @@
       ok:
         !el.querySelector('.bgdhamp-kpi-line-viz__major') &&
         !el.querySelector('.bgdhamp-kpi-line-viz__trend') &&
-        count(el, '.bgdhamp-kpi-line-viz__yTick') === 0 &&
+        count(el, '.bgdhamp-kpi-line-viz__yTick') >= 2 &&
         count(el, '.bgdhamp-kpi-line-viz__xTick') >= 2 &&
         !!el.querySelector('path') &&
         !/▲|▼|\u25b2|\u25bc/.test(el.textContent || ''),
-      detail: 'chart-only X ticks, no Y/trend',
+      detail:
+        'OOTB-like axes y=' +
+        count(el, '.bgdhamp-kpi-line-viz__yTick') +
+        ' x=' +
+        count(el, '.bgdhamp-kpi-line-viz__xTick'),
     };
   });
   add(lineTests, 'major value without trend delta', function () {
