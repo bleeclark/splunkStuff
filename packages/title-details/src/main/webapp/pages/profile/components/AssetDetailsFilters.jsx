@@ -4,6 +4,7 @@ import Text from '@splunk/react-ui/Text';
 
 import { MUTED } from '../ProfileStyles';
 
+/** Radio group used by the asset filters. Works with AssetDetailsFilters. */
 function RadioGroup({ label, name, value, options, onChange }) {
     return (
         <div style={{ minWidth: 130 }}>
@@ -36,6 +37,7 @@ function RadioGroup({ label, name, value, options, onChange }) {
     );
 }
 
+/** Asset Details filter bar: facing, hosts, devices, category, and search. Works with the results table and filterDemoAssets. */
 export default function AssetDetailsFilters({
     filters,
     onChange,

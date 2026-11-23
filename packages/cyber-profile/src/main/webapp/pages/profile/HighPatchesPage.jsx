@@ -34,6 +34,7 @@ const DEFAULT_ASSET_FILTERS = {
     search: '',
 };
 
+/** High Patches drilldown: entity filter, charts, asset filters, and the results table. Works with HighPatchesVizLayout and AssetResultsTable. */
 function HighPatchesApp({ title }) {
     const [entity, setEntity] = useState('');
     const [mode, setMode] = useState('assets');
@@ -156,11 +157,17 @@ function HighPatchesApp({ title }) {
     );
 }
 
+/** Mounts the High Patches page with the Splunk theme. Works with the profile_high_patches view. */
 export function mountHighPatchesPage(title) {
     getUserTheme()
         .then((theme) => {
             const themed = {
                 ...theme,
+                fontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                fontFamilyTitle: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                sansFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                serifFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                monoFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
                 backgroundColorPage: PAGE_BLUE,
                 backgroundColorSection: PAGE_BLUE,
                 backgroundColorPopup: PANEL_BLUE,

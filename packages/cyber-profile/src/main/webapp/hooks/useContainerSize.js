@@ -1,13 +1,6 @@
-/**
- * Resize-aware hook for measuring a host element's dimensions for pixel-based visualizations.
- * Shared by Risk and Profile React pages.
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/**
- * WHAT: Tracks host element width/height via ResizeObserver (or window resize) for responsive charts and KPIs.
- * WORKS WITH: ResizeObserver, hostRef, measure callback, LineChart, RiskTrendChart, Profile FullBleedChart.
- */
+/** Tracks a host element's width and height with ResizeObserver. Works with ChartHost, LineChart, and the profile charts. */
 export function useContainerSize({
     minWidth = 120,
     minHeight = 80,

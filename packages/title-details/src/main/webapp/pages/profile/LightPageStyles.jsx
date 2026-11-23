@@ -19,6 +19,18 @@ const LIGHT_CSS = `
   background: ${LIGHT_PAGE_BG};
   color: ${LIGHT_INK};
   padding: 18px 24px 40px;
+  font-family: 'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.ss-profile-light-page button,
+.ss-profile-light-page input,
+.ss-profile-light-page select,
+.ss-profile-light-page textarea,
+.ss-profile-light-page code {
+  font-family: inherit;
+}
+.ss-profile-light-page .highcharts-container,
+.ss-profile-light-page .highcharts-container * {
+  font-family: 'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
 }
 .ss-profile-light-page__inner {
   max-width: 1280px;
@@ -94,6 +106,7 @@ const LIGHT_CSS = `
 }
 `;
 
+/** Injects the light drilldown page CSS once. Works with LightPage. */
 export function ensureLightPageStyles() {
     if (typeof document === 'undefined') return;
     if (document.getElementById(LIGHT_STYLE_ID)) return;
@@ -103,6 +116,7 @@ export function ensureLightPageStyles() {
     document.head.appendChild(style);
 }
 
+/** Light-background page shell for drilldown views. Works with DrilldownPage and the light theme. */
 export function LightPage({ children, ...rest }) {
     useEffect(() => {
         ensureLightPageStyles();
@@ -130,6 +144,7 @@ export function LightPage({ children, ...rest }) {
     );
 }
 
+/** Title block for a light drilldown page. Works with LightPage. */
 export function LightPageHeader({ title, ...rest }) {
     return (
         <div style={{ marginBottom: 18 }} {...rest}>
@@ -141,7 +156,7 @@ export function LightPageHeader({ title, ...rest }) {
                     color: LIGHT_INK,
                     letterSpacing: '-0.02em',
                     fontFamily:
-                        "'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                        "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
                 }}
             >
                 {title}

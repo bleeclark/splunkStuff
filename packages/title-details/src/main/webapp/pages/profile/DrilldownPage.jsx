@@ -20,6 +20,7 @@ import {
     LIGHT_ACCENT,
 } from './LightPageStyles';
 
+/** Small metric card with a custom line chart. Works with DrilldownApp and LineChart. */
 function MetricCard({ feed }) {
     const { hostRef, width, height } = useContainerSize({
         minWidth: 140,
@@ -68,6 +69,7 @@ function MetricCard({ feed }) {
     );
 }
 
+/** Light drilldown page for endpoints or assets inventory metrics. Works with getDrilldownMetrics and LightPage. */
 export function DrilldownApp({ pageId, title }) {
     const [host, setHost] = useState('*');
     const [label1, setLabel1] = useState('');
@@ -231,11 +233,17 @@ export function DrilldownApp({ pageId, title }) {
     );
 }
 
+/** Mounts a light drilldown page. Works with the endpoints and assets-inventory views. */
 export function mountDrilldownPage(pageId, title) {
     getUserTheme()
         .then((theme) => {
             const themed = {
                 ...theme,
+                fontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                fontFamilyTitle: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                sansFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                serifFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                monoFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
                 backgroundColorPage: LIGHT_PAGE_BG,
                 backgroundColorSection: LIGHT_PAGE_BG,
                 backgroundColorPopup: LIGHT_CARD,

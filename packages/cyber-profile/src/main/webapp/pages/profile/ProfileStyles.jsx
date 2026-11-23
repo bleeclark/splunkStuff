@@ -1,4 +1,8 @@
 import React, { useEffect } from 'react';
+import VizTools from './components/VizTools';
+import { SPLUNK_SANS } from '../../components/visualizations/chartModel';
+
+export { SPLUNK_SANS };
 
 /** Modern SOC / cybersecurity ops surface */
 export const PAGE_BLUE = '#050B14';
@@ -30,7 +34,18 @@ const RESPONSIVE_CSS = `
     radial-gradient(1200px 500px at 12% -10%, rgba(61, 220, 255, 0.14), transparent 55%),
     radial-gradient(900px 420px at 92% 0%, rgba(0, 212, 170, 0.10), transparent 50%),
     linear-gradient(180deg, #07111F 0%, ${PAGE_BLUE} 42%, #03070D 100%);
-  font-family: 'IBM Plex Sans', 'Splunk Platform Sans', 'Segoe UI', sans-serif;
+  font-family: ${SPLUNK_SANS};
+}
+.ss-profile-page button,
+.ss-profile-page input,
+.ss-profile-page select,
+.ss-profile-page textarea,
+.ss-profile-page code {
+  font-family: inherit;
+}
+.ss-profile-standard-viz,
+.ss-profile-standard-viz * {
+  font-family: ${SPLUNK_SANS} !important;
 }
 .ss-profile-page__inner {
   max-width: 1400px;
@@ -61,7 +76,7 @@ const RESPONSIVE_CSS = `
   text-transform: uppercase;
   color: ${ACCENT_GOLD};
   cursor: pointer;
-  font-family: 'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace;
+  font-family: ${SPLUNK_SANS};
 }
 .ss-profile-kpi-card__title:hover,
 .ss-profile-kpi-card__title:focus {
@@ -105,7 +120,7 @@ const RESPONSIVE_CSS = `
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: ${ACCENT_TEAL};
-  font-family: 'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace;
+  font-family: ${SPLUNK_SANS};
 }
 .ss-profile-radio-group {
   display: flex;
@@ -154,11 +169,29 @@ const RESPONSIVE_CSS = `
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-family: 'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace;
+  font-family: ${SPLUNK_SANS};
 }
 .ss-profile-results-empty {
   padding: 28px 12px;
   text-align: center;
+  color: ${MUTED};
+  font-size: 13px;
+}
+.ss-profile-results-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.ss-profile-results-actions button,
+.ss-profile-results-actions a {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  max-width: 100%;
+  align-self: center;
+}
+.ss-profile-results-count {
   color: ${MUTED};
   font-size: 13px;
 }
@@ -174,8 +207,20 @@ const RESPONSIVE_CSS = `
   color: #E8F7FF !important;
   border-color: rgba(61, 220, 255, 0.4) !important;
 }
+.ss-profile-standard-viz {
+  width: 100%;
+  height: 100%;
+}
 .ss-profile-standard-viz text {
-  fill: #E8F7FF;
+  fill: #E8F7FF !important;
+  font-family: ${SPLUNK_SANS} !important;
+}
+.ss-profile-standard-viz .highcharts-axis-line,
+.ss-profile-standard-viz .highcharts-tick {
+  stroke: rgba(232, 247, 255, 0.55) !important;
+}
+.ss-profile-standard-viz .highcharts-grid-line {
+  stroke: rgba(232, 247, 255, 0.18) !important;
 }
 .ss-profile-filter-row {
   display: flex;
@@ -247,7 +292,7 @@ const RESPONSIVE_CSS = `
 }
 `;
 
-/** Inject shared Profile/Feedback responsive CSS once per document. */
+/** Injects the shared profile CSS once into the document. Works with Page, VizCard, charts, and the feedback page. */
 export function ensureProfileResponsiveStyles() {
     if (typeof document === 'undefined') return;
     if (document.getElementById(RESPONSIVE_STYLE_ID)) return;
@@ -257,6 +302,7 @@ export function ensureProfileResponsiveStyles() {
     document.head.appendChild(style);
 }
 
+/** Page shell that applies the profile background and responsive CSS. Works with every profile, drilldown, and feedback view. */
 export function Page({ children, ...rest }) {
     useEffect(() => {
         ensureProfileResponsiveStyles();
@@ -269,6 +315,7 @@ export function Page({ children, ...rest }) {
     );
 }
 
+/** Renders the page title in the Splunk sans stack. Works with profile, asset, patch, and feedback pages. */
 export function PageHeader({ title, ...rest }) {
     return (
         <div style={{ marginBottom: 22 }} {...rest}>
@@ -280,7 +327,7 @@ export function PageHeader({ title, ...rest }) {
                     textTransform: 'uppercase',
                     color: ACCENT_TEAL,
                     marginBottom: 8,
-                    fontFamily: "'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace",
+                    fontFamily: SPLUNK_SANS,
                 }}
             >
                 Cyber Profile · Security Operations
@@ -293,7 +340,7 @@ export function PageHeader({ title, ...rest }) {
                     lineHeight: 1.12,
                     color: '#F3FBFF',
                     letterSpacing: '-0.03em',
-                    fontFamily: "'IBM Plex Sans', 'Splunk Platform Sans', 'Segoe UI', sans-serif",
+                    fontFamily: SPLUNK_SANS,
                 }}
             >
                 {title}
@@ -311,6 +358,7 @@ export function PageHeader({ title, ...rest }) {
     );
 }
 
+/** Horizontal row for filters and action buttons. Works with the entity picker and the Metric tab. */
 export function FilterRow({ children, ...rest }) {
     return (
         <div className="ss-profile-filter-row" {...rest}>
@@ -319,6 +367,7 @@ export function FilterRow({ children, ...rest }) {
     );
 }
 
+/** Groups filter controls on the left side of a filter row. Works with FilterRow. */
 export function FilterCluster({ children, ...rest }) {
     return (
         <div
@@ -335,6 +384,7 @@ export function FilterCluster({ children, ...rest }) {
     );
 }
 
+/** Small label above a filter control. Works with the entity select and Asset Details filters. */
 export function FilterLabel({ children, ...rest }) {
     return (
         <span
@@ -352,6 +402,7 @@ export function FilterLabel({ children, ...rest }) {
     );
 }
 
+/** Wraps a row of Splunk buttons. Works with Metric A/B and other page actions. */
 export function ButtonRow({ children, className = '', ...rest }) {
     const classes = ['ss-profile-actions', className].filter(Boolean).join(' ');
     return (
@@ -361,6 +412,7 @@ export function ButtonRow({ children, className = '', ...rest }) {
     );
 }
 
+/** Responsive grid for visualization cards. Works with VizCard on the profile and metric tabs. */
 export function CardGrid({ children, columns = 3, ...rest }) {
     return (
         <div
@@ -379,6 +431,7 @@ export function CardGrid({ children, columns = 3, ...rest }) {
     );
 }
 
+/** Section title with an accent bar. Works with KPI and visualization sections. */
 export function SectionHeading({ children, subtitle, tone = 'kpi', ...rest }) {
     const accent = tone === 'viz' ? ACCENT_GOLD : ACCENT_TEAL;
     return (
@@ -390,7 +443,7 @@ export function SectionHeading({ children, subtitle, tone = 'kpi', ...rest }) {
                     letterSpacing: '0.1em',
                     textTransform: 'uppercase',
                     color: accent,
-                    fontFamily: "'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace",
+                    fontFamily: SPLUNK_SANS,
                 }}
             >
                 {children}
@@ -402,6 +455,7 @@ export function SectionHeading({ children, subtitle, tone = 'kpi', ...rest }) {
     );
 }
 
+/** Simple titled card for summary text. Works with profile summary sections. */
 export function SummaryCard({ title, children, ...rest }) {
     return (
         <div
@@ -424,7 +478,7 @@ export function SummaryCard({ title, children, ...rest }) {
                     textTransform: 'uppercase',
                     color: ACCENT_GOLD,
                     marginBottom: 8,
-                    fontFamily: "'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace",
+                    fontFamily: SPLUNK_SANS,
                 }}
             >
                 {title}
@@ -434,7 +488,8 @@ export function SummaryCard({ title, children, ...rest }) {
     );
 }
 
-export function VizCard({ title, subheader, headerBlue = false, href, children, ...rest }) {
+/** Card chrome around a chart, including the title, text row, and info button. Works with VizTools and the standard charts. */
+export function VizCard({ title, subheader, headerBlue = false, href, tools = null, children, ...rest }) {
     const name = title || subheader;
     const caption = title && subheader ? subheader : null;
     const titleStyle = {
@@ -451,19 +506,20 @@ export function VizCard({ title, subheader, headerBlue = false, href, children, 
         color: headerBlue ? ACCENT_GOLD : '#F3FBFF',
         letterSpacing: headerBlue ? '0.06em' : '-0.01em',
         textTransform: headerBlue ? 'uppercase' : 'none',
-        fontFamily: headerBlue
-            ? "'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace"
-            : "'IBM Plex Sans', 'Splunk Platform Sans', 'Segoe UI', sans-serif",
+        fontFamily: SPLUNK_SANS,
         overflow: 'hidden',
         whiteSpace: 'nowrap',
         textOverflow: 'ellipsis',
         lineHeight: 1.3,
         textDecoration: 'none',
         cursor: href ? 'pointer' : 'default',
+        paddingRight:
+            tools && tools.showInfo !== false && String(tools.infoText || '').trim() ? 36 : undefined,
     };
     return (
         <div
             style={{
+                position: 'relative',
                 background: headerBlue ? VIZ_BODY : 'transparent',
                 border: headerBlue ? `1px solid ${VIZ_BORDER}` : 'none',
                 borderRadius: 6,
@@ -497,18 +553,19 @@ export function VizCard({ title, subheader, headerBlue = false, href, children, 
                         overflow: 'hidden',
                         whiteSpace: 'nowrap',
                         textOverflow: 'ellipsis',
-                        fontFamily:
-                            "'Splunk Platform Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                        fontFamily: SPLUNK_SANS,
                     }}
                 >
                     {caption}
                 </div>
             ) : null}
+            <VizTools tools={tools} />
             <div style={{ padding: headerBlue ? '8px 12px 12px' : '0 4px 8px' }}>{children}</div>
         </div>
     );
 }
 
+/** Fixed-height frame that holds one chart. Works with StandardSplunkViz inside VizCard. */
 export function VizPanel({ children, width = '100%', height = 200, background = 'transparent', ...rest }) {
     return (
         <div
@@ -529,6 +586,7 @@ export function VizPanel({ children, width = '100%', height = 200, background = 
     );
 }
 
+/** Large KPI number. Works with summary and drilldown metric cards. */
 export function KpiValue({ children, ...rest }) {
     return (
         <div
@@ -545,6 +603,7 @@ export function KpiValue({ children, ...rest }) {
     );
 }
 
+/** Secondary KPI change text under a value. Works with KpiValue. */
 export function KpiDelta({ children, ...rest }) {
     return (
         <div
@@ -560,6 +619,7 @@ export function KpiDelta({ children, ...rest }) {
     );
 }
 
+/** Content wrapper for the Profile or Metric tab. Works with ProfileTabContent and MetricTabContent. */
 export function TabPanel({ children, ...rest }) {
     return (
         <div style={{ paddingTop: 18 }} {...rest}>

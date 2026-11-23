@@ -8,18 +8,22 @@ import {
     seriesIndexFromPointerNone,
 } from '../../lib/bgdhampVizHoverMath.mjs';
 
+/** Keeps only finite numbers from a series. Works with LineChart. */
 function toFiniteNumbers(values) {
     return (Array.isArray(values) ? values : []).map(Number).filter(Number.isFinite);
 }
 
+/** True when a number looks like a Unix timestamp in seconds. Works with normalizeTimes. */
 function isLikelyEpochSeconds(n) {
     return Number.isFinite(n) && n > 31536000 && n < 4102444800;
 }
 
+/** True when a number looks like a Unix timestamp in milliseconds. Works with normalizeTimes. */
 function isLikelyEpochMs(n) {
     return Number.isFinite(n) && n > 31536000000 && n < 4102444800000;
 }
 
+/** Converts mixed time values to milliseconds for hover and drilldown. Works with LineChart. */
 function normalizeTimes(rawTimes, len) {
     const times = Array.isArray(rawTimes) ? rawTimes.slice(0, len) : [];
     const out = [];
@@ -52,6 +56,7 @@ function normalizeTimes(rawTimes, len) {
     return { ms: out, timeLike };
 }
 
+/** Formats a point time for the line-chart hover tip. Works with LineChart. */
 function formatTimeForHover(raw, ms, timeLike) {
     if (timeLike && Number.isFinite(ms)) {
         return new Date(ms).toLocaleString(undefined, {
@@ -65,11 +70,13 @@ function formatTimeForHover(raw, ms, timeLike) {
     return String(raw);
 }
 
+/** Formats a numeric point for hover text. Works with LineChart. */
 function formatValue(v) {
     if (!Number.isFinite(v)) return '—';
     return v.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+/** Formats the large KPI number and its unit. Works with LineChart. */
 function formatMajor(v, unit) {
     if (!Number.isFinite(v)) {
         return { majorText: '—', unitText: '' };
@@ -80,12 +87,14 @@ function formatMajor(v, unit) {
     };
 }
 
+/** Formats an up or down change with an arrow. Works with LineChart and trendDelta. */
 function formatDelta(d) {
     if (!Number.isFinite(d)) return '—';
     const arrow = d >= 0 ? '\u25b2' : '\u25bc';
     return `${arrow} ${d.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
+/** Computes a padded min and max across series. Works with LineChart axes. */
 function deriveDomainFromSeries(seriesList) {
     const nums = [];
     seriesList.forEach((s) => {
@@ -101,6 +110,7 @@ function deriveDomainFromSeries(seriesList) {
     return { min: min - pad, max: max + pad };
 }
 
+/** Smooths a series with a moving average and keeps gaps as NaN. Works with LineChart overlays. */
 function sma(values, windowSize) {
     const w = Math.max(1, Math.floor(Number(windowSize) || 1));
     if (w <= 1) return values.slice();
@@ -114,6 +124,7 @@ function sma(values, windowSize) {
     return out;
 }
 
+/** Thins a series so the SVG path stays light. Works with LineChart. */
 function downsample(values, times, maxPoints) {
     const cap = Math.floor(Number(maxPoints) || 0);
     if (!cap || values.length <= cap) return { values, times };
@@ -131,6 +142,7 @@ function downsample(values, times, maxPoints) {
     return { values: vOut, times: tOut };
 }
 
+/** Builds the SVG line path for a series. Works with LineChart. */
 function buildPath(values, width, height, { padLeft, padRight, padTop, padBottom, min, max }) {
     const innerW = Math.max(1, width - padLeft - padRight);
     const innerH = Math.max(1, height - padTop - padBottom);
@@ -148,6 +160,7 @@ function buildPath(values, width, height, { padLeft, padRight, padTop, padBottom
         .join(' ');
 }
 
+/** Closes a line path into an area under the line. Works with buildPath and LineChart. */
 function buildAreaPath(values, width, height, pads) {
     const line = buildPath(values, width, height, pads);
     if (!line) return '';
@@ -161,6 +174,7 @@ function buildAreaPath(values, width, height, pads) {
     return `${line} L ${xN.toFixed(2)} ${baseline.toFixed(2)} L ${x0.toFixed(2)} ${baseline.toFixed(2)} Z`;
 }
 
+/** Chooses readable axis tick values. Works with LineChart. */
 function niceAxisTicks(min, max, count) {
     const span = max - min || 1;
     const rough = span / Math.max(1, count - 1);
@@ -184,6 +198,7 @@ function niceAxisTicks(min, max, count) {
     return ticks;
 }
 
+/** Flags points that jump by percent change or z-score. Works with LineChart anomaly markers. */
 function computeAnomalies(values, mode, sensitivity) {
     const m = mode || 'none';
     const s = Number.isFinite(Number(sensitivity)) ? Number(sensitivity) : 3;
@@ -222,6 +237,7 @@ function computeAnomalies(values, mode, sensitivity) {
     return flags;
 }
 
+/** Builds a Splunk search URL for a chart drilldown. Works with LineChart click-through. */
 function buildSearchUrl({ earliestSec, latestSec, query }) {
     const q = query || '*';
     const params = new URLSearchParams();
@@ -231,6 +247,7 @@ function buildSearchUrl({ earliestSec, latestSec, query }) {
     return `/app/search/search?${params.toString()}`;
 }
 
+/** Custom SVG line chart with hover, thresholds, anomalies, and trend color. Works with drilldown layouts and ProfileKpiGrid. */
 export default function LineChart({
     // Backwards-compatible single-series inputs
     values,
@@ -537,6 +554,7 @@ export default function LineChart({
     useLayoutEffect(() => {
         if (!showHover || n < 2 || !vizDocument || !vizDocument.defaultView) return undefined;
 
+        /** Tracks the pointer so the hover tip follows the nearest point. Works with the LineChart plot. */
         function onDocPointerMove(e) {
             const el = chartAreaRef.current;
             if (!el) return;
@@ -597,6 +615,7 @@ export default function LineChart({
             return undefined;
         }
 
+        /** Opens the Splunk search drilldown when a point is clicked. Works with buildSearchUrl and LineChart. */
         function onDocClick(e) {
             const el = chartAreaRef.current;
             if (!el) return;

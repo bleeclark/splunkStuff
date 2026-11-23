@@ -1,17 +1,9 @@
-/**
- * Pure hover hit-test + series index math for BGDHamp line visualizations.
- * Source of truth — AMD copy: appserver/static/visualizations/_shared/bgdhampVizHoverMath.js
- */
-
+/** Clamps a number into a range. Works with LineChart paths and hover math. */
 export function clamp(v, lo, hi) {
     return Math.max(lo, Math.min(hi, v));
 }
 
-/**
- * @param {number} clientX
- * @param {number} clientY
- * @param {{ left: number, top: number, right: number, bottom: number, width?: number, height?: number }} rect
- */
+/** True when a pointer is inside a rectangle. Works with line-chart hover. */
 export function hitTestPointInRect(clientX, clientY, rect) {
     const w = rect.width != null ? rect.width : rect.right - rect.left;
     const h = rect.height != null ? rect.height : rect.bottom - rect.top;
@@ -24,17 +16,7 @@ export function hitTestPointInRect(clientX, clientY, rect) {
     );
 }
 
-/**
- * Map pointer X to series index when the mapping rect matches the full SVG user width
- * (no letterboxing). Prefer {@link seriesIndexFromPointerMeet} for scaled SVGs.
- *
- * @param {number} clientX
- * @param {{ left: number, width: number }} mappingRect - must have width > 0
- * @param {number} modelWidth - logical plot width (matches SVG width attribute)
- * @param {number} padLeft
- * @param {number} padRight
- * @param {number} pointCount - n >= 2
- */
+/** Maps a pointer x position to a series point index. Works with LineChart hover. */
 export function seriesIndexFromClientX(clientX, mappingRect, modelWidth, padLeft, padRight, pointCount) {
     const n = pointCount;
     if (n < 2 || !mappingRect.width) return 0;
@@ -46,16 +28,7 @@ export function seriesIndexFromClientX(clientX, mappingRect, modelWidth, padLeft
     return clamp(Math.round(relX / xStep), 0, n - 1);
 }
 
-/**
- * Viewport → SVG user space for default `preserveAspectRatio: xMidYMid meet`.
- *
- * @param {number} clientX
- * @param {number} clientY
- * @param {Element | { left: number, top: number, width: number, height: number }} rectSource - element or ClientRect-like
- * @param {number} userW
- * @param {number} userH
- * @returns {{ x: number, y: number } | null}
- */
+/** Converts a pointer position into SVG user space. Works with the line-chart hover layer. */
 export function viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH) {
     const rect =
         rectSource && typeof rectSource.getBoundingClientRect === 'function'
@@ -81,9 +54,7 @@ export function viewportToSvgUserXY(clientX, clientY, rectSource, userW, userH) 
     };
 }
 
-/**
- * Series index from pointer coordinates (handles meet letterboxing).
- */
+/** Point index when the pointer meets the series using the meet mapping. Works with LineChart. */
 export function seriesIndexFromPointerMeet(
     clientX,
     clientY,
@@ -101,16 +72,7 @@ export function seriesIndexFromPointerMeet(
     return clamp(Math.round((mapped.x - padLeft) / xStep), 0, pointCount - 1);
 }
 
-/**
- * Viewport → SVG user space for `preserveAspectRatio="none"` (non-uniform stretch).
- *
- * @param {number} clientX
- * @param {number} clientY
- * @param {Element | { left: number, top: number, width: number, height: number }} rectSource
- * @param {number} userW
- * @param {number} userH
- * @returns {{ x: number, y: number } | null}
- */
+/** Converts a pointer position into SVG space for the none-aspect mapping. Works with LineChart hover. */
 export function viewportToSvgUserXYNone(clientX, clientY, rectSource, userW, userH) {
     const rect =
         rectSource && typeof rectSource.getBoundingClientRect === 'function'
@@ -133,9 +95,7 @@ export function viewportToSvgUserXYNone(clientX, clientY, rectSource, userW, use
     };
 }
 
-/**
- * Series index from pointer when SVG uses `preserveAspectRatio="none"` (fillContainer).
- */
+/** Point index when the pointer uses the none-aspect mapping. Works with LineChart. */
 export function seriesIndexFromPointerNone(
     clientX,
     clientY,
@@ -153,16 +113,7 @@ export function seriesIndexFromPointerNone(
     return clamp(Math.round((mapped.x - padLeft) / xStep), 0, pointCount - 1);
 }
 
-/**
- * Clamp a fixed-position tooltip so it stays inside the viewport.
- * Assumes transform translate(-50%, calc(-100% - 8px)) (centered above cursor).
- *
- * @param {number} clientX
- * @param {number} clientY
- * @param {{ innerWidth?: number, innerHeight?: number }} [viewport]
- * @param {{ width?: number, height?: number, pad?: number }} [opts]
- * @returns {{ x: number, y: number }}
- */
+/** Keeps the hover tooltip inside the viewport. Works with LineChart. */
 export function clampTooltipViewport(clientX, clientY, viewport, opts) {
     const vw =
         (viewport && viewport.innerWidth) ||

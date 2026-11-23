@@ -35,6 +35,7 @@ const DEFAULT_ASSET_FILTERS = {
     search: '',
 };
 
+/** Asset Details page: entity filter, asset/endpoint mode, charts, filters, and the results table. Works with AssetCloneVizLayout and AssetResultsTable. */
 export function BlueAssetApp({ title }) {
     const [entity, setEntity] = useState('');
     const [mode, setMode] = useState('assets');
@@ -156,11 +157,17 @@ export function BlueAssetApp({ title }) {
     );
 }
 
+/** Mounts the Asset Details page with the Splunk theme. Works with the profile_assets view. */
 export function mountBlueAssetPage(title) {
     getUserTheme()
         .then((theme) => {
             const themed = {
                 ...theme,
+                fontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                fontFamilyTitle: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                sansFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                serifFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+                monoFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
                 backgroundColorPage: PAGE_BLUE,
                 backgroundColorSection: PAGE_BLUE,
                 backgroundColorPopup: PANEL_BLUE,

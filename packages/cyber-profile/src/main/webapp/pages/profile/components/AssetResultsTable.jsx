@@ -1,21 +1,14 @@
 import React from 'react';
 import Button from '@splunk/react-ui/Button';
 
-import { MUTED } from '../ProfileStyles';
+import { buildFeedbackHref as feedbackHref } from '../vizLinks';
 
+/** Builds the feedback URL for the rows checked in this app's results table. Works with AssetResultsTable and the feedback page. */
 export function buildFeedbackHref(selectedRows) {
-    const payload = selectedRows.map((r) => ({ id: r.id, name: r.name, category: r.category }));
-    try {
-        if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('ss_profile_feedback_assets', JSON.stringify(payload));
-        }
-    } catch (e) {
-        // ignore
-    }
-    const ids = payload.map((p) => p.id).join(',');
-    return `/app/so_cyber_profile/feedback?assets=${encodeURIComponent(ids)}`;
+    return feedbackHref('so_cyber_profile', selectedRows);
 }
 
+/** Results table with row checkboxes and the feedback button. Works with buildFeedbackHref and the asset drilldown pages. */
 export default function AssetResultsTable({
     active,
     rows,
@@ -28,22 +21,14 @@ export default function AssetResultsTable({
 
     return (
         <div style={{ marginTop: 14 }}>
-            <div
-                style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    gap: 12,
-                    marginBottom: 10,
-                }}
-            >
+            <div className="ss-profile-results-actions">
                 <Button
                     label="Provide Feedback on Checked Items"
                     appearance="primary"
                     disabled={selectedRows.length === 0}
                     to={selectedRows.length ? buildFeedbackHref(selectedRows) : undefined}
                 />
-                <span style={{ color: MUTED, fontSize: 13 }}>
+                <span className="ss-profile-results-count">
                     Current Number of Selected Items: {selectedRows.length}
                 </span>
             </div>

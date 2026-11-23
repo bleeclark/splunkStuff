@@ -10,6 +10,7 @@ const palette = {
     textColor: '#FFFFFF',
 };
 
+/** One KPI tile that can link into a drilldown page. Works with ProfileKpiGrid and LineChart. */
 function KpiTile({ feed, href, drillable }) {
     const { hostRef, width, height } = useContainerSize({
         minWidth: 120,
@@ -74,6 +75,7 @@ function KpiTile({ feed, href, drillable }) {
     );
 }
 
+/** Grid of profile KPI tiles. Works with KpiTile and the cybersecurity demo feeds. */
 export default function ProfileKpiGrid() {
     const tiles = [
         ...PROFILE_DRILLDOWNS.map((d) => ({ feed: d.feed, href: d.href, drillable: true })),

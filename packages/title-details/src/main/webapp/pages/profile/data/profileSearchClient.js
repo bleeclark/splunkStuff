@@ -36,10 +36,7 @@ search index=_internal
 const DEFAULT_MAX_WAIT_MS = 300000;
 const POLL_INTERVAL_MS = 250;
 
-/**
- * Resolve Splunk REST proxy base (…/splunkd/__raw) from page globals.
- * Splunk 10 HTML views expose __splunkd_partials__ keyed by endpoint, not splunkd.rootUrl.
- */
+/** Finds the Splunkd REST proxy base URL from the page. Works with runProfileSearch. */
 export function getSplunkRestBase() {
     if (typeof window === 'undefined') {
         return '';
@@ -67,10 +64,12 @@ export function getSplunkRestBase() {
     return '';
 }
 
+/** Returns the Splunk Web root used to build search URLs. Works with getSplunkRestBase. */
 function getSplunkBase() {
     return getSplunkRestBase();
 }
 
+/** Reads field rows out of a Splunk results payload. Works with runProfileSearch. */
 function parseResultsJson(json) {
     const fields = (json.fields || []).map((f) => (typeof f === 'string' ? f : f.name));
     const rows = json.results || json.rows || [];
@@ -87,6 +86,7 @@ function parseResultsJson(json) {
     return rows;
 }
 
+/** Reads progress from a Splunk search job. Works with waitForJob. */
 export function parseJobProgress(content = {}) {
     const rawProgress = Number(content.doneProgress);
     const progress = Number.isFinite(rawProgress)
@@ -101,12 +101,14 @@ export function parseJobProgress(content = {}) {
     };
 }
 
+/** Stops the search poll when the caller aborts. Works with useProfileData. */
 function throwIfAborted(signal) {
     if (signal?.aborted) {
         throw new DOMException('Search aborted', 'AbortError');
     }
 }
 
+/** Waits between Splunk job polls and wakes early if aborted. Works with waitForJob. */
 function sleep(ms, signal) {
     return new Promise((resolve, reject) => {
         if (signal?.aborted) {
@@ -127,6 +129,7 @@ function sleep(ms, signal) {
     });
 }
 
+/** Polls a Splunk search job until it finishes. Works with runProfileSearch. */
 async function waitForJob(base, sid, { onProgress, signal, maxWaitMs = DEFAULT_MAX_WAIT_MS } = {}) {
     const deadline = Date.now() + maxWaitMs;
     while (Date.now() < deadline) {
@@ -148,11 +151,7 @@ async function waitForJob(base, sid, { onProgress, signal, maxWaitMs = DEFAULT_M
     throw new Error('Search job timed out');
 }
 
-/**
- * @param {string} searchName
- * @param {string} filterKey
- * @param {{ onProgress?: Function, signal?: AbortSignal, maxWaitMs?: number }} [options]
- */
+/** Runs a named profile SPL search and returns result rows. Works with useProfileData and the search templates. */
 export async function runProfileSearch(searchName, filterKey, options = {}) {
     const { onProgress, signal, maxWaitMs } = options;
     const template = SEARCH_TEMPLATES[searchName];

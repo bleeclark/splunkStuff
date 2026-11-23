@@ -8,7 +8,8 @@
     "build": "node bin/build.js build",
     "start": "node bin/build.js watch",
     "link:app": "node bin/build.js link",
-    "package:app": "yarn build && node bin/package-app.js"
+    "package:app": "yarn build && node bin/package-app.js",
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@splunk/react-page": "^8.3.1",

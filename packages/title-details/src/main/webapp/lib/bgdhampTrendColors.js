@@ -6,6 +6,7 @@
 export const DEFAULT_UP_COLOR = '#01417F';
 export const DEFAULT_DOWN_COLOR = '#DFA611';
 
+/** Last-minus-previous change for a series. Works with trend tile colors. */
 export function trendDelta(values) {
     if (!values || !values.length) {
         return NaN;
@@ -19,13 +20,13 @@ export function trendDelta(values) {
     return last - prev;
 }
 
-/** @param {number} delta @param {string} upColor @param {string} downColor */
+/** Picks the up or down color from a trend delta. Works with LineChart and the trend tiles. */
 export function trendBackground(delta, upColor, downColor) {
     const isUp = Number.isFinite(delta) ? delta >= 0 : true;
     return isUp ? upColor : downColor;
 }
 
-/** Paint a surface with trend background; overrides Splunk formatter `background`. */
+/** Paints an element with the trend background. Works with Splunk formatter hosts. */
 export function applyTrendSurfaceStyle(el, bg) {
     if (!el) {
         return;
@@ -34,7 +35,7 @@ export function applyTrendSurfaceStyle(el, bg) {
     el.style.setProperty('background-color', bg, 'important');
 }
 
-/** Override Splunk formatter background on the viz host element. */
+/** Paints the visualization host with the trend background and text color. Works with applyTrendSurfaceStyle. */
 export function applyTrendHostStyle(el, bg, textColor) {
     if (!el) {
         return;
@@ -50,7 +51,7 @@ export function applyTrendHostStyle(el, bg, textColor) {
     el.style.boxSizing = 'border-box';
 }
 
-/** Re-apply trend bg after Splunk formatter may have painted host/parent navy. */
+/** Reapplies the trend color after Splunk paints over the tile. Works with LineChart hosts. */
 export function repaintTrendTile(hostEl, rootEl, chartEl, majorEl, bg, textColor) {
     applyTrendHostStyle(hostEl, bg, textColor);
     if (rootEl) {

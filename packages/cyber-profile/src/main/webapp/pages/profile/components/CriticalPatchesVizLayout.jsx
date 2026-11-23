@@ -12,6 +12,7 @@ const palette = {
     textColor: '#FFFFFF',
 };
 
+/** KPI tile with a sparkline for the Critical Patches layout. Works with LineChart and cybersecurity demo feeds. */
 function VizKpiCard({ feed, zeroed = false }) {
     const { hostRef, width, height } = useContainerSize({
         minWidth: 100,
@@ -66,6 +67,7 @@ function VizKpiCard({ feed, zeroed = false }) {
     );
 }
 
+/** Chart layout on the Critical Patches page. Works with VizKpiCard, StudioVizShell, and LineChart. */
 export default function CriticalPatchesVizLayout({ zeroed = false }) {
     const feeds = [
         ...PROFILE_DRILLDOWNS.map((d) => d.feed),

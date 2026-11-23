@@ -27,6 +27,7 @@ const fieldStyle = {
     borderColor: 'rgba(255,255,255,0.28)',
 };
 
+/** Reads checked assets from the URL or session storage. Works with the feedback form and AssetResultsTable. */
 function readPrefillAssets() {
     const params =
         typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -59,6 +60,7 @@ function readPrefillAssets() {
     }));
 }
 
+/** Turns checked assets into the ServiceNow ticket draft text. Works with FeedbackForm. */
 function buildPrefillMessage(assets) {
     if (!assets.length) {
         return '';
@@ -74,6 +76,7 @@ function buildPrefillMessage(assets) {
     ].join('\n');
 }
 
+/** Feedback form for a name and ticket notes, prefilled from checked table rows. Works with the feedback page and session storage. */
 function FeedbackForm() {
     const prefillAssets = useMemo(() => readPrefillAssets(), []);
     const [name, setName] = useState('');
@@ -150,6 +153,7 @@ function FeedbackForm() {
     );
 }
 
+/** Feedback page shell. Works with Splunk react-page layout and ProfileStyles. */
 function FeedbackPage() {
     useEffect(() => {
         const style = document.createElement('style');
@@ -181,6 +185,11 @@ getUserTheme()
     .then((theme) => {
         const themed = {
             ...theme,
+            fontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+            fontFamilyTitle: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+            sansFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+            serifFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+            monoFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
             backgroundColorPage: PAGE_BLUE,
             backgroundColorSection: PAGE_BLUE,
             backgroundColorPopup: CARD_NAVY,

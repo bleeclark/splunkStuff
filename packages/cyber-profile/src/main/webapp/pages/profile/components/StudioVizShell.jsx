@@ -2,6 +2,7 @@ import React from 'react';
 
 import { MUTED, VIZ_HEADER, VIZ_BODY, VIZ_BORDER } from '../ProfileStyles';
 
+/** Red warning icon shown while a Studio-style viz is waiting for input. Works with StudioVizShell. */
 function WaitingIcon() {
     return (
         <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0 }}>
@@ -15,9 +16,7 @@ function WaitingIcon() {
     );
 }
 
-/**
- * Cyber ops visualization frame (modernized from Studio shell).
- */
+/** Frame around a drilldown visualization, including waiting and empty states. Works with the asset, high-patch, and critical-patch layouts. */
 export default function StudioVizShell({
     children,
     height = 160,
@@ -55,7 +54,8 @@ export default function StudioVizShell({
                     letterSpacing: '0.1em',
                     textTransform: 'uppercase',
                     borderBottom: `1px solid ${VIZ_BORDER}`,
-                    fontFamily: "'IBM Plex Mono', 'SF Mono', Menlo, Consolas, monospace",
+                    fontFamily:
+                        "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
                 }}
             >
                 visualization

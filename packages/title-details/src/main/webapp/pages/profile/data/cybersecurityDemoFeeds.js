@@ -1,7 +1,4 @@
-/**
- * Demo fixtures for Cybersecurity Profile remake (KPI row, asset table, drill-downs).
- */
-
+/** Builds an hourly time series that rises, falls, or waves. Works with demo chart and KPI feeds. */
 function buildSeries(base, points, shape) {
     const times = [];
     const values = [];
@@ -18,6 +15,7 @@ function buildSeries(base, points, shape) {
     return { times, values };
 }
 
+/** One demo KPI or sparkline feed. Works with drilldown layouts and ProfileKpiGrid. */
 function vizFeed(title, base, shape, unit = '') {
     const { times, values } = buildSeries(base, 14, shape);
     const last = values[values.length - 1];
@@ -142,10 +140,7 @@ export const DEMO_ASSETS = [
     },
 ];
 
-/**
- * @param {object} filters
- * @returns {Array}
- */
+/** Filters the demo asset rows by entity, facing, hosts, devices, category, and search. Works with AssetResultsTable. */
 export function filterDemoAssets(filters = {}) {
     const {
         entity = '',
@@ -180,7 +175,7 @@ export function filterDemoAssets(filters = {}) {
     });
 }
 
-/** True when Asset Details should show populated rows. */
+/** True when the user has narrowed Asset Details filters enough to show the table. Works with the drilldown pages. */
 export function assetFiltersActive(filters = {}) {
     const {
         facing = 'all',
@@ -197,6 +192,7 @@ export function assetFiltersActive(filters = {}) {
     return false;
 }
 
+/** Demo metric cards for a drilldown page. Works with DrilldownApp and MetricCard. */
 export function getDrilldownMetrics(pageId) {
     const map = {
         assets: [

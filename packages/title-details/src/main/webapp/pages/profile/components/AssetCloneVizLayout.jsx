@@ -12,6 +12,7 @@ const palette = {
     textColor: '#FFFFFF',
 };
 
+/** Small sparkline panel on the Asset Details layout. Works with LineChart and StudioVizShell. */
 function MiniSpark({ feed, waiting }) {
     const { hostRef, width, height } = useContainerSize({
         minWidth: 100,
@@ -56,6 +57,7 @@ function MiniSpark({ feed, waiting }) {
     );
 }
 
+/** Large chart panel on the Asset Details layout. Works with LineChart and StudioVizShell. */
 function LargePanel({ feed, waiting }) {
     const { hostRef, width, height } = useContainerSize({
         minWidth: 160,
@@ -94,6 +96,7 @@ function LargePanel({ feed, waiting }) {
     );
 }
 
+/** Visualization grid on the Asset Details page. Works with MiniSpark, LargePanel, and demo feeds. */
 export default function AssetCloneVizLayout({ waiting = true }) {
     const leftFeeds = PROFILE_DRILLDOWNS.slice(0, 3).map((d) => d.feed);
     const midFeed = PROFILE_DRILLDOWNS[3]?.feed || PROFILE_EXTRA_KPIS[0];

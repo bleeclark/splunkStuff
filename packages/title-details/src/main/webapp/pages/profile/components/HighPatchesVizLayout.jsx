@@ -12,6 +12,7 @@ const palette = {
     textColor: '#FFFFFF',
 };
 
+/** Left-column KPI, optionally with a sparkline, on the High Patches page. Works with LineChart. */
 function LeftKpi({ feed, showSpark = false, zeroed = false }) {
     const { hostRef, width, height } = useContainerSize({
         minWidth: 120,
@@ -70,6 +71,7 @@ function LeftKpi({ feed, showSpark = false, zeroed = false }) {
     );
 }
 
+/** Chart layout on the High Patches page. Works with LeftKpi, StudioVizShell, and LineChart. */
 export default function HighPatchesVizLayout({ zeroed = false }) {
     const assets = PROFILE_DRILLDOWNS.find((d) => d.id === 'assets')?.feed;
     const high = PROFILE_DRILLDOWNS.find((d) => d.id === 'high_patches')?.feed;

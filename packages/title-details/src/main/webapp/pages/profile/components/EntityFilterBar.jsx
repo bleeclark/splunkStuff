@@ -4,6 +4,7 @@ import Select from '@splunk/react-ui/Select';
 import { FilterLabel } from '../ProfileStyles';
 import { ENTITY_OPTIONS } from '../data/cybersecurityDemoFeeds';
 
+/** Entity dropdown for profile drilldowns. Works with ENTITY_OPTIONS and FilterLabel. */
 export default function EntityFilterBar({ entity, onEntityChange }) {
     return (
         <div className="ss-profile-entity-bar">

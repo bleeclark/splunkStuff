@@ -10,15 +10,14 @@ import Message from '@splunk/react-ui/Message';
 import WaitSpinner from '@splunk/react-ui/WaitSpinner';
 import Select from '@splunk/react-ui/Select';
 
-import LineChart from '../../components/visualizations/LineChart';
 import {
     StandardPieChart,
     StandardLineChart,
+    StandardColumnChart,
     StandardSingleValueChart,
 } from '../../components/visualizations/StandardSplunkViz';
-import { useContainerSize } from '../../hooks/useContainerSize';
 import { useProfileData } from './hooks/useProfileData';
-import { getProfileStandardCharts, isProfileDemoMode } from './data/profileDemoFeeds';
+import { getProfileStandardCharts, getTopChartTools, isProfileDemoMode } from './data/profileDemoFeeds';
 import { ENTITY_OPTIONS, PROFILE_DRILLDOWNS } from './data/cybersecurityDemoFeeds';
 import {
     Page,
@@ -34,14 +33,9 @@ import {
     PANEL_BLUE,
     profileModalStyle,
 } from './ProfileStyles';
+import { VIZ_PANEL_HEIGHT } from '../../components/visualizations/chartModel';
 
-const palette = {
-    goodColor: '#01417F',
-    badColor: '#DFA611',
-    textColor: '#FFFFFF',
-};
-
-const VIZ_HEIGHT = 200;
+const VIZ_HEIGHT = VIZ_PANEL_HEIGHT;
 const FEEDBACK_URL = '/app/so_title_details/feedback';
 
 const TOP_LINKS = {
@@ -50,41 +44,7 @@ const TOP_LINKS = {
     critical_patches: PROFILE_DRILLDOWNS.find((d) => d.id === 'critical_patches')?.href,
 };
 
-function FullBleedChart({ feed, unit = '', panelHeight }) {
-    const { hostRef, width: chartWidth, height: chartHeight } = useContainerSize({
-        minWidth: 160,
-        minHeight: 96,
-        defaultWidth: 420,
-        defaultHeight: panelHeight || VIZ_HEIGHT,
-    });
-
-    return (
-        <div ref={hostRef} style={{ width: '100%', height: '100%' }}>
-            <LineChart
-                values={feed.values}
-                times={feed.times}
-                width={chartWidth}
-                height={chartHeight || panelHeight || VIZ_HEIGHT}
-                fillContainer
-                stroke="rgba(255,255,255,0.88)"
-                strokeWidth={2}
-                background="transparent"
-                showMajor
-                goodColor={palette.goodColor}
-                badColor={palette.badColor}
-                textColor={palette.textColor}
-                unit={unit}
-                centerMajor={false}
-                colorPlacement="none"
-                padLeft={2}
-                padRight={2}
-                padTop={4}
-                padBottom={4}
-            />
-        </div>
-    );
-}
-
+/** Shows a spinner, search error, or empty message for a profile panel. Works with useProfileData on the Profile and Metric tabs. */
 function PanelStatus({ loading, error, empty }) {
     if (loading) {
         return (
@@ -111,6 +71,7 @@ function PanelStatus({ loading, error, empty }) {
     return null;
 }
 
+/** Renders the entity picker plus Instructions, Feedback, and Release Notes. Works with ProfilePage and the profile modals. */
 function ProfileChrome({ entity, onEntityChange }) {
     const [instructionsOpen, setInstructionsOpen] = useState(false);
     const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
@@ -216,11 +177,13 @@ function ProfileChrome({ entity, onEntityChange }) {
     );
 }
 
+/** Renders the profile chart grid: pies, area, column, and single values. Works with StandardSplunkViz, VizCard, and demo or live feeds. */
 function ProfileTabContent({ entity }) {
     const vizHeight = VIZ_HEIGHT;
     const { data, loading, error, status } = useProfileData('profile', entity || 'all');
     const viz = Array.isArray(data?.viz) ? data.viz : [];
     const standard = getProfileStandardCharts(entity || 'all');
+    const topTools = getTopChartTools();
     const demoMode = isProfileDemoMode();
 
     const topPie = {
@@ -262,12 +225,12 @@ function ProfileTabContent({ entity }) {
             />
 
             <CardGrid columns={3}>
-                <VizCard headerBlue title={topPie.title} href={topPie.href}>
+                <VizCard headerBlue title={topPie.title} href={topPie.href} tools={topTools.assets}>
                     <VizPanel height={vizHeight} background="transparent">
                         <StandardPieChart slices={topPie.slices} panelHeight={vizHeight} />
                     </VizPanel>
                 </VizCard>
-                <VizCard headerBlue title={topLine.title} href={topLine.href}>
+                <VizCard headerBlue title={topLine.title} href={topLine.href} tools={topTools.high}>
                     <VizPanel height={vizHeight} background="transparent">
                         <StandardLineChart
                             values={topLine.values}
@@ -278,7 +241,7 @@ function ProfileTabContent({ entity }) {
                         />
                     </VizPanel>
                 </VizCard>
-                <VizCard headerBlue title={topSingle.title} href={topSingle.href}>
+                <VizCard headerBlue title={topSingle.title} href={topSingle.href} tools={topTools.critical}>
                     <VizPanel height={vizHeight} background="transparent">
                         <StandardSingleValueChart
                             values={topSingle.values}
@@ -291,12 +254,12 @@ function ProfileTabContent({ entity }) {
             </CardGrid>
 
             <CardGrid columns={3}>
-                <VizCard headerBlue title={standard.pie.title}>
+                <VizCard headerBlue title={standard.pie.title} tools={standard.pie.tools}>
                     <VizPanel height={vizHeight} background="transparent">
                         <StandardPieChart slices={standard.pie.slices} panelHeight={vizHeight} />
                     </VizPanel>
                 </VizCard>
-                <VizCard headerBlue title={standard.line.title}>
+                <VizCard headerBlue title={standard.line.title} tools={standard.line.tools}>
                     <VizPanel height={vizHeight} background="transparent">
                         <StandardLineChart
                             values={standard.line.values}
@@ -307,9 +270,9 @@ function ProfileTabContent({ entity }) {
                         />
                     </VizPanel>
                 </VizCard>
-                <VizCard headerBlue title={standard.column.title}>
+                <VizCard headerBlue title={standard.column.title} tools={standard.column.tools}>
                     <VizPanel height={vizHeight} background="transparent">
-                        <StandardLineChart
+                        <StandardColumnChart
                             values={standard.column.values}
                             times={standard.column.times}
                             panelHeight={vizHeight}
@@ -322,7 +285,7 @@ function ProfileTabContent({ entity }) {
 
             <CardGrid columns={3}>
                 {(standard.singles || []).map((feed) => (
-                    <VizCard key={feed.title} headerBlue title={feed.title}>
+                    <VizCard key={feed.title} headerBlue title={feed.title} tools={feed.tools}>
                         <VizPanel height={vizHeight} background="transparent">
                             <StandardSingleValueChart
                                 values={feed.values}
@@ -340,6 +303,7 @@ function ProfileTabContent({ entity }) {
     );
 }
 
+/** Renders the Metric tab as area charts plus Metric A and Metric B actions. Works with useProfileData('metric') and StandardLineChart. */
 function MetricTabContent() {
     const [metricModalOpen, setMetricModalOpen] = useState(false);
     const vizHeight = VIZ_HEIGHT;
@@ -393,12 +357,15 @@ function MetricTabContent() {
                         key={item.title}
                         title={item.title}
                         subheader={item.feed?.subheader}
+                        tools={item.feed?.tools}
                     >
                         <VizPanel height={vizHeight} background="transparent">
-                            <FullBleedChart
-                                feed={item.feed}
-                                unit={item.chart ? 'ms' : ''}
+                            <StandardLineChart
+                                values={item.feed?.values}
+                                times={item.feed?.times}
                                 panelHeight={vizHeight}
+                                xAxisTitle="Time"
+                                yAxisTitle={item.chart ? 'ms' : 'Count'}
                             />
                         </VizPanel>
                     </VizCard>
@@ -408,6 +375,7 @@ function MetricTabContent() {
     );
 }
 
+/** Top-level profile page with Profile and Metric tabs. Works with Splunk react-page layout and the profile theme. */
 function ProfilePage() {
     const [activeTabId, setActiveTabId] = useState('profile');
     const [entity, setEntity] = useState('');
@@ -450,6 +418,11 @@ getUserTheme()
     .then((theme) => {
         const themed = {
             ...theme,
+            fontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+            fontFamilyTitle: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+            sansFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+            serifFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
+            monoFontFamily: "'Splunk Platform Sans', 'Proxima Nova', Roboto, Droid, 'Helvetica Neue', Helvetica, Arial, sans-serif",
             backgroundColorPage: PAGE_BLUE,
             backgroundColorSection: PAGE_BLUE,
             backgroundColorPopup: PANEL_BLUE,

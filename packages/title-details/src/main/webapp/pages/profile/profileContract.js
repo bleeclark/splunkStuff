@@ -9,15 +9,12 @@ export const FILTER_OPTIONS = [
     { value: 'region_b', label: 'Region B' },
 ];
 
-/** Empty feed used while loading or when a search returns nothing usable. */
+/** Empty cards-and-viz feed used while a search is loading or returns nothing. Works with useProfileData. */
 export function emptyProfileFeed() {
     return { cards: [], viz: [] };
 }
 
-/**
- * @param {unknown} feedObj
- * @returns {boolean}
- */
+/** Checks that a profile feed has cards and viz series with matching times and values. Works with the profile unit tests. */
 export function isValidProfileFeedShape(feedObj) {
     if (!feedObj || typeof feedObj !== 'object') return false;
     if (!Array.isArray(feedObj.cards) || !Array.isArray(feedObj.viz)) return false;
@@ -31,12 +28,36 @@ export function isValidProfileFeedShape(feedObj) {
     );
 }
 
-/**
- * Card chrome title, kept distinct from the viz subheader.
- * @param {Record<string, unknown>} row
- * @param {string} subheader
- * @param {number} index
- */
+/** Reads one text-row cell (`text1`–`text3` and its link fields) from a Splunk result row. Works with toolsFromRow and VizTools. */
+function textCellFromRow(row, slot) {
+    const value = row[`text${slot}`];
+    if (value == null || String(value).trim() === '') return null;
+    return {
+        label: String(row[`text${slot}_label`] ?? row[`text${slot}Label`] ?? `Text${slot}`),
+        value: String(value).trim(),
+        url: String(row[`text${slot}_link_url`] ?? row[`text${slot}LinkUrl`] ?? ''),
+        urlFromField: String(row[`text${slot}_link_url_value`] ?? ''),
+        search: String(row[`text${slot}_link_search`] ?? row[`text${slot}LinkSearch`] ?? ''),
+    };
+}
+
+/** Turns text, link, and info fields on a Splunk row into the chart tools object. Works with mapRowsToProfileFeed and VizCard. */
+function toolsFromRow(row) {
+    const cells = [1, 2, 3].map((slot) => textCellFromRow(row, slot)).filter(Boolean);
+    const infoText = String(row.info ?? row.info_text ?? '').trim();
+    if (!cells.length && !infoText) return null;
+    return {
+        showTextRow: true,
+        showInfo: Boolean(infoText),
+        infoText,
+        linkTarget: 'newTab',
+        linkEarliest: String(row.link_earliest ?? ''),
+        linkLatest: String(row.link_latest ?? ''),
+        cells,
+    };
+}
+
+/** Picks a card title that stays different from the series subheader. Works with mapRowsToProfileFeed. */
 function distinctVizCardTitle(row, subheader, index) {
     const explicit = row.card_title ?? row.panel_title ?? row.panel;
     if (explicit != null && String(explicit).trim() !== '') {
@@ -49,16 +70,7 @@ function distinctVizCardTitle(row, subheader, index) {
     return `Trend ${index + 1}`;
 }
 
-/**
- * Map Splunk result rows → Profile feed shape.
- * Expected card rows: title, value, delta
- * Expected viz rows: series (or subheader), _time, count (or value);
- * optional card_title / panel for the wrapper card (different from viz subheader)
- *
- * @param {Array<Record<string, unknown>>} cardRows
- * @param {Array<Record<string, unknown>>} vizRows
- * @returns {{ cards: Array, viz: Array }}
- */
+/** Maps Splunk card rows (title, value, delta) and viz rows (series, _time, value) into the profile feed. Works with useProfileData and the profile tab. */
 export function mapRowsToProfileFeed(cardRows = [], vizRows = []) {
     const cards = (Array.isArray(cardRows) ? cardRows : []).map((row) => ({
         title: String(row.title ?? row.name ?? '—'),
@@ -88,6 +100,8 @@ export function mapRowsToProfileFeed(cardRows = [], vizRows = []) {
         const v = Number(rawV);
         series.times.push(t);
         series.values.push(Number.isFinite(v) ? v : 0);
+        const tools = toolsFromRow(row);
+        if (tools) series.tools = tools;
     });
 
     return {
@@ -96,12 +110,7 @@ export function mapRowsToProfileFeed(cardRows = [], vizRows = []) {
     };
 }
 
-/**
- * Metric tab: map rows into { cards: [{ title, feed, chart? }] }.
- * Expected: title, series, _time, value/count; optional unit=ms → chart flag.
- *
- * @param {Array<Record<string, unknown>>} rows
- */
+/** Maps Splunk metric rows (title, series, _time, value, optional unit) into Metric-tab cards. Works with useProfileData and StandardLineChart. */
 export function mapRowsToMetricFeeds(rows = []) {
     const byTitle = new Map();
     (Array.isArray(rows) ? rows : []).forEach((row) => {
@@ -132,6 +141,8 @@ export function mapRowsToMetricFeeds(rows = []) {
         const v = Number(rawV);
         item.feed.times.push(t);
         item.feed.values.push(Number.isFinite(v) ? v : 0);
+        const tools = toolsFromRow(row);
+        if (tools) item.feed.tools = tools;
     });
     return { cards: Array.from(byTitle.values()) };
 }

@@ -6,138 +6,25 @@ import Column from '@splunk/visualizations/Column';
 import SingleValue from '@splunk/visualizations/SingleValue';
 
 import { useContainerSize } from '../../hooks/useContainerSize';
+import {
+    AXIS_CHART_OPTIONS,
+    PIE_CHART_OPTIONS,
+    SINGLE_VALUE_OPTIONS,
+    toCategoryDataSource,
+    toSingleValueDataSource,
+    toTimeSeriesDataSource,
+} from './chartModel';
 
-const AXIS_CHART_OPTIONS = {
-    backgroundColor: 'transparent',
-    legendDisplay: 'off',
-    xAxisTitleVisibility: 'show',
-    yAxisTitleVisibility: 'show',
-    xAxisTitleText: 'Time',
-    yAxisTitleText: 'Value',
-    xAxisLabelVisibility: 'show',
-    yAxisLabelVisibility: 'show',
-    showXMajorGridLines: true,
-    showYMajorGridLines: true,
-    showYMinorGridLines: false,
-    lineWidth: 2,
-    seriesColors: ['#5B9BD5'],
-};
+export {
+    AXIS_CHART_OPTIONS,
+    PIE_CHART_OPTIONS,
+    SINGLE_VALUE_OPTIONS,
+    toCategoryDataSource,
+    toSingleValueDataSource,
+    toTimeSeriesDataSource,
+} from './chartModel';
 
-const PIE_CHART_OPTIONS = {
-    backgroundColor: 'transparent',
-    labelDisplay: 'valuesAndPercent',
-    collapseThreshold: 0.01,
-};
-
-// SingleValue sparkline options (correct @splunk/visualizations names).
-// Area fill uses sparklineAreaColor × internal fillOpacity (~0.2).
-const SINGLE_VALUE_OPTIONS = {
-    backgroundColor: 'transparent',
-    majorColor: '#FFFFFF',
-    trendColor: '#FFFFFF',
-    sparklineDisplay: 'below',
-    sparklineStrokeColor: '#FFFFFF',
-    sparklineAreaColor: '#7EB6E8',
-    showSparklineAreaGraph: true,
-    showSparklineTooltip: true,
-    sparklineHighlightDots: 1,
-    sparklineHighlightSegments: 0,
-    sparklineNullValueDisplay: 'connect',
-};
-
-export function toSingleValueDataSource(values = [], times = []) {
-    const colsT = [];
-    const colsV = [];
-    const len = Math.min(
-        Array.isArray(values) ? values.length : 0,
-        Array.isArray(times) ? times.length : 0
-    );
-    for (let i = 0; i < len; i += 1) {
-        const rawT = times[i];
-        const parsed = typeof rawT === 'string' ? Date.parse(rawT) : Number(rawT);
-        const t = Number.isFinite(parsed) && parsed > 0 && parsed < 1e12 ? parsed * 1000 : parsed;
-        const v = Number(values[i]);
-        if (Number.isFinite(t) && Number.isFinite(v)) {
-            colsT.push(t);
-            colsV.push(v);
-        }
-    }
-    return {
-        primary: {
-            requestParams: { offset: 0, count: colsT.length || 10000 },
-            data: {
-                columns: [colsT, colsV],
-                fields: [{ name: '_time' }, { name: 'count' }],
-            },
-            meta: { totalCount: colsT.length },
-        },
-    };
-}
-
-function timeLabel(rawT, index) {
-    const parsed = typeof rawT === 'string' ? Date.parse(rawT) : Number(rawT);
-    const ms = Number.isFinite(parsed) && parsed > 1e12 ? parsed : parsed * 1000;
-    if (!Number.isFinite(ms) || ms <= 0) {
-        return String(index);
-    }
-    return new Date(ms).toLocaleString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
-
-export function toTimeSeriesDataSource(values = [], times = [], valueName = 'count') {
-    const colsX = [];
-    const colsV = [];
-    const len = Math.min(
-        Array.isArray(values) ? values.length : 0,
-        Array.isArray(times) ? times.length : 0
-    );
-    for (let i = 0; i < len; i += 1) {
-        const v = Number(values[i]);
-        if (!Number.isFinite(v)) {
-            continue;
-        }
-        colsX.push(timeLabel(times[i], i));
-        colsV.push(v);
-    }
-    return {
-        primary: {
-            requestParams: { offset: 0, count: colsX.length || 10000 },
-            data: {
-                columns: [colsX, colsV],
-                fields: [{ name: 'time' }, { name: valueName }],
-            },
-            meta: { totalCount: colsX.length },
-        },
-    };
-}
-
-export function toCategoryDataSource(slices = []) {
-    const labels = [];
-    const values = [];
-    (Array.isArray(slices) ? slices : []).forEach((slice) => {
-        const label = String(slice?.label ?? '');
-        const value = Number(slice?.value);
-        if (label && Number.isFinite(value) && value > 0) {
-            labels.push(label);
-            values.push(value);
-        }
-    });
-    return {
-        primary: {
-            requestParams: { offset: 0, count: labels.length || 10000 },
-            data: {
-                columns: [labels, values],
-                fields: [{ name: 'label' }, { name: 'value' }],
-            },
-            meta: { totalCount: labels.length },
-        },
-    };
-}
-
+/** Measures the panel and passes pixel width and height to a Splunk visualization. Works with useContainerSize and the standard charts. */
 function ChartHost({ children, defaultHeight }) {
     const { hostRef, width, height } = useContainerSize({
         minWidth: 160,
@@ -165,6 +52,7 @@ ChartHost.defaultProps = {
     defaultHeight: 200,
 };
 
+/** Renders a Splunk Pie chart that fills its panel. Works with VizCard, profile pie data, and PIE_CHART_OPTIONS. */
 export function StandardPieChart({ slices, panelHeight = 200 }) {
     const dataSources = useMemo(() => toCategoryDataSource(slices), [slices]);
     return (
@@ -191,6 +79,7 @@ StandardPieChart.defaultProps = {
     panelHeight: 200,
 };
 
+/** Renders a Splunk Area chart with time and value axes. Works with profile, metric, and drilldown series. */
 export function StandardLineChart({
     values,
     times,
@@ -240,6 +129,7 @@ StandardLineChart.defaultProps = {
     yAxisTitle: 'Value',
 };
 
+/** Renders a Splunk Column chart with time and value axes. Works with the Tickets panel and column demo series. */
 export function StandardColumnChart({
     values,
     times,
@@ -289,6 +179,7 @@ StandardColumnChart.defaultProps = {
     yAxisTitle: 'Value',
 };
 
+/** Renders a Splunk SingleValue with a sparkline under the number. Works with Critical Patches and the single-value row. */
 export function StandardSingleValueChart({
     values,
     times,

@@ -1,7 +1,3 @@
-/**
- * Live-only Profile data hook. Always runs Splunk REST searches.
- */
-
 import { useEffect, useState } from 'react';
 import { runProfileSearch } from '../data/profileSearchClient.js';
 import {
@@ -15,10 +11,7 @@ import {
     mapRowsToProfileFeed,
 } from '../profileContract.js';
 
-/**
- * @param {'profile' | 'metric'} panel
- * @param {string} filterKey  Profile filter; ignored for metric unless product unifies later
- */
+/** Loads profile or metric data from demo mode or a live Splunk search. Works with ProfileTabContent, MetricTabContent, and profileSearchClient. */
 export function useProfileData(panel, filterKey = 'all') {
     const [state, setState] = useState({
         data: panel === 'metric' ? { cards: [] } : emptyProfileFeed(),
